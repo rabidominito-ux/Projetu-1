@@ -102,15 +102,3 @@ def main_app():
             kategoria = "❌ Insuficiente"
 
         st.success(f"Rezultadu Avaliasaun: **{kategoria}** (Nota: {nota:.2f})")
-
-# ============================================================
-# 6. KONTROLU FLUXU (LOGIN vs APP)
-# ============================================================
-if "logged_in" not in st.session_state:
-    st.session_state["logged_in"] = False
-    st.session_state["username"] = None
-
-if st.session_state["logged_in"]:
-    main_app()
-else:
-    login()
