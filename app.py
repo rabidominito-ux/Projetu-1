@@ -7,7 +7,7 @@ import sqlite3
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 
 # 1. Konfigurasaun Pajina Streamlit (Layout Wide)
 st.set_page_config(
@@ -195,7 +195,7 @@ if 'extra_reports' not in st.session_state:
 if 'edit_index' not in st.session_state:
     st.session_state['edit_index'] = None
 
-# 3. Sidebar ba Upload Dataset & Download Backup (Laiha ona Filtru)
+# 3. Sidebar ba Upload Dataset & Download Backup
 st.sidebar.header("📁 Gestaun Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
 
@@ -281,6 +281,7 @@ if uploaded_file is not None:
 
             model = DecisionTreeClassifier(criterion='entropy', max_depth=5, random_state=42)
             model.fit(X_train, y_train)
+            
             df['Prediksaun'] = le.inverse_transform(model.predict(X))
             acc = accuracy_score(y_test, model.predict(X_test))
 
@@ -359,8 +360,32 @@ if uploaded_file is not None:
                 
                 st.markdown("---")
                 st.subheader("🚀 Informasaun Modelu Decision Tree")
-                st.success(f"✅ Modelu treinu ho suksesu! Akurasi Modelu: **{acc * 100:.2f}%**")
+                st.success(f"✅ Modelu treinu ho suksesu! Akurasi Modelu (Accuracy): **{acc * 100:.2f}%**")
                 
+                # --- [IMPLEMENTASI BARUK: CONFUSION MATRIX & CLASSIFICATION REPORT] ---
+                st.markdown("---")
+                st.subheader("🎯 Avaliasaun Detalladu Modelu (Confusion Matrix & Métricas)")
+                
+                y_pred_test = model.predict(X_test)
+                cm = confusion_matrix(y_test, y_pred_test)
+                
+                col_eval1, col_eval2 = st.columns(2)
+                
+                with col_eval1:
+                    st.markdown("##### 📉 Confusion Matrix")
+                    fig_cm, ax_cm = plt.subplots(figsize=(5, 4))
+                    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False,
+                                xticklabels=le.classes_, yticklabels=le.classes_, ax=ax_cm)
+                    ax_cm.set_xlabel('Prediksaun (Predicted)')
+                    ax_cm.set_ylabel('Reál (Actual)')
+                    st.pyplot(fig_cm)
+                
+                with col_eval2:
+                    st.markdown("##### 📑 Classification Report (Precision, Recall, F1-Score)")
+                    report_dict = classification_report(y_test, y_pred_test, target_names=le.classes_, output_dict=True, zero_division=0)
+                    df_report = pd.DataFrame(report_dict).transpose()
+                    st.dataframe(df_report.style.format(subset=['precision', 'recall', 'f1-score', 'support'], formatter="{:.2f}"), use_container_width=True)
+
                 st.markdown("---")
                 st.subheader("🌳 Vizualizasaun Árbore Desizaun (Decision Tree Plot)")
                 max_depth_vis = st.slider("Hili Profundidade Árbore (Max Depth)", 1, 5, 3)
