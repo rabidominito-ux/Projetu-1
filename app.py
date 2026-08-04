@@ -4,9 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
+from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix
 
 # Konfigurasaun Pajina Streamlit
 st.set_page_config(page_title="Sistema Klasifikasaun CFP - Decision Tree", page_icon="📊", layout="wide")
@@ -19,7 +19,6 @@ st.sidebar.header("📁 Upload Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
 
 if uploaded_file is not None:
-    # Karga Dadus
     @st.cache_data
     def load_data(file):
         df_raw = pd.read_excel(file, sheet_name='Sheet1', header=0)
@@ -27,7 +26,7 @@ if uploaded_file is not None:
 
     df_raw = load_data(uploaded_file)
     
-    # Remapa koluna sira tuir kódigu Colab
+    # Remapa koluna sira
     rename_map = {
         'Column1': 'controlo_ativo_identificacao',
         'Column2': 'nome_pessoal',
@@ -54,7 +53,6 @@ if uploaded_file is not None:
         'Column23': 'temp2'
     }
     
-    # Asegura katak koluna sira iha baze de dadus
     df_raw.rename(columns={k: v for k, v in rename_map.items() if k in df_raw.columns}, inplace=True)
 
     nota_cols = ['Asiduidade', 'Pontualidade', 'Produtividade', 'Kualidade_Servisu',
@@ -62,17 +60,16 @@ if uploaded_file is not None:
     target_col = 'Rezultadu_Avaliasaun'
 
     if all(col in df_raw.columns for col in nota_cols + [target_col]):
-        df = df_raw[nota_cols + [target_col]].copy()
+        df = df_raw.dropna(subset=nota_cols + [target_col]).copy()
         for col in nota_cols:
             df[col] = pd.to_numeric(df[col], errors='coerce')
-        df = df.dropna()
 
         st.subheader("📋 Dadus Amostra (Preview)")
         st.dataframe(df.head())
 
-        # Botão 1: Treinu no Evaluasaun Modelu
+        # Botão Treinu Modelu
         if st.button("🚀 Prosesa no Treinu Modelu (Train Model)"):
-            with st.spinner("Modelu dada hela treinu... Favor hein minutu uitoan."):
+            with st.spinner("Modelu dada hela treinu..."):
                 le = LabelEncoder()
                 df['target_encoded'] = le.fit_transform(df[target_col])
                 y = df['target_encoded']
@@ -82,44 +79,34 @@ if uploaded_file is not None:
                     X, y, test_size=0.2, random_state=42, stratify=y
                 )
 
-                # GridSearch ba Hyperparameter Tuning
-                param_grid = {
-                    'max_depth': [3, 5, 7, 10, None],
-                    'min_samples_split': [2, 5, 10, 20],
-                    'min_samples_leaf': [1, 2, 4, 8],
-                    'criterion': ['gini', 'entropy']
-                }
-                grid = GridSearchCV(DecisionTreeClassifier(random_state=42), param_grid, cv=5, scoring='accuracy', n_jobs=-1)
-                grid.fit(X_train, y_train)
-                
-                dt_best = grid.best_estimator_
-                y_pred_best = dt_best.predict(X_test)
-                
-                acc = accuracy_score(y_test, y_pred_best)
-                cv_scores = cross_val_score(dt_best, X_train, y_train, cv=5)
+                model = DecisionTreeClassifier(criterion='entropy', max_depth=5, random_state=42)
+                model.fit(X_train, y_train)
+                y_pred = model.predict(X_test)
+                acc = accuracy_score(y_test, y_pred)
 
-                st.success("✅ Modelu treinu ho susesu!")
-                
-                col1, col2, col3 = st.columns(3)
-                col1.metric("Akurasi (Test Accuracy)", f"{acc * 100:.2f}%")
-                col2.metric("Cross-Validation Média", f"{cv_scores.mean() * 100:.2f}%")
-                col3.metric("Parametru Di'ak liu", str(grid.best_params_))
+                st.success(f"✅ Modelu treinu ho susesu! Akurasi: {acc * 100:.2f}%")
 
-                # Visualizasaun Confusion Matrix
-                st.subheader("📊 Matriz Konfuzaun (Confusion Matrix)")
-                cm = confusion_matrix(y_test, y_pred_best)
-                fig, ax = plt.subplots(figsize=(6, 4))
-                sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-                            xticklabels=le.classes_, yticklabels=le.classes_, ax=ax)
-                plt.xlabel("Prediksaun")
-                plt.ylabel("Reál")
-                st.pyplot(fig)
-
-        # Botão 2 / Formuláriu Prediksaun Foun ba Funsionáriu
+        # Formuláriu Identidade no Prediksaun Funsionáriu Foun
         st.markdown("---")
-        st.subheader("🔍 Halo Prediksaun ba Funsionáriu Unidade Foun")
+        st.subheader("🔍 Halo Prediksaun no Input Identidade Funsionáriu Foun")
         
-        with st.form("pred_form"):
+        with st.form("funsionariu_form"):
+            st.markdown("##### 📝 Informasaun Identidade Funsionáriu")
+            col_i1, col_i2, col_i3 = st.columns(3)
+            with col_i1:
+                txt_nome = st.text_input("Naran Pessoal (nome_pessoal)", "Ex: João da Silva")
+                txt_sigap = st.text_input("ID SIGAP (id_sigap)", "SIGAP-001")
+                txt_sexo = st.selectbox("Sexo", ["M", "F"])
+            with col_i2:
+                txt_inst = st.text_input("Instituisaun", "KFP")
+                txt_local = st.text_input("Local Trabalhu", "Dili")
+                txt_nascimento = st.text_input("Data de Nascimento", "1995-01-01")
+            with col_i3:
+                txt_funcao = st.text_input("Funsaun", "Tékniku")
+                txt_cargo = st.text_input("Kargo", "Staff")
+                txt_grp = st.text_input("ID GRP", "GRP-123")
+
+            st.markdown("##### 📊 Indikadór Avaliasaun Funsionáriu (Skala 1 - 5)")
             col_a, col_b, col_c, col_d = st.columns(4)
             with col_a:
                 p_asid = st.slider("Asiduidade", 1.0, 5.0, 4.0, 1.0)
@@ -134,7 +121,7 @@ if uploaded_file is not None:
                 p_disp = st.slider("Disiplina", 1.0, 5.0, 4.0, 1.0)
                 p_resp = st.slider("Responsabilidade", 1.0, 5.0, 4.0, 1.0)
             
-            submit_pred = st.form_submit_button("🔮 Predict / Prediksa Rezultadu")
+            submit_pred = st.form_submit_button("🔮 Predict & Hare Relatóriu")
             
             if submit_pred:
                 le = LabelEncoder()
@@ -142,15 +129,45 @@ if uploaded_file is not None:
                 X = df[nota_cols].copy()
                 y = df['target_encoded']
                 
-                model = DecisionTreeClassifier(criterion='entropy', max_depth=10, min_samples_split=5, random_state=42)
+                model = DecisionTreeClassifier(criterion='entropy', max_depth=10, random_state=42)
                 model.fit(X, y)
                 
                 input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
                 pred_encoded = model.predict(input_data)
                 pred_label = le.inverse_transform(pred_encoded)[0]
                 
-                st.info(f"✨ Rezultadu Klasifikasaun Dezempenu Funsionáriu: **{pred_label}**")
-    else:
-        st.error("⚠️ Koluna sira iha ficheiru Excel la hanesan ho estrutura ne'ebé espere (Keta haluha koluna nota no rezultadu avaliasaun).")
-else:
-    st.info("👈 Favor upload ficheiru `Dadus CFP.xlsx` liuhusi sidebar iha sorin karuk hಿತು hahú.")
+                # Rai iha session_state atu bele hatudu relatóriu
+                st.session_state['last_report'] = {
+                    'nome': txt_nome,
+                    'sigap': txt_sigap,
+                    'sexo': txt_sexo,
+                    'funcao': txt_funcao,
+                    'cargo': txt_cargo,
+                    'local': txt_local,
+                    'asid': p_asid,
+                    'pont': p_pont,
+                    'prod': p_prod,
+                    'kual': p_kual,
+                    'koop': p_koop,
+                    'inis': p_inis,
+                    'disp': p_disp,
+                    'resp': p_resp,
+                    'result': pred_label
+                }
+
+        # Seksaun Relatóriu Funsionáriu Foun ne'ebé foin hatama
+        if 'last_report' in st.session_state:
+            rep = st.session_state['last_report']
+            st.markdown("---")
+            st.subheader("📄 Relatóriu Rezultadu Avaliasaun Funsionáriu Foun")
+            
+            col_r1, col_r2 = st.columns(2)
+            with col_r1:
+                st.markdown(f"**Naran Pessoal:** {rep['nome']}")
+                st.markdown(f"**ID SIGAP:** {rep['sigap']}")
+                st.markdown(f"**Sexo:** {rep['sexo']}")
+                st.markdown(f"**Funsaun:** {rep['funcao']}")
+            with col_r2:
+                st.markdown(f"**Kargo:** {rep['cargo']}")
+                st.markdown(f"**Fatin Trabalhu:** {rep['local']}")
+                st.markdown(f"✨ **Rezultadu Klasifikasaun:** `
