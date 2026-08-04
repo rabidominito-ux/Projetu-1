@@ -47,106 +47,127 @@ st.markdown("""
 st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Aplikasaun uza algoritmu Decision Tree hodi klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
 
-# 2. Konfigurasaun Database SQLite local ba Persistent Storage
+# 2. Konfigurasaun Database SQLite local ho Try-Except (Robust)
 DB_NAME = "cfp_database.db"
 
 def init_db():
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS extra_reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome_pessoal TEXT,
-            id_sigap TEXT,
-            sexo TEXT,
-            instituicao TEXT,
-            local_trabalho TEXT,
-            data_de_nascimento TEXT,
-            funcao TEXT,
-            cargo TEXT,
-            id_grp TEXT,
-            Asiduidade REAL,
-            Pontualidade REAL,
-            Produtividade REAL,
-            Kualidade_Servisu REAL,
-            Kooperasaun REAL,
-            Inisiativa REAL,
-            Disiplina REAL,
-            Responsabilidade REAL,
-            Rezultadu_Avaliasaun TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS extra_reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome_pessoal TEXT,
+                id_sigap TEXT,
+                sexo TEXT,
+                instituicao TEXT,
+                local_trabalho TEXT,
+                data_de_nascimento TEXT,
+                funcao TEXT,
+                cargo TEXT,
+                id_grp TEXT,
+                Asiduidade REAL,
+                Pontualidade REAL,
+                Produtividade REAL,
+                Kualidade_Servisu REAL,
+                Kooperasaun REAL,
+                Inisiativa REAL,
+                Disiplina REAL,
+                Responsabilidade REAL,
+                Rezultadu_Avaliasaun TEXT
+            )
+        ''')
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        st.error(f"⚠️ Erro iha inicializasaun database: {e}")
 
 init_db()
 
 def load_extra_from_db():
-    conn = sqlite3.connect(DB_NAME)
-    df_db = pd.read_sql_query("SELECT * FROM extra_reports", conn)
-    conn.close()
-    if 'id' in df_db.columns:
-        df_db = df_db.drop(columns=['id'])
-    return df_db.to_dict('records')
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        df_db = pd.read_sql_query("SELECT * FROM extra_reports", conn)
+        conn.close()
+        if 'id' in df_db.columns:
+            df_db = df_db.drop(columns=['id'])
+        return df_db.to_dict('records')
+    except Exception as e:
+        st.error(f"⚠️ Erro bainhira carrega dadus husi database: {e}")
+        return []
 
 def save_extra_to_db(report_dict):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO extra_reports (
-            nome_pessoal, id_sigap, sexo, instituicao, local_trabalho, 
-            data_de_nascimento, funcao, cargo, id_grp, Asiduidade, 
-            Pontualidade, Produtividade, Kualidade_Servisu, Kooperasaun, 
-            Inisiativa, Disiplina, Responsabilidade, Rezultadu_Avaliasaun
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (
-        report_dict['nome_pessoal'], report_dict['id_sigap'], report_dict['sexo'],
-        report_dict['instituicao'], report_dict['local_trabalho'], report_dict['data_de_nascimento'],
-        report_dict['funcao'], report_dict['cargo'], report_dict['id_grp'],
-        report_dict['Asiduidade'], report_dict['Pontualidade'], report_dict['Produtividade'],
-        report_dict['Kualidade_Servisu'], report_dict['Kooperasaun'], report_dict['Inisiativa'],
-        report_dict['Disiplina'], report_dict['Responsabilidade'], report_dict['Rezultadu_Avaliasaun']
-    ))
-    conn.commit()
-    conn.close()
-
-def update_extra_in_db(index_val, report_dict):
-    # Load all records to match index, or drop table rows and recreate cleanly
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("SELECT id FROM extra_reports")
-    ids = [row[0] for row in cursor.fetchall()]
-    if index_val < len(ids):
-        row_id = ids[index_val]
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
         cursor.execute('''
-            UPDATE extra_reports SET 
-                nome_pessoal=?, id_sigap=?, sexo=?, instituicao=?, local_trabalho=?, 
-                data_de_nascimento=?, funcao=?, cargo=?, id_grp=?, Asiduidade=?, 
-                Pontualidade=?, Produtividade=?, Kualidade_Servisu=?, Kooperasaun=?, 
-                Inisiativa=?, Disiplina=?, Responsabilidade=?, Rezultadu_Avaliasaun=?
-            WHERE id=?
+            INSERT INTO extra_reports (
+                nome_pessoal, id_sigap, sexo, instituicao, local_trabalho, 
+                data_de_nascimento, funcao, cargo, id_grp, Asiduidade, 
+                Pontualidade, Produtividade, Kualidade_Servisu, Kooperasaun, 
+                Inisiativa, Disiplina, Responsabilidade, Rezultadu_Avaliasaun
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             report_dict['nome_pessoal'], report_dict['id_sigap'], report_dict['sexo'],
             report_dict['instituicao'], report_dict['local_trabalho'], report_dict['data_de_nascimento'],
             report_dict['funcao'], report_dict['cargo'], report_dict['id_grp'],
             report_dict['Asiduidade'], report_dict['Pontualidade'], report_dict['Produtividade'],
             report_dict['Kualidade_Servisu'], report_dict['Kooperasaun'], report_dict['Inisiativa'],
-            report_dict['Disiplina'], report_dict['Responsabilidade'], report_dict['Rezultadu_Avaliasaun'],
-            row_id
+            report_dict['Disiplina'], report_dict['Responsabilidade'], report_dict['Rezultadu_Avaliasaun']
         ))
         conn.commit()
-    conn.close()
+        conn.close()
+        return True
+    except Exception as e:
+        st.error(f"⚠️ Erro bainhira salva dadus: {e}")
+        return False
+
+def update_extra_in_db(index_val, report_dict):
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM extra_reports")
+        ids = [row[0] for row in cursor.fetchall()]
+        if index_val < len(ids):
+            row_id = ids[index_val]
+            cursor.execute('''
+                UPDATE extra_reports SET 
+                    nome_pessoal=?, id_sigap=?, sexo=?, instituicao=?, local_trabalho=?, 
+                    data_de_nascimento=?, funcao=?, cargo=?, id_grp=?, Asiduidade=?, 
+                    Pontualidade=?, Produtividade=?, Kualidade_Servisu=?, Kooperasaun=?, 
+                    Inisiativa=?, Disiplina=?, Responsabilidade=?, Rezultadu_Avaliasaun=?
+                WHERE id=?
+            ''', (
+                report_dict['nome_pessoal'], report_dict['id_sigap'], report_dict['sexo'],
+                report_dict['instituicao'], report_dict['local_trabalho'], report_dict['data_de_nascimento'],
+                report_dict['funcao'], report_dict['cargo'], report_dict['id_grp'],
+                report_dict['Asiduidade'], report_dict['Pontualidade'], report_dict['Produtividade'],
+                report_dict['Kualidade_Servisu'], report_dict['Kooperasaun'], report_dict['Inisiativa'],
+                report_dict['Disiplina'], report_dict['Responsabilidade'], report_dict['Rezultadu_Avaliasaun'],
+                row_id
+            ))
+            conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        st.error(f"⚠️ Erro bainhira atualiza dadus: {e}")
+        return False
 
 def delete_extra_from_db(index_val):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("SELECT id FROM extra_reports")
-    ids = [row[0] for row in cursor.fetchall()]
-    if index_val < len(ids):
-        row_id = ids[index_val]
-        cursor.execute("DELETE FROM extra_reports WHERE id=?", (row_id,))
-        conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM extra_reports")
+        ids = [row[0] for row in cursor.fetchall()]
+        if index_val < len(ids):
+            row_id = ids[index_val]
+            cursor.execute("DELETE FROM extra_reports WHERE id=?", (row_id,))
+            conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        st.error(f"⚠️ Erro bainhira hamos dadus: {e}")
+        return False
 
 # Load dadus husi SQLite ba session_state
 if 'extra_reports' not in st.session_state:
@@ -155,8 +176,8 @@ if 'extra_reports' not in st.session_state:
 if 'edit_index' not in st.session_state:
     st.session_state['edit_index'] = None
 
-# 3. Sidebar ba Upload Dataset
-st.sidebar.header("📁 Upload Dataset")
+# 3. Sidebar ba Upload Dataset & Download Backup
+st.sidebar.header("📁 Gestaun Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
 
 if uploaded_file is not None:
@@ -217,6 +238,17 @@ if uploaded_file is not None:
                 df = pd.concat([df_base, df_extra], ignore_index=True)
             else:
                 df = df_base
+
+            # [FITUR TAMBAHAN 1]: Botão Download Dataset Tomak (Backup) iha Sidebar
+            st.sidebar.markdown("---")
+            st.sidebar.subheader("📥 Download Backup Dataset")
+            csv_full = df.to_csv(index=False).encode('utf-8')
+            st.sidebar.download_button(
+                label="⬇️ Download Dataset Tomak (CSV)",
+                data=csv_full,
+                file_name="dataset_cfp_kompletu.csv",
+                mime='text/csv'
+            )
 
             le = LabelEncoder()
             df['target_encoded'] = le.fit_transform(df[target_col].astype(str))
@@ -340,8 +372,8 @@ if uploaded_file is not None:
                     st.markdown("##### 📝 1. Informasaun Identidade Funsionáriu")
                     col_i1, col_i2, col_i3 = st.columns(3)
                     with col_i1:
-                        txt_nome = st.text_input("Naran Pessoal (nome_pessoal)", def_val.get('nome_pessoal', "João da Silva"))
-                        txt_sigap = st.text_input("ID SIGAP (id_sigap)", def_val.get('id_sigap', "SIGAP-001"))
+                        txt_nome = st.text_input("Naran Pessoal (nome_pessoal)*", def_val.get('nome_pessoal', "João da Silva"))
+                        txt_sigap = st.text_input("ID SIGAP (id_sigap)*", def_val.get('id_sigap', "SIGAP-001"))
                         txt_sexo = st.selectbox("Sexo", ["M", "F"], index=0 if def_val.get('sexo', 'M')=='M' else 1)
                     with col_i2:
                         txt_inst = st.text_input("Instituisaun", def_val.get('instituicao', "CFP"))
@@ -371,40 +403,44 @@ if uploaded_file is not None:
                     submit_pred = st.form_submit_button(btn_label)
                     
                     if submit_pred:
-                        input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
-                        pred_encoded = model.predict(input_data)
-                        pred_label = le.inverse_transform(pred_encoded)[0]
-                        
-                        new_report = {
-                            'nome_pessoal': txt_nome,
-                            'id_sigap': txt_sigap,
-                            'sexo': txt_sexo,
-                            'instituicao': txt_inst,
-                            'local_trabalho': txt_local,
-                            'data_de_nascimento': txt_nascimento,
-                            'funcao': txt_funcao,
-                            'cargo': txt_cargo,
-                            'id_grp': txt_grp,
-                            'Asiduidade': p_asid,
-                            'Pontualidade': p_pont,
-                            'Produtividade': p_prod,
-                            'Kualidade_Servisu': p_kual,
-                            'Kooperasaun': p_koop,
-                            'Inisiativa': p_inis,
-                            'Disiplina': p_disp,
-                            'Responsabilidade': p_resp,
-                            'Rezultadu_Avaliasaun': pred_label
-                        }
-                        
-                        if idx_edit is not None:
-                            update_extra_in_db(idx_edit, new_report)
-                            st.session_state['edit_index'] = None
-                            st.success("✅ Relatóriu atualiza no rai permanente ona iha database SQLite!")
-                            st.rerun()
+                        # [FITUR TAMBAHAN 2]: Validasaun kampu mamuk
+                        if not txt_nome.strip() or not txt_sigap.strip():
+                            st.warning("⚠️ Favor prende Naran Pessoal no ID SIGAP labele husik mamuk!")
                         else:
-                            save_extra_to_db(new_report)
-                            st.success("✅ Relatóriu foun rejista no rai permanente ona iha database SQLite!")
-                            st.rerun()
+                            input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
+                            pred_encoded = model.predict(input_data)
+                            pred_label = le.inverse_transform(pred_encoded)[0]
+                            
+                            new_report = {
+                                'nome_pessoal': txt_nome,
+                                'id_sigap': txt_sigap,
+                                'sexo': txt_sexo,
+                                'instituicao': txt_inst,
+                                'local_trabalho': txt_local,
+                                'data_de_nascimento': txt_nascimento,
+                                'funcao': txt_funcao,
+                                'cargo': txt_cargo,
+                                'id_grp': txt_grp,
+                                'Asiduidade': p_asid,
+                                'Pontualidade': p_pont,
+                                'Produtividade': p_prod,
+                                'Kualidade_Servisu': p_kual,
+                                'Kooperasaun': p_koop,
+                                'Inisiativa': p_inis,
+                                'Disiplina': p_disp,
+                                'Responsabilidade': p_resp,
+                                'Rezultadu_Avaliasaun': pred_label
+                            }
+                            
+                            if idx_edit is not None:
+                                if update_extra_in_db(idx_edit, new_report):
+                                    st.session_state['edit_index'] = None
+                                    st.success("✅ Relatóriu atualiza no rai permanente ona iha database SQLite!")
+                                    st.rerun()
+                            else:
+                                if save_extra_to_db(new_report):
+                                    st.success("✅ Relatóriu foun rejista no rai permanente ona iha database SQLite!")
+                                    st.rerun()
 
                 st.session_state['extra_reports'] = load_extra_from_db()
                 if len(st.session_state['extra_reports']) > 0:
@@ -427,11 +463,11 @@ if uploaded_file is not None:
                                     st.rerun()
                             with col_btn2:
                                 if st.button("🗑️ Hamos", key=f"del_{idx}"):
-                                    delete_extra_from_db(idx)
-                                    if st.session_state['edit_index'] == idx:
-                                        st.session_state['edit_index'] = None
-                                    st.success("Dadus hamos ona husi database!")
-                                    st.rerun()
+                                    if delete_extra_from_db(idx):
+                                        if st.session_state['edit_index'] == idx:
+                                            st.session_state['edit_index'] = None
+                                        st.success("Dadus hamos ona husi database!")
+                                        st.rerun()
                                     
                             rep_df = pd.DataFrame([rep])
                             csv_data = rep_df.to_csv(index=False).encode('utf-8')
