@@ -11,7 +11,7 @@ from sklearn.metrics import accuracy_score
 
 # 1. Konfigurasaun Pajina Streamlit (Layout Wide)
 st.set_page_config(
-    page_title="Sistema Klasifikasaun CFP - Advanced Dashboard",
+    page_title="Sistema Klasifikasaun CFP - Decision Tree",
     page_icon="📊",
     layout="wide"
 )
@@ -45,7 +45,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">Dashboard Avançadu ho Algoritmu Decision Tree no Analiza Indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">Aplikasaun uza algoritmu Decision Tree hodi klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
 
 # 2. Konfigurasaun Database SQLite local
 DB_NAME = "cfp_database.db"
@@ -195,7 +195,7 @@ if 'extra_reports' not in st.session_state:
 if 'edit_index' not in st.session_state:
     st.session_state['edit_index'] = None
 
-# 3. Sidebar ba Upload Dataset
+# 3. Sidebar ba Upload Dataset & Download Backup (Laiha ona Filtru)
 st.sidebar.header("📁 Gestaun Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
 
@@ -255,7 +255,16 @@ if uploaded_file is not None:
             else:
                 df = df_base
 
-            # Machine Learning Prediction Setup
+            st.sidebar.markdown("---")
+            st.sidebar.subheader("📥 Download Backup Dataset")
+            csv_full = df.to_csv(index=False).encode('utf-8')
+            st.sidebar.download_button(
+                label="⬇️ Download Dataset Tomak (CSV)",
+                data=csv_full,
+                file_name="dataset_cfp_kompletu.csv",
+                mime='text/csv'
+            )
+
             le = LabelEncoder()
             df['target_encoded'] = le.fit_transform(df[target_col].astype(str))
             y = df['target_encoded']
@@ -275,40 +284,14 @@ if uploaded_file is not None:
             df['Prediksaun'] = le.inverse_transform(model.predict(X))
             acc = accuracy_score(y_test, model.predict(X_test))
 
-            # --- [FITUR TAMBAHAN]: SIDEBAR FILTRU DINÁMIKU ---
-            st.sidebar.markdown("---")
-            st.sidebar.header("🎯 Filtru Dashboard")
-            
-            instituicoes = ["Hotu-hotu"] + list(df['instituicao'].dropna().unique())
-            selected_inst = st.sidebar.selectbox("Filtru Instituisaun", instituicoes)
-            
-            lokais = ["Hotu-hotu"] + list(df['local_trabalho'].dropna().unique())
-            selected_local = st.sidebar.selectbox("Filtru Local Trabalhu", lokais)
-
-            # Aplika filtru ba dataframe
-            df_filtered = df.copy()
-            if selected_inst != "Hotu-hotu":
-                df_filtered = df_filtered[df_filtered['instituicao'] == selected_inst]
-            if selected_local != "Hotu-hotu":
-                df_filtered = df_filtered[df_filtered['local_trabalho'] == selected_local]
-
-            st.sidebar.markdown("---")
-            csv_full = df_filtered.to_csv(index=False).encode('utf-8')
-            st.sidebar.download_button(
-                label="⬇️ Download Dataset Filtru (CSV)",
-                data=csv_full,
-                file_name="dataset_cfp_filtrado.csv",
-                mime='text/csv'
-            )
-
             # 4. Tabs Navegasaun
             tab1, tab2, tab3 = st.tabs(["📊 Dashboard & Sumáriu", "⚙️ Preview & Treinu Modelu", "🔮 Prediksaun & Jere Relatóriu"])
 
             with tab1:
-                st.subheader(f"📈 Dashboard Estatistika Dezempenu Funsionáriu ({len(df_filtered)} Dadus Hili)")
+                st.subheader("📈 Dashboard Estatistika Dezempenu Funsionáriu")
                 
-                total_funs = len(df_filtered)
-                counts_real = df_filtered[target_col].value_counts() if total_funs > 0 else pd.Series()
+                total_funs = len(df)
+                counts_real = df[target_col].value_counts()
                 
                 mb_pct = (counts_real.get('Muito Bom', 0) / total_funs) * 100 if total_funs > 0 else 0
                 b_pct = (counts_real.get('Bom', 0) / total_funs) * 100 if total_funs > 0 else 0
@@ -331,7 +314,7 @@ if uploaded_file is not None:
                     fig, ax = plt.subplots(figsize=(6, 4))
                     categories = ['Muito Bom', 'Bom', 'Suficiente', 'Insuficiente']
                     real_counts = [counts_real.get(cat, 0) for cat in categories]
-                    pred_counts = [df_filtered['Prediksaun'].value_counts().get(cat, 0) for cat in categories] if total_funs > 0 else [0,0,0,0]
+                    pred_counts = [df['Prediksaun'].value_counts().get(cat, 0) for cat in categories]
                     
                     x = np.arange(len(categories))
                     width = 0.35
@@ -349,37 +332,34 @@ if uploaded_file is not None:
                     fig2, ax2 = plt.subplots(figsize=(6, 4))
                     sizes = [counts_real.get(cat, 0) for cat in categories]
                     colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444']
-                    if sum(sizes) > 0:
-                        wedges, texts, autotexts = ax2.pie(
-                            sizes, labels=categories, autopct='%1.1f%%', 
-                            startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor='w')
-                        )
-                        plt.setp(autotexts, size=9, weight="bold")
+                    wedges, texts, autotexts = ax2.pie(
+                        sizes, labels=categories, autopct='%1.1f%%', 
+                        startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor='w')
+                    )
+                    plt.setp(autotexts, size=9, weight="bold")
                     ax2.set_title('Proporsaun Kategoria Reál')
                     st.pyplot(fig2)
 
-                # [FITUR TAMBAHAN]: Grafiku Média Indikadór Avaliasaun
                 st.markdown("---")
                 st.markdown("##### 📊 Média Indikadór Avaliasaun Funsionáriu (Skala 1-5)")
-                if total_funs > 0:
-                    avg_scores = df_filtered[nota_cols].mean()
-                    fig3, ax3 = plt.subplots(figsize=(10, 4))
-                    sns.barplot(x=avg_scores.index, y=avg_scores.values, palette="Blues_d", ax=ax3)
-                    ax3.set_ylim(0, 5)
-                    ax3.set_ylabel("Média Pontuasaun")
-                    ax3.set_xticklabels(nota_cols, rotation=20)
-                    for p in ax3.patches:
-                        ax3.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2., p.get_height()),
-                                     ha='center', va='center', xytext=(0, 5), textcoords='offset points', fontsize=9, fontweight='bold')
-                    st.pyplot(fig3)
+                avg_scores = df[nota_cols].mean()
+                fig3, ax3 = plt.subplots(figsize=(10, 4))
+                sns.barplot(x=avg_scores.index, y=avg_scores.values, palette="Blues_d", ax=ax3)
+                ax3.set_ylim(0, 5)
+                ax3.set_ylabel("Média Pontuasaun")
+                ax3.set_xticklabels(nota_cols, rotation=20)
+                for p in ax3.patches:
+                    ax3.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2., p.get_height()),
+                                 ha='center', va='center', xytext=(0, 5), textcoords='offset points', fontsize=9, fontweight='bold')
+                st.pyplot(fig3)
 
             with tab2:
                 st.subheader("📋 Dadus Amostra (Preview)")
-                st.dataframe(df_filtered.head(10), use_container_width=True)
+                st.dataframe(df.head(10), use_container_width=True)
                 
                 st.markdown("---")
                 st.subheader("🚀 Informasaun Modelu Decision Tree")
-                st.success(f"✅ Modelu treinu ho suksesu! Akurasi Modelu (Accuracy): **{acc * 100:.2f}%**")
+                st.success(f"✅ Modelu treinu ho suksesu! Akurasi Modelu: **{acc * 100:.2f}%**")
                 
                 st.markdown("---")
                 st.subheader("🌳 Vizualizasaun Árbore Desizaun (Decision Tree Plot)")
@@ -444,7 +424,7 @@ if uploaded_file is not None:
                     
                     if submit_pred:
                         if not txt_nome.strip() or not txt_sigap.strip():
-                            st.warning("⚠️ Favor prense Naran Pessoal no ID SIGAP!")
+                            st.warning("⚠️ Favor prennde Naran Pessoal no ID SIGAP!")
                         else:
                             input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
                             pred_encoded = model.predict(input_data)
