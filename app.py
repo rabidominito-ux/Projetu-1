@@ -205,16 +205,24 @@ if uploaded_file is not None:
             st.subheader("🌳 Vizualizasaun Árbore Desizaun (Decision Tree Plot)")
             st.info("Gráfiku ne'e hatudu oinsá algoritmu fahe dadus bazeia ba indikadór avaliasaun sira.")
             
-            fig_tree, ax_tree = plt.subplots(figsize=(12, 8))
+            # Kontrola Profundidade (Max Depth) hodi grafiku labele sabraut
+            max_depth_vis = st.slider("Hili Profundidade Árbore (Max Depth ba Vizualizasaun)", 1, 5, 3)
+            
+            # Treinu foun ho depth ne'ebé hili ba vizualizasaun
+            vis_model = DecisionTreeClassifier(criterion='entropy', max_depth=max_depth_vis, random_state=42)
+            vis_model.fit(X_train, y_train)
+            
+            fig_tree, ax_tree = plt.subplots(figsize=(16, 10), dpi=100)
             plot_tree(
-                model, 
+                vis_model, 
                 feature_names=nota_cols, 
                 class_names=le.classes_, 
                 filled=True, 
                 rounded=True, 
                 ax=ax_tree,
-                fontsize=10
+                fontsize=9
             )
+            plt.tight_layout()
             st.pyplot(fig_tree)
 
         with tab3:
