@@ -58,7 +58,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS extra_reports (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nome_pessoal TEXT,
-                id_sigap TEXT,
+                id_sigap TEXT UNIQUE,
                 sexo TEXT,
                 instituicao TEXT,
                 local_trabalho TEXT,
@@ -96,33 +96,65 @@ def load_extra_from_db():
         st.error(f"⚠️ Erro bainhira carrega dadus husi database: {e}")
         return []
 
-def save_extra_to_db(report_dict):
+def save_or_update_extra_to_db(report_dict):
+    """
+    Funsaun inteligente: Se id_sigap egziste ona, halo UPDATE. 
+    Se seidauk, halo INSERT foun.
+    """
     try:
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO extra_reports (
-                nome_pessoal, id_sigap, sexo, instituicao, local_trabalho, 
-                data_de_nascimento, funcao, cargo, id_grp, Asiduidade, 
-                Pontualidade, Produtividade, Kualidade_Servisu, Kooperasaun, 
-                Inisiativa, Disiplina, Responsabilidade, Rezultadu_Avaliasaun
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            report_dict['nome_pessoal'], report_dict['id_sigap'], report_dict['sexo'],
-            report_dict['instituicao'], report_dict['local_trabalho'], report_dict['data_de_nascimento'],
-            report_dict['funcao'], report_dict['cargo'], report_dict['id_grp'],
-            report_dict['Asiduidade'], report_dict['Pontualidade'], report_dict['Produtividade'],
-            report_dict['Kualidade_Servisu'], report_dict['Kooperasaun'], report_dict['Inisiativa'],
-            report_dict['Disiplina'], report_dict['Responsabilidade'], report_dict['Rezultadu_Avaliasaun']
-        ))
+        
+        # Verifika se id_sigap egziste ona
+        cursor.execute("SELECT id FROM extra_reports WHERE id_sigap = ?", (report_dict['id_sigap'],))
+        existing = cursor.fetchone()
+        
+        if existing:
+            # Update dadus ne'ebé iha ona
+            cursor.execute('''
+                UPDATE extra_reports SET 
+                    nome_pessoal=?, sexo=?, instituicao=?, local_trabalho=?, 
+                    data_de_nascimento=?, funcao=?, cargo=?, id_grp=?, Asiduidade=?, 
+                    Pontualidade=?, Produtividade=?, Kualidade_Servisu=?, Kooperasaun=?, 
+                    Inisiativa=?, Disiplina=?, Responsabilidade=?, Rezultadu_Avaliasaun=?
+                WHERE id_sigap=?
+            ''', (
+                report_dict['nome_pessoal'], report_dict['sexo'],
+                report_dict['instituicao'], report_dict['local_trabalho'], report_dict['data_de_nascimento'],
+                report_dict['funcao'], report_dict['cargo'], report_dict['id_grp'],
+                report_dict['Asiduidade'], report_dict['Pontualidade'], report_dict['Produtividade'],
+                report_dict['Kualidade_Servisu'], report_dict['Kooperasaun'], report_dict['Inisiativa'],
+                report_dict['Disiplina'], report_dict['Responsabilidade'], report_dict['Rezultadu_Avaliasaun'],
+                report_dict['id_sigap']
+            ))
+            action_type = "updated"
+        else:
+            # Insert dadus foun
+            cursor.execute('''
+                INSERT INTO extra_reports (
+                    nome_pessoal, id_sigap, sexo, instituicao, local_trabalho, 
+                    data_de_nascimento, funcao, cargo, id_grp, Asiduidade, 
+                    Pontualidade, Produtividade, Kualidade_Servisu, Kooperasaun, 
+                    Inisiativa, Disiplina, Responsabilidade, Rezultadu_Avaliasaun
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                report_dict['nome_pessoal'], report_dict['id_sigap'], report_dict['sexo'],
+                report_dict['instituicao'], report_dict['local_trabalho'], report_dict['data_de_nascimento'],
+                report_dict['funcao'], report_dict['cargo'], report_dict['id_grp'],
+                report_dict['Asiduidade'], report_dict['Pontualidade'], report_dict['Produtividade'],
+                report_dict['Kualidade_Servisu'], report_dict['Kooperasaun'], report_dict['Inisiativa'],
+                report_dict['Disiplina'], report_dict['Responsabilidade'], report_dict['Rezultadu_Avaliasaun']
+            ))
+            action_type = "inserted"
+            
         conn.commit()
         conn.close()
-        return True
+        return action_type
     except Exception as e:
-        st.error(f"⚠️ Erro bainhira salva dadus: {e}")
-        return False
+        st.error(f"⚠️ Erro bainhira salva dadus ba database: {e}")
+        return None
 
-def update_extra_in_db(index_val, report_dict):
+def update_extra_in_db_by_index(index_val, report_dict):
     try:
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
@@ -239,7 +271,6 @@ if uploaded_file is not None:
             else:
                 df = df_base
 
-            # [FITUR TAMBAHAN 1]: Botão Download Dataset Tomak (Backup) iha Sidebar
             st.sidebar.markdown("---")
             st.sidebar.subheader("📥 Download Backup Dataset")
             csv_full = df.to_csv(index=False).encode('utf-8')
@@ -403,9 +434,8 @@ if uploaded_file is not None:
                     submit_pred = st.form_submit_button(btn_label)
                     
                     if submit_pred:
-                        # [FITUR TAMBAHAN 2]: Validasaun kampu mamuk
                         if not txt_nome.strip() or not txt_sigap.strip():
-                            st.warning("⚠️ Favor prende Naran Pessoal no ID SIGAP labele husik mamuk!")
+                            st.warning("⚠️ Favor prennde Naran Pessoal no ID SIGAP labele husik mamuk!")
                         else:
                             input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
                             pred_encoded = model.predict(input_data)
@@ -433,12 +463,16 @@ if uploaded_file is not None:
                             }
                             
                             if idx_edit is not None:
-                                if update_extra_in_db(idx_edit, new_report):
+                                if update_extra_in_db_by_index(idx_edit, new_report):
                                     st.session_state['edit_index'] = None
                                     st.success("✅ Relatóriu atualiza no rai permanente ona iha database SQLite!")
                                     st.rerun()
                             else:
-                                if save_extra_to_db(new_report):
+                                res_type = save_or_update_extra_to_db(new_report)
+                                if res_type == "updated":
+                                    st.warning(f"⚠️ ID SIGAP **{txt_sigap}** egziste ona! Sistema halo **update/atualizasaun** automatikamente ba dadus foun ne'e.")
+                                    st.rerun()
+                                elif res_type == "inserted":
                                     st.success("✅ Relatóriu foun rejista no rai permanente ona iha database SQLite!")
                                     st.rerun()
 
