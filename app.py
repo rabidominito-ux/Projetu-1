@@ -11,7 +11,7 @@ from sklearn.metrics import accuracy_score
 
 # 1. Konfigurasaun Pajina Streamlit (Layout Wide)
 st.set_page_config(
-    page_title="Sistema Klasifikasaun CFP - Decision Tree",
+    page_title="Sistema Klasifikasaun CFP - Advanced Dashboard",
     page_icon="📊",
     layout="wide"
 )
@@ -45,9 +45,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">Aplikasaun uza algoritmu Decision Tree hodi klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">Dashboard Avançadu ho Algoritmu Decision Tree no Analiza Indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
 
-# 2. Konfigurasaun Database SQLite local ho Try-Except (Robust)
+# 2. Konfigurasaun Database SQLite local
 DB_NAME = "cfp_database.db"
 
 def init_db():
@@ -93,14 +93,12 @@ def load_extra_from_db():
             df_db = df_db.drop(columns=['id'])
         return df_db.to_dict('records')
     except Exception as e:
-        st.error(f"⚠️ Erro bainhira carrega dadus husi database: {e}")
         return []
 
 def save_or_update_extra_to_db(report_dict):
     try:
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-        
         cursor.execute("SELECT id FROM extra_reports WHERE id_sigap = ?", (report_dict['id_sigap'],))
         existing = cursor.fetchone()
         
@@ -144,7 +142,6 @@ def save_or_update_extra_to_db(report_dict):
         conn.close()
         return action_type
     except Exception as e:
-        st.error(f"⚠️ Erro bainhira salva dadus ba database: {e}")
         return None
 
 def update_extra_in_db_by_index(index_val, report_dict):
@@ -175,7 +172,6 @@ def update_extra_in_db_by_index(index_val, report_dict):
         conn.close()
         return True
     except Exception as e:
-        st.error(f"⚠️ Erro bainhira atualiza dadus: {e}")
         return False
 
 def delete_extra_from_db(index_val):
@@ -191,17 +187,15 @@ def delete_extra_from_db(index_val):
         conn.close()
         return True
     except Exception as e:
-        st.error(f"⚠️ Erro bainhira hamos dadus: {e}")
         return False
 
-# Load dadus husi SQLite ba session_state
 if 'extra_reports' not in st.session_state:
     st.session_state['extra_reports'] = load_extra_from_db()
 
 if 'edit_index' not in st.session_state:
     st.session_state['edit_index'] = None
 
-# 3. Sidebar ba Upload Dataset & Download Backup
+# 3. Sidebar ba Upload Dataset
 st.sidebar.header("📁 Gestaun Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
 
@@ -209,8 +203,7 @@ if uploaded_file is not None:
     try:
         @st.cache_data
         def load_data(file):
-            df_raw = pd.read_excel(file, sheet_name='Sheet1', header=0)
-            return df_raw
+            return pd.read_excel(file, sheet_name='Sheet1', header=0)
 
         df_raw = load_data(uploaded_file)
         
@@ -249,8 +242,7 @@ if uploaded_file is not None:
         missing_cols = [col for col in nota_cols + [target_col] if col not in df_raw.columns]
 
         if len(missing_cols) > 0:
-            st.error(f"⚠️ **Atensaun:** Ficheiru Excel ne'ebé Ita upload la tuir padraun CFP! Koluna tuirmai ne'e falta husi ficheiru: `{', '.join(missing_cols)}`.")
-            st.info("💡 Favor verifika fali formatu ficheiru Excel ka uza template ne'ebé loos.")
+            st.error(f"⚠️ **Atensaun:** Ficheiru Excel la tuir padraun! Falta koluna: `{', '.join(missing_cols)}`.")
         else:
             df_base = df_raw.dropna(subset=nota_cols + [target_col]).copy()
             for col in nota_cols:
@@ -263,16 +255,7 @@ if uploaded_file is not None:
             else:
                 df = df_base
 
-            st.sidebar.markdown("---")
-            st.sidebar.subheader("📥 Download Backup Dataset")
-            csv_full = df.to_csv(index=False).encode('utf-8')
-            st.sidebar.download_button(
-                label="⬇️ Download Dataset Tomak (CSV)",
-                data=csv_full,
-                file_name="dataset_cfp_kompletu.csv",
-                mime='text/csv'
-            )
-
+            # Machine Learning Prediction Setup
             le = LabelEncoder()
             df['target_encoded'] = le.fit_transform(df[target_col].astype(str))
             y = df['target_encoded']
@@ -292,14 +275,40 @@ if uploaded_file is not None:
             df['Prediksaun'] = le.inverse_transform(model.predict(X))
             acc = accuracy_score(y_test, model.predict(X_test))
 
+            # --- [FITUR TAMBAHAN]: SIDEBAR FILTRU DINÁMIKU ---
+            st.sidebar.markdown("---")
+            st.sidebar.header("🎯 Filtru Dashboard")
+            
+            instituicoes = ["Hotu-hotu"] + list(df['instituicao'].dropna().unique())
+            selected_inst = st.sidebar.selectbox("Filtru Instituisaun", instituicoes)
+            
+            lokais = ["Hotu-hotu"] + list(df['local_trabalho'].dropna().unique())
+            selected_local = st.sidebar.selectbox("Filtru Local Trabalhu", lokais)
+
+            # Aplika filtru ba dataframe
+            df_filtered = df.copy()
+            if selected_inst != "Hotu-hotu":
+                df_filtered = df_filtered[df_filtered['instituicao'] == selected_inst]
+            if selected_local != "Hotu-hotu":
+                df_filtered = df_filtered[df_filtered['local_trabalho'] == selected_local]
+
+            st.sidebar.markdown("---")
+            csv_full = df_filtered.to_csv(index=False).encode('utf-8')
+            st.sidebar.download_button(
+                label="⬇️ Download Dataset Filtru (CSV)",
+                data=csv_full,
+                file_name="dataset_cfp_filtrado.csv",
+                mime='text/csv'
+            )
+
             # 4. Tabs Navegasaun
             tab1, tab2, tab3 = st.tabs(["📊 Dashboard & Sumáriu", "⚙️ Preview & Treinu Modelu", "🔮 Prediksaun & Jere Relatóriu"])
 
             with tab1:
-                st.subheader("📈 Dashboard Estatistika Dezempenu Funsionáriu")
+                st.subheader(f"📈 Dashboard Estatistika Dezempenu Funsionáriu ({len(df_filtered)} Dadus Hili)")
                 
-                total_funs = len(df)
-                counts_real = df[target_col].value_counts()
+                total_funs = len(df_filtered)
+                counts_real = df_filtered[target_col].value_counts() if total_funs > 0 else pd.Series()
                 
                 mb_pct = (counts_real.get('Muito Bom', 0) / total_funs) * 100 if total_funs > 0 else 0
                 b_pct = (counts_real.get('Bom', 0) / total_funs) * 100 if total_funs > 0 else 0
@@ -320,17 +329,14 @@ if uploaded_file is not None:
                 with col_g1:
                     st.markdown("##### 📊 Komparasaun Kategoria (Reál vs Prediksaun)")
                     fig, ax = plt.subplots(figsize=(6, 4))
-                    
                     categories = ['Muito Bom', 'Bom', 'Suficiente', 'Insuficiente']
                     real_counts = [counts_real.get(cat, 0) for cat in categories]
-                    pred_counts = [df['Prediksaun'].value_counts().get(cat, 0) for cat in categories]
+                    pred_counts = [df_filtered['Prediksaun'].value_counts().get(cat, 0) for cat in categories] if total_funs > 0 else [0,0,0,0]
                     
                     x = np.arange(len(categories))
                     width = 0.35
-                    
                     ax.bar(x - width/2, real_counts, width, label='Dadus Reál', color='#3B82F6')
                     ax.bar(x + width/2, pred_counts, width, label='Prediksaun Tree', color='#10B981')
-                    
                     ax.set_ylabel('Total Funsionáriu')
                     ax.set_title('Distribuisaun Kategoria Dezempenu')
                     ax.set_xticks(x)
@@ -341,32 +347,43 @@ if uploaded_file is not None:
                 with col_g2:
                     st.markdown("##### 🍩 Donut Chart (Proporsaun Reál)")
                     fig2, ax2 = plt.subplots(figsize=(6, 4))
-                    
                     sizes = [counts_real.get(cat, 0) for cat in categories]
                     colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444']
-                    
-                    wedges, texts, autotexts = ax2.pie(
-                        sizes, labels=categories, autopct='%1.1f%%', 
-                        startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor='w')
-                    )
-                    plt.setp(autotexts, size=9, weight="bold")
+                    if sum(sizes) > 0:
+                        wedges, texts, autotexts = ax2.pie(
+                            sizes, labels=categories, autopct='%1.1f%%', 
+                            startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor='w')
+                        )
+                        plt.setp(autotexts, size=9, weight="bold")
                     ax2.set_title('Proporsaun Kategoria Reál')
                     st.pyplot(fig2)
 
+                # [FITUR TAMBAHAN]: Grafiku Média Indikadór Avaliasaun
+                st.markdown("---")
+                st.markdown("##### 📊 Média Indikadór Avaliasaun Funsionáriu (Skala 1-5)")
+                if total_funs > 0:
+                    avg_scores = df_filtered[nota_cols].mean()
+                    fig3, ax3 = plt.subplots(figsize=(10, 4))
+                    sns.barplot(x=avg_scores.index, y=avg_scores.values, palette="Blues_d", ax=ax3)
+                    ax3.set_ylim(0, 5)
+                    ax3.set_ylabel("Média Pontuasaun")
+                    ax3.set_xticklabels(nota_cols, rotation=20)
+                    for p in ax3.patches:
+                        ax3.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2., p.get_height()),
+                                     ha='center', va='center', xytext=(0, 5), textcoords='offset points', fontsize=9, fontweight='bold')
+                    st.pyplot(fig3)
+
             with tab2:
                 st.subheader("📋 Dadus Amostra (Preview)")
-                st.dataframe(df.head(10), use_container_width=True)
+                st.dataframe(df_filtered.head(10), use_container_width=True)
                 
                 st.markdown("---")
                 st.subheader("🚀 Informasaun Modelu Decision Tree")
-                st.success(f"✅ Modelu treinu ho suksesu! Akurasi Modelu: **{acc * 100:.2f}%**")
+                st.success(f"✅ Modelu treinu ho suksesu! Akurasi Modelu (Accuracy): **{acc * 100:.2f}%**")
                 
                 st.markdown("---")
                 st.subheader("🌳 Vizualizasaun Árbore Desizaun (Decision Tree Plot)")
-                st.info("Gráfiku ne'e hatudu oinsá algoritmu fahe dadus bazeia ba indikadór avaliasaun sira.")
-                
-                max_depth_vis = st.slider("Hili Profundidade Árbore (Max Depth ba Vizualizasaun)", 1, 5, 3)
-                
+                max_depth_vis = st.slider("Hili Profundidade Árbore (Max Depth)", 1, 5, 3)
                 vis_model = DecisionTreeClassifier(criterion='entropy', max_depth=max_depth_vis, random_state=42)
                 vis_model.fit(X_train, y_train)
                 
@@ -395,8 +412,8 @@ if uploaded_file is not None:
                     st.markdown("##### 📝 1. Informasaun Identidade Funsionáriu")
                     col_i1, col_i2, col_i3 = st.columns(3)
                     with col_i1:
-                        txt_nome = st.text_input("Naran Pessoal (nome_pessoal)*", def_val.get('nome_pessoal', ""))
-                        txt_sigap = st.text_input("ID SIGAP (id_sigap)*", def_val.get('id_sigap', ""))
+                        txt_nome = st.text_input("Naran Pessoal*", def_val.get('nome_pessoal', ""))
+                        txt_sigap = st.text_input("ID SIGAP*", def_val.get('id_sigap', ""))
                         txt_sexo = st.selectbox("Sexo", ["M", "F"], index=0 if def_val.get('sexo', 'M')=='M' else 1)
                     with col_i2:
                         txt_inst = st.text_input("Instituisaun", def_val.get('instituicao', "CFP"))
@@ -427,46 +444,34 @@ if uploaded_file is not None:
                     
                     if submit_pred:
                         if not txt_nome.strip() or not txt_sigap.strip():
-                            st.warning("⚠️ Favor prennde Naran Pessoal no ID SIGAP labele husik mamuk!")
+                            st.warning("⚠️ Favor prennde Naran Pessoal no ID SIGAP!")
                         else:
                             input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
                             pred_encoded = model.predict(input_data)
                             pred_label = le.inverse_transform(pred_encoded)[0]
                             
                             new_report = {
-                                'nome_pessoal': txt_nome,
-                                'id_sigap': txt_sigap,
-                                'sexo': txt_sexo,
-                                'instituicao': txt_inst,
-                                'local_trabalho': txt_local,
-                                'data_de_nascimento': txt_nascimento,
-                                'funcao': txt_funcao,
-                                'cargo': txt_cargo,
-                                'id_grp': txt_grp,
-                                'Asiduidade': p_asid,
-                                'Pontualidade': p_pont,
-                                'Produtividade': p_prod,
-                                'Kualidade_Servisu': p_kual,
-                                'Kooperasaun': p_koop,
-                                'Inisiativa': p_inis,
-                                'Disiplina': p_disp,
-                                'Responsabilidade': p_resp,
-                                'Rezultadu_Avaliasaun': pred_label
+                                'nome_pessoal': txt_nome, 'id_sigap': txt_sigap, 'sexo': txt_sexo,
+                                'instituicao': txt_inst, 'local_trabalho': txt_local, 'data_de_nascimento': txt_nascimento,
+                                'funcao': txt_funcao, 'cargo': txt_cargo, 'id_grp': txt_grp,
+                                'Asiduidade': p_asid, 'Pontualidade': p_pont, 'Produtividade': p_prod,
+                                'Kualidade_Servisu': p_kual, 'Kooperasaun': p_koop, 'Inisiativa': p_inis,
+                                'Disiplina': p_disp, 'Responsabilidade': p_resp, 'Rezultadu_Avaliasaun': pred_label
                             }
                             
                             if idx_edit is not None:
                                 if update_extra_in_db_by_index(idx_edit, new_report):
                                     st.session_state['edit_index'] = None
-                                    st.success("✅ Relatóriu atualiza no rai permanente ona iha database SQLite!")
+                                    st.success("✅ Relatóriu atualiza no rai permanente ona iha database!")
                                     st.rerun()
                             else:
                                 res_type = save_or_update_extra_to_db(new_report)
                                 if res_type in ["inserted", "updated"]:
                                     st.session_state['edit_index'] = None
                                     if res_type == "updated":
-                                        st.warning(f"⚠️ ID SIGAP **{txt_sigap}** egziste ona! Sistema halo **update/atualizasaun** automatikamente.")
+                                        st.warning(f"⚠️ ID SIGAP **{txt_sigap}** egziste ona! Sistema halo update automatikamente.")
                                     else:
-                                        st.success("✅ Relatóriu foun rejista no rai permanente ona iha database SQLite!")
+                                        st.success("✅ Relatóriu foun rejista no rai permanente ona iha database!")
                                     st.rerun()
 
                 if idx_edit is not None:
@@ -481,7 +486,7 @@ if uploaded_file is not None:
                     st.markdown("---")
                     st.subheader("📋 Lista Relatóriu Funsionáriu Foun (Jere Dadus)")
                     
-                    search_query = st.text_input("🔍 Buka Funsionáriu (Hakerek Naran Pessoal ka ID SIGAP):", "")
+                    search_query = st.text_input("🔍 Buka Funsionáriu (Hakerek Naran ka ID SIGAP):", "")
                     
                     filtered_reports = []
                     for idx_orig, rep in enumerate(extra_data_list):
@@ -492,7 +497,6 @@ if uploaded_file is not None:
                         st.info("💡 La hetan dadus ne'ebé tuir liafuan ne'ebé buka.")
                     else:
                         st.caption(f"Hetan dadus hamutuk: {len(filtered_reports)} funsionáriu.")
-                        
                         for idx, rep in filtered_reports:
                             with st.expander(f"👤 {rep['nome_pessoal']} (SIGAP: {rep['id_sigap']}) - Rezultadu: {rep['Rezultadu_Avaliasaun']}"):
                                 col_d1, col_d2 = st.columns(2)
@@ -526,6 +530,5 @@ if uploaded_file is not None:
                                 )
     except Exception as e:
         st.error(f"⚠️ Akontese Error ruma durante prosesamentu ficheiru Excel: `{str(e)}`")
-        st.info("💡 Favor asegura katak ficheiru ne'e iha formato Excel (.xlsx) ne'ebé loos no la'ós korrutu.")
 else:
     st.info("👈 Favor upload uluk ficheiru Excel (`.xlsx`) iha sidebar sorin karuk hodi hahú sistema.")
