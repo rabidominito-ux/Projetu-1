@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import sqlite3
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -46,20 +47,120 @@ st.markdown("""
 st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Aplikasaun uza algoritmu Decision Tree hodi klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
 
-# Inicializa session_state ba relatóriu foun no edit
+# 2. Konfigurasaun Database SQLite local ba Persistent Storage
+DB_NAME = "cfp_database.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS extra_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome_pessoal TEXT,
+            id_sigap TEXT,
+            sexo TEXT,
+            instituicao TEXT,
+            local_trabalho TEXT,
+            data_de_nascimento TEXT,
+            funcao TEXT,
+            cargo TEXT,
+            id_grp TEXT,
+            Asiduidade REAL,
+            Pontualidade REAL,
+            Produtividade REAL,
+            Kualidade_Servisu REAL,
+            Kooperasaun REAL,
+            Inisiativa REAL,
+            Disiplina REAL,
+            Responsabilidade REAL,
+            Rezultadu_Avaliasaun TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+def load_extra_from_db():
+    conn = sqlite3.connect(DB_NAME)
+    df_db = pd.read_sql_query("SELECT * FROM extra_reports", conn)
+    conn.close()
+    if 'id' in df_db.columns:
+        df_db = df_db.drop(columns=['id'])
+    return df_db.to_dict('records')
+
+def save_extra_to_db(report_dict):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO extra_reports (
+            nome_pessoal, id_sigap, sexo, instituicao, local_trabalho, 
+            data_de_nascimento, funcao, cargo, id_grp, Asiduidade, 
+            Pontualidade, Produtividade, Kualidade_Servisu, Kooperasaun, 
+            Inisiativa, Disiplina, Responsabilidade, Rezultadu_Avaliasaun
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        report_dict['nome_pessoal'], report_dict['id_sigap'], report_dict['sexo'],
+        report_dict['instituicao'], report_dict['local_trabalho'], report_dict['data_de_nascimento'],
+        report_dict['funcao'], report_dict['cargo'], report_dict['id_grp'],
+        report_dict['Asiduidade'], report_dict['Pontualidade'], report_dict['Produtividade'],
+        report_dict['Kualidade_Servisu'], report_dict['Kooperasaun'], report_dict['Inisiativa'],
+        report_dict['Disiplina'], report_dict['Responsabilidade'], report_dict['Rezultadu_Avaliasaun']
+    ))
+    conn.commit()
+    conn.close()
+
+def update_extra_in_db(index_val, report_dict):
+    # Load all records to match index, or drop table rows and recreate cleanly
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM extra_reports")
+    ids = [row[0] for row in cursor.fetchall()]
+    if index_val < len(ids):
+        row_id = ids[index_val]
+        cursor.execute('''
+            UPDATE extra_reports SET 
+                nome_pessoal=?, id_sigap=?, sexo=?, instituicao=?, local_trabalho=?, 
+                data_de_nascimento=?, funcao=?, cargo=?, id_grp=?, Asiduidade=?, 
+                Pontualidade=?, Produtividade=?, Kualidade_Servisu=?, Kooperasaun=?, 
+                Inisiativa=?, Disiplina=?, Responsabilidade=?, Rezultadu_Avaliasaun=?
+            WHERE id=?
+        ''', (
+            report_dict['nome_pessoal'], report_dict['id_sigap'], report_dict['sexo'],
+            report_dict['instituicao'], report_dict['local_trabalho'], report_dict['data_de_nascimento'],
+            report_dict['funcao'], report_dict['cargo'], report_dict['id_grp'],
+            report_dict['Asiduidade'], report_dict['Pontualidade'], report_dict['Produtividade'],
+            report_dict['Kualidade_Servisu'], report_dict['Kooperasaun'], report_dict['Inisiativa'],
+            report_dict['Disiplina'], report_dict['Responsabilidade'], report_dict['Rezultadu_Avaliasaun'],
+            row_id
+        ))
+        conn.commit()
+    conn.close()
+
+def delete_extra_from_db(index_val):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM extra_reports")
+    ids = [row[0] for row in cursor.fetchall()]
+    if index_val < len(ids):
+        row_id = ids[index_val]
+        cursor.execute("DELETE FROM extra_reports WHERE id=?", (row_id,))
+        conn.commit()
+    conn.close()
+
+# Load dadus husi SQLite ba session_state
 if 'extra_reports' not in st.session_state:
-    st.session_state['extra_reports'] = []
+    st.session_state['extra_reports'] = load_extra_from_db()
 
 if 'edit_index' not in st.session_state:
     st.session_state['edit_index'] = None
 
-# 2. Sidebar ba Upload Dataset
+# 3. Sidebar ba Upload Dataset
 st.sidebar.header("📁 Upload Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
 
 if uploaded_file is not None:
     try:
-        # Try-Except hodi kaptura error se estrutura excel laos padraun
         @st.cache_data
         def load_data(file):
             df_raw = pd.read_excel(file, sheet_name='Sheet1', header=0)
@@ -67,7 +168,6 @@ if uploaded_file is not None:
 
         df_raw = load_data(uploaded_file)
         
-        # Remapa koluna sira
         rename_map = {
             'Column1': 'controlo_ativo_identificacao',
             'Column2': 'nome_pessoal',
@@ -100,18 +200,18 @@ if uploaded_file is not None:
                      'Kooperasaun', 'Inisiativa', 'Disiplina', 'Responsabilidade']
         target_col = 'Rezultadu_Avaliasaun'
 
-        # Validasaun koluna sira ne'ebé presiza
         missing_cols = [col for col in nota_cols + [target_col] if col not in df_raw.columns]
 
         if len(missing_cols) > 0:
             st.error(f"⚠️ **Atensaun:** Ficheiru Excel ne'ebé Ita upload la tuir padraun CFP! Koluna tuirmai ne'e falta husi ficheiru: `{', '.join(missing_cols)}`.")
-            st.info("💡 Favor verifikaj fali formatu ficheiru Excel ka uza template ne'ebé loos.")
+            st.info("💡 Favor verifika fali formatu ficheiru Excel ka uza template ne'ebé loos.")
         else:
             df_base = df_raw.dropna(subset=nota_cols + [target_col]).copy()
             for col in nota_cols:
                 df_base[col] = pd.to_numeric(df_base[col], errors='coerce')
 
-            # Konjuga dadus foun ne'ebé input husi user ba dataset principal
+            # Konjuga dadus foun ne'ebé rai ona iha database SQLite
+            st.session_state['extra_reports'] = load_extra_from_db()
             if len(st.session_state['extra_reports']) > 0:
                 df_extra = pd.DataFrame(st.session_state['extra_reports'])
                 df = pd.concat([df_base, df_extra], ignore_index=True)
@@ -137,7 +237,7 @@ if uploaded_file is not None:
             df['Prediksaun'] = le.inverse_transform(model.predict(X))
             acc = accuracy_score(y_test, model.predict(X_test))
 
-            # 3. Tabs Navegasaun
+            # 4. Tabs Navegasaun
             tab1, tab2, tab3 = st.tabs(["📊 Dashboard & Sumáriu", "⚙️ Preview & Treinu Modelu", "🔮 Prediksaun & Jere Relatóriu"])
 
             with tab1:
@@ -297,15 +397,16 @@ if uploaded_file is not None:
                         }
                         
                         if idx_edit is not None:
-                            st.session_state['extra_reports'][idx_edit] = new_report
+                            update_extra_in_db(idx_edit, new_report)
                             st.session_state['edit_index'] = None
-                            st.success("✅ Relatóriu atualiza no integra ona ba Dashboard!")
+                            st.success("✅ Relatóriu atualiza no rai permanente ona iha database SQLite!")
                             st.rerun()
                         else:
-                            st.session_state['extra_reports'].append(new_report)
-                            st.success("✅ Relatóriu foun rejista no integra ona ba Dashboard!")
+                            save_extra_to_db(new_report)
+                            st.success("✅ Relatóriu foun rejista no rai permanente ona iha database SQLite!")
                             st.rerun()
 
+                st.session_state['extra_reports'] = load_extra_from_db()
                 if len(st.session_state['extra_reports']) > 0:
                     st.markdown("---")
                     st.subheader("📋 Lista Relatóriu Funsionáriu Foun (Jere Dadus)")
@@ -326,10 +427,10 @@ if uploaded_file is not None:
                                     st.rerun()
                             with col_btn2:
                                 if st.button("🗑️ Hamos", key=f"del_{idx}"):
-                                    st.session_state['extra_reports'].pop(idx)
+                                    delete_extra_from_db(idx)
                                     if st.session_state['edit_index'] == idx:
                                         st.session_state['edit_index'] = None
-                                    st.success("Dadus hamos ona!")
+                                    st.success("Dadus hamos ona husi database!")
                                     st.rerun()
                                     
                             rep_df = pd.DataFrame([rep])
@@ -342,7 +443,7 @@ if uploaded_file is not None:
                                 key=f"dl_{idx}"
                             )
     except Exception as e:
-        st.error(id=f"⚠️ Akontese Error ruma durante prosesamentu ficheiru Excel: `{str(e)}`")
+        st.error(f"⚠️ Akontese Error ruma durante prosesamentu ficheiru Excel: `{str(e)}`")
         st.info("💡 Favor asegura katak ficheiru ne'e iha formato Excel (.xlsx) ne'ebé loos no la'ós korrutu.")
 else:
     st.info("👈 Favor upload uluk ficheiru Excel (`.xlsx`) iha sidebar sorin karuk hodi hahú sistema.")
