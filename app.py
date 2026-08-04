@@ -8,13 +8,45 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score
 
-# Konfigurasaun Pajina Streamlit
-st.set_page_config(page_title="Sistema Klasifikasaun CFP - Decision Tree", page_icon="📊", layout="wide")
+# 1. Konfigurasaun Pajina Streamlit (Layout Wide)
+st.set_page_config(
+    page_title="Sistema Klasifikasaun CFP - Decision Tree",
+    page_icon="📊",
+    layout="wide"
+)
 
-st.title("📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP")
-st.markdown("Aplikasaun ne'e uza algoritmu **Decision Tree** hodi klasifika dezempenu funsionáriu bazeia ba indikadór avaliasaun iha Komisaun Função Pública (CFP).")
+# Custom CSS ba UI ne'ebé modernu no kapás
+st.markdown("""
+    <style>
+    .main-title {
+        font-size: 2.2rem;
+        color: #1E3A8A;
+        font-weight: 700;
+        margin-bottom: 0px;
+    }
+    .sub-title {
+        color: #4B5563;
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+    }
+    .stButton>button {
+        background-color: #2563EB;
+        color: white;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        border: none;
+    }
+    .stButton>button:hover {
+        background-color: #1D4ED8;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# Sidebar ba Upload Ficheiru
+st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">Aplikasaun uza algoritmu Decision Tree hodi klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
+
+# 2. Sidebar ba Upload Dataset
 st.sidebar.header("📁 Upload Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
 
@@ -64,145 +96,151 @@ if uploaded_file is not None:
         for col in nota_cols:
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
-        st.subheader("📋 Dadus Amostra (Preview)")
-        st.dataframe(df.head())
+        # Treinu Modelu Automátiku ka bazeia ba Cache/Session State
+        le = LabelEncoder()
+        df['target_encoded'] = le.fit_transform(df[target_col])
+        y = df['target_encoded']
+        X = df[nota_cols].copy()
 
-        # Botão Treinu Modelu no Kontajen Kategoria
-        if st.button("🚀 Prosesa no Treinu Modelu (Train Model)"):
-            with st.spinner("Modelu dada hela treinu..."):
-                le = LabelEncoder()
-                df['target_encoded'] = le.fit_transform(df[target_col])
-                y = df['target_encoded']
-                X = df[nota_cols].copy()
+        try:
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=0.2, random_state=42, stratify=y
+            )
+        except ValueError:
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=0.2, random_state=42
+            )
 
-                # Usa try-except para evitar erro se houver categorias com poucos dados
-                try:
-                    X_train, X_test, y_train, y_test = train_test_split(
-                        X, y, test_size=0.2, random_state=42, stratify=y
-                    )
-                except ValueError:
-                    X_train, X_test, y_train, y_test = train_test_split(
-                        X, y, test_size=0.2, random_state=42
-                    )
+        model = DecisionTreeClassifier(criterion='entropy', max_depth=5, random_state=42)
+        model.fit(X_train, y_train)
+        df['Prediksaun'] = le.inverse_transform(model.predict(X))
+        acc = accuracy_score(y_test, model.predict(X_test))
 
-                model = DecisionTreeClassifier(criterion='entropy', max_depth=5, random_state=42)
-                model.fit(X_train, y_train)
-                
-                # Prediksaun ba dataset tomak hodi hatudu total
-                df['Prediksaun'] = le.inverse_transform(model.predict(X))
-                
-                y_pred_test = model.predict(X_test)
-                acc = accuracy_score(y_test, y_pred_test)
+        # 3. Organizasaun Interface uza Tabs (Fasilita Navegasaun)
+        tab1, tab2, tab3 = st.tabs(["📊 Dashboard & Sumáriu", "⚙️ Preview & Treinu Modelu", "🔮 Prediksaun Funsionáriu Foun"])
 
-                st.success(f"✅ Modelu treinu ho susesu! Akurasi Modelu: {acc * 100:.2f}%")
-
-                # Seksaun Hatudu Total Funsionáriu tuir Kategoria
-                st.markdown("---")
-                st.subheader("📊 Sumáriu Total Funsionáriu tuir Kategoria Avaliasaun")
-                
-                col_sum1, col_sum2 = st.columns(2)
-                
-                with col_sum1:
-                    st.markdown("##### 📁 Dadus Reál (Iha Ficheiru Excel)")
-                    counts_real = df[target_col].value_counts()
-                    st.dataframe(counts_real)
-
-                with col_sum2:
-                    st.markdown("##### 🤖 Rezultadu Prediksaun (Decision Tree)")
-                    counts_pred = df['Prediksaun'].value_counts()
-                    st.dataframe(counts_pred)
-
-                # Gráfiku Bar Chart
-                st.markdown("##### 📈 Gráfiku Distribuisaun Kategoria Dezempenu")
-                fig, ax = plt.subplots(figsize=(8, 4))
-                sns.countplot(data=df, x='Prediksaun', order=['Muito Bom', 'Bom', 'Suficiente', 'Insuficiente'], palette='viridis', ax=ax)
-                plt.title("Total Funsionáriu tuir Prediksaun Decision Tree")
-                plt.xlabel("Kategoria Rezultadu Avaliasaun")
-                plt.ylabel("Total Funsionáriu")
-                st.pyplot(fig)
-
-        # Formuláriu Identidade no Prediksaun Funsionáriu Foun
-        st.markdown("---")
-        st.subheader("🔍 Halo Prediksaun no Input Identidade Funsionáriu Foun")
-        
-        with st.form("funsionariu_form"):
-            st.markdown("##### 📝 Informasaun Identidade Funsionáriu")
-            col_i1, col_i2, col_i3 = st.columns(3)
-            with col_i1:
-                txt_nome = st.text_input("Naran Pessoal (nome_pessoal)", "Ex: João da Silva")
-                txt_sigap = st.text_input("ID SIGAP (id_sigap)", "SIGAP-001")
-                txt_sexo = st.selectbox("Sexo", ["M", "F"])
-            with col_i2:
-                txt_inst = st.text_input("Instituisaun", "CFP")
-                txt_local = st.text_input("Local Trabalhu", "Dili")
-                txt_nascimento = st.text_input("Data de Nascimento", "1995-01-01")
-            with col_i3:
-                txt_funcao = st.text_input("Funsaun", "Tékniku")
-                txt_cargo = st.text_input("Kargo", "Staff")
-                txt_grp = st.text_input("ID GRP", "GRP-123")
-
-            st.markdown("##### 📊 Indikadór Avaliasaun Funsionáriu (Skala 1 - 5)")
-            col_a, col_b, col_c, col_d = st.columns(4)
-            with col_a:
-                p_asid = st.slider("Asiduidade", 1.0, 5.0, 4.0, 1.0)
-                p_pont = st.slider("Pontualidade", 1.0, 5.0, 4.0, 1.0)
-            with col_b:
-                p_prod = st.slider("Produtividade", 1.0, 5.0, 4.0, 1.0)
-                p_kual = st.slider("Kualidade Servisu", 1.0, 5.0, 4.0, 1.0)
-            with col_c:
-                p_koop = st.slider("Kooperasaun", 1.0, 5.0, 4.0, 1.0)
-                p_inis = st.slider("Inisiativa", 1.0, 5.0, 4.0, 1.0)
-            with col_d:
-                p_disp = st.slider("Disiplina", 1.0, 5.0, 4.0, 1.0)
-                p_resp = st.slider("Responsabilidade", 1.0, 5.0, 4.0, 1.0)
+        with tab1:
+            st.subheader("📈 Estatistika & Sumáriu Kategoria Dezempenu")
             
-            submit_pred = st.form_submit_button("🔮 Predict & Hare Relatóriu")
+            # KPI Metrics Cards
+            total_funs = len(df)
+            counts_real = df[target_col].value_counts()
             
-            if submit_pred:
-                le = LabelEncoder()
-                df['target_encoded'] = le.fit_transform(df[target_col])
-                X = df[nota_cols].copy()
-                y = df['target_encoded']
-                
-                model = DecisionTreeClassifier(criterion='entropy', max_depth=10, random_state=42)
-                model.fit(X, y)
-                
-                input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
-                pred_encoded = model.predict(input_data)
-                pred_label = le.inverse_transform(pred_encoded)[0]
-                
-                # Rai iha session_state atu bele hatudu relatóriu
-                st.session_state['last_report'] = {
-                    'nome': txt_nome,
-                    'sigap': txt_sigap,
-                    'sexo': txt_sexo,
-                    'funcao': txt_funcao,
-                    'cargo': txt_cargo,
-                    'local': txt_local,
-                    'asid': p_asid,
-                    'pont': p_pont,
-                    'prod': p_prod,
-                    'kual': p_kual,
-                    'koop': p_koop,
-                    'inis': p_inis,
-                    'disp': p_disp,
-                    'resp': p_resp,
-                    'result': pred_label
-                }
-
-        # Seksaun Relatóriu Funsionáriu Foun ne'ebé foin hatama
-        if 'last_report' in st.session_state:
-            rep = st.session_state['last_report']
+            col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
+            col_m1.metric("Total Funsionáriu", total_funs)
+            col_m2.metric("Muito Bom", counts_real.get('Muito Bom', 0))
+            col_m3.metric("Bom", counts_real.get('Bom', 0))
+            col_m4.metric("Suficiente", counts_real.get('Suficiente', 0))
+            col_m5.metric("Insuficiente", counts_real.get('Insuficiente', 0))
+            
             st.markdown("---")
-            st.subheader("📄 Relatóriu Rezultadu Avaliasaun Funsionáriu Foun")
+            col_g1, col_g2 = st.columns(2)
+            with col_g1:
+                st.markdown("##### 📁 Distribuisaun Dadus Reál (Excel)")
+                fig, ax = plt.subplots(figsize=(6, 3.5))
+                sns.countplot(data=df, x=target_col, order=['Muito Bom', 'Bom', 'Suficiente', 'Insuficiente'], palette='Blues', ax=ax)
+                plt.title("Dadus Reál CFP")
+                st.pyplot(fig)
+            with col_g2:
+                st.markdown("##### 🤖 Distribuisaun Prediksaun (Decision Tree)")
+                fig2, ax2 = plt.subplots(figsize=(6, 3.5))
+                sns.countplot(data=df, x='Prediksaun', order=['Muito Bom', 'Bom', 'Suficiente', 'Insuficiente'], palette='Purples', ax=ax2)
+                plt.title("Prediksaun Algoritmu")
+                st.pyplot(fig2)
+
+        with tab2:
+            st.subheader("📋 Dadus Amostra (Preview)")
+            st.dataframe(df.head(10), use_container_width=True)
             
-            col_r1, col_r2 = st.columns(2)
-            with col_r1:
-                st.markdown(f"**Naran Pessoal:** {rep['nome']}")
-                st.markdown(f"**ID SIGAP:** {rep['sigap']}")
-                st.markdown(f"**Sexo:** {rep['sexo']}")
-                st.markdown(f"**Funsaun:** {rep['funcao']}")
-            with col_r2:
-                st.markdown(f"**Kargo:** {rep['cargo']}")
-                st.markdown(f"**Fatin Trabalhu:** {rep['local']}")
-                st.markdown(f"✨ **Rezultadu Klasifikasaun:** `{rep['result']}`")
+            st.markdown("---")
+            st.subheader("🚀 Informasaun Modelu Decision Tree")
+            st.success(f"✅ Modelu treinu ho suksesu! Akurasi Modelu (Accuracy): **{acc * 100:.2f}%**")
+            st.info("Algoritmu uza kriteria `Entropy` hodi kalkula Information Gain husi indikadór 8 avaliasaun nian.")
+
+        with tab3:
+            st.subheader("🔍 Halo Prediksaun ba Funsionáriu Unidade Foun")
+            
+            with st.form("funsionariu_form"):
+                st.markdown("##### 📝 1. Informasaun Identidade Funsionáriu")
+                col_i1, col_i2, col_i3 = st.columns(3)
+                with col_i1:
+                    txt_nome = st.text_input("Naran Pessoal (nome_pessoal)", "Ex: João da Silva")
+                    txt_sigap = st.text_input("ID SIGAP (id_sigap)", "SIGAP-001")
+                    txt_sexo = st.selectbox("Sexo", ["M", "F"])
+                with col_i2:
+                    txt_inst = st.text_input("Instituisaun", "CFP")
+                    txt_local = st.text_input("Local Trabalhu", "Dili")
+                    txt_nascimento = st.text_input("Data de Nascimento", "1995-01-01")
+                with col_i3:
+                    txt_funcao = st.text_input("Funsaun", "Tékniku")
+                    txt_cargo = st.text_input("Kargo", "Staff")
+                    txt_grp = st.text_input("ID GRP", "GRP-123")
+
+                st.markdown("##### 📊 2. Indikadór Avaliasaun Funsionáriu (Skala 1 - 5)")
+                col_a, col_b, col_c, col_d = st.columns(4)
+                with col_a:
+                    p_asid = st.slider("Asiduidade", 1.0, 5.0, 4.0, 1.0)
+                    p_pont = st.slider("Pontualidade", 1.0, 5.0, 4.0, 1.0)
+                with col_b:
+                    p_prod = st.slider("Produtividade", 1.0, 5.0, 4.0, 1.0)
+                    p_kual = st.slider("Kualidade Servisu", 1.0, 5.0, 4.0, 1.0)
+                with col_c:
+                    p_koop = st.slider("Kooperasaun", 1.0, 5.0, 4.0, 1.0)
+                    p_inis = st.slider("Inisiativa", 1.0, 5.0, 4.0, 1.0)
+                with col_d:
+                    p_disp = st.slider("Disiplina", 1.0, 5.0, 4.0, 1.0)
+                    p_resp = st.slider("Responsabilidade", 1.0, 5.0, 4.0, 1.0)
+                
+                submit_pred = st.form_submit_button("🔮 Predict & Hare Relatóriu")
+                
+                if submit_pred:
+                    input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
+                    pred_encoded = model.predict(input_data)
+                    pred_label = le.inverse_transform(pred_encoded)[0]
+                    
+                    st.session_state['last_report'] = {
+                        'nome_pessoal': txt_nome,
+                        'id_sigap': txt_sigap,
+                        'sexo': txt_sexo,
+                        'funcao': txt_funcao,
+                        'cargo': txt_cargo,
+                        'local_trabalho': txt_local,
+                        'Asiduidade': p_asid,
+                        'Pontualidade': p_pont,
+                        'Produtividade': p_prod,
+                        'Kualidade_Servisu': p_kual,
+                        'Kooperasaun': p_koop,
+                        'Inisiativa': p_inis,
+                        'Disiplina': p_disp,
+                        'Responsabilidade': p_resp,
+                        'Rezultadu_Prediksaun': pred_label
+                    }
+
+            # Relatóriu no Download Button
+            if 'last_report' in st.session_state:
+                rep = st.session_state['last_report']
+                st.markdown("---")
+                st.subheader("📄 Relatóriu Rezultadu Avaliasaun Funsionáriu Foun")
+                
+                col_r1, col_r2 = st.columns(2)
+                with col_r1:
+                    st.markdown(f"**Naran Pessoal:** {rep['nome_pessoal']}")
+                    st.markdown(f"**ID SIGAP:** {rep['id_sigap']}")
+                    st.markdown(f"**Sexo:** {rep['sexo']}")
+                    st.markdown(f"**Funsaun:** {rep['funcao']}")
+                with col_r2:
+                    st.markdown(f"**Kargo:** {rep['cargo']}")
+                    st.markdown(f"**Fatin Trabalhu:** {rep['local_trabalho']}")
+                    st.markdown(f"✨ **Rezultadu Klasifikasaun:** `{rep['Rezultadu_Prediksaun']}`")
+                
+                # Botaun Download CSV
+                rep_df = pd.DataFrame([rep])
+                csv_data = rep_df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📥 Download Relatóriu (CSV)",
+                    data=csv_data,
+                    file_name=f"relatorio_{rep['id_sigap']}.csv",
+                    mime='text/csv'
+                )
+else:
+    st.info("👈 Favor upload uluk ficheiru Excel (`.xlsx`) iha sidebar sorin karuk hodi hahú sistema.")
