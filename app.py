@@ -3,30 +3,50 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score
 
-# 1. Konfigurasaun Pajina Streamlit
+# 1. Konfigurasaun Pajina Streamlit (Layout Wide)
 st.set_page_config(
     page_title="Sistema Klasifikasaun CFP - Decision Tree",
     page_icon="📊",
     layout="wide"
 )
 
+# Custom CSS ba UI ne'ebé modernu no kapás
 st.markdown("""
     <style>
-    .main-title { font-size: 2.2rem; color: #1E3A8A; font-weight: 700; margin-bottom: 0px; }
-    .sub-title { color: #4B5563; font-size: 1.1rem; margin-bottom: 20px; }
-    .stButton>button { background-color: #2563EB; color: white; border-radius: 8px; padding: 0.5rem 1rem; font-weight: 600; border: none; }
-    .stButton>button:hover { background-color: #1D4ED8; }
+    .main-title {
+        font-size: 2.2rem;
+        color: #1E3A8A;
+        font-weight: 700;
+        margin-bottom: 0px;
+    }
+    .sub-title {
+        color: #4B5563;
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+    }
+    .stButton>button {
+        background-color: #2563EB;
+        color: white;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        border: none;
+    }
+    .stButton>button:hover {
+        background-color: #1D4ED8;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Aplikasaun uza algoritmu Decision Tree hodi klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
 
+# Inicializa session_state ba relatóriu foun no edit
 if 'extra_reports' not in st.session_state:
     st.session_state['extra_reports'] = []
 
@@ -45,6 +65,7 @@ if uploaded_file is not None:
 
     df_raw = load_data(uploaded_file)
     
+    # Remapa koluna sira
     rename_map = {
         'Column1': 'controlo_ativo_identificacao',
         'Column2': 'nome_pessoal',
@@ -108,18 +129,22 @@ if uploaded_file is not None:
         df['Prediksaun'] = le.inverse_transform(model.predict(X))
         acc = accuracy_score(y_test, model.predict(X_test))
 
+        # 3. Tabs Navegasaun
         tab1, tab2, tab3 = st.tabs(["📊 Dashboard & Sumáriu", "⚙️ Preview & Treinu Modelu", "🔮 Prediksaun & Jere Relatóriu"])
 
         with tab1:
             st.subheader("📈 Dashboard Estatistika Dezempenu Funsionáriu")
+            
             total_funs = len(df)
             counts_real = df[target_col].value_counts()
             
+            # Kalkula porsentu
             mb_pct = (counts_real.get('Muito Bom', 0) / total_funs) * 100 if total_funs > 0 else 0
             b_pct = (counts_real.get('Bom', 0) / total_funs) * 100 if total_funs > 0 else 0
             s_pct = (counts_real.get('Suficiente', 0) / total_funs) * 100 if total_funs > 0 else 0
             i_pct = (counts_real.get('Insuficiente', 0) / total_funs) * 100 if total_funs > 0 else 0
             
+            # KPI Cards modernu ho porsentu
             col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
             col_m1.metric("Total Funsionáriu", f"{total_funs}")
             col_m2.metric("Muito Bom", f"{counts_real.get('Muito Bom', 0)}", f"{mb_pct:.1f}%")
@@ -128,18 +153,24 @@ if uploaded_file is not None:
             col_m5.metric("Insuficiente", f"{counts_real.get('Insuficiente', 0)}", f"{i_pct:.1f}%")
             
             st.markdown("---")
+            
+            # Gráfiku rua: Bar Chart & Donut Chart
             col_g1, col_g2 = st.columns(2)
             
             with col_g1:
                 st.markdown("##### 📊 Komparasaun Kategoria (Reál vs Prediksaun)")
                 fig, ax = plt.subplots(figsize=(6, 4))
+                
                 categories = ['Muito Bom', 'Bom', 'Suficiente', 'Insuficiente']
                 real_counts = [counts_real.get(cat, 0) for cat in categories]
                 pred_counts = [df['Prediksaun'].value_counts().get(cat, 0) for cat in categories]
+                
                 x = np.arange(len(categories))
                 width = 0.35
+                
                 ax.bar(x - width/2, real_counts, width, label='Dadus Reál', color='#3B82F6')
                 ax.bar(x + width/2, pred_counts, width, label='Prediksaun Tree', color='#10B981')
+                
                 ax.set_ylabel('Total Funsionáriu')
                 ax.set_title('Distribuisaun Kategoria Dezempenu')
                 ax.set_xticks(x)
@@ -150,8 +181,10 @@ if uploaded_file is not None:
             with col_g2:
                 st.markdown("##### 🍩 Donut Chart (Proporsaun Reál)")
                 fig2, ax2 = plt.subplots(figsize=(6, 4))
+                
                 sizes = [counts_real.get(cat, 0) for cat in categories]
                 colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444']
+                
                 wedges, texts, autotexts = ax2.pie(
                     sizes, labels=categories, autopct='%1.1f%%', 
                     startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor='w')
@@ -162,10 +195,27 @@ if uploaded_file is not None:
 
         with tab2:
             st.subheader("📋 Dadus Amostra (Preview)")
-            st.dataframe(df.tail(10), use_container_width=True)
+            st.dataframe(df.head(10), use_container_width=True)
+            
             st.markdown("---")
             st.subheader("🚀 Informasaun Modelu Decision Tree")
             st.success(f"✅ Modelu treinu ho suksesu! Akurasi Modelu: **{acc * 100:.2f}%**")
+            
+            st.markdown("---")
+            st.subheader("🌳 Vizualizasaun Árbore Desizaun (Decision Tree Plot)")
+            st.info("Gráfiku ne'e hatudu oinsá algoritmu fahe dadus bazeia ba indikadór avaliasaun sira.")
+            
+            fig_tree, ax_tree = plt.subplots(figsize=(12, 8))
+            plot_tree(
+                model, 
+                feature_names=nota_cols, 
+                class_names=le.classes_, 
+                filled=True, 
+                rounded=True, 
+                ax=ax_tree,
+                fontsize=10
+            )
+            st.pyplot(fig_tree)
 
         with tab3:
             st.subheader("🔍 Halo Prediksaun no Jere Relatóriu Funsionáriu Foun")
