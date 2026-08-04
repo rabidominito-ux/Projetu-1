@@ -46,6 +46,13 @@ st.markdown("""
 st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Aplikasaun uza algoritmu Decision Tree hodi klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
 
+# Inicializa session_state ba lista relatóriu se seidauk iha
+if 'reports_list' not in st.session_state:
+    st.session_state['reports_list'] = []
+
+if 'edit_index' not in st.session_state:
+    st.session_state['edit_index'] = None
+
 # 2. Sidebar ba Upload Dataset
 st.sidebar.header("📁 Upload Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
@@ -96,7 +103,6 @@ if uploaded_file is not None:
         for col in nota_cols:
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
-        # Treinu Modelu Automátiku ka bazeia ba Cache/Session State
         le = LabelEncoder()
         df['target_encoded'] = le.fit_transform(df[target_col])
         y = df['target_encoded']
@@ -116,13 +122,11 @@ if uploaded_file is not None:
         df['Prediksaun'] = le.inverse_transform(model.predict(X))
         acc = accuracy_score(y_test, model.predict(X_test))
 
-        # 3. Organizasaun Interface uza Tabs (Fasilita Navegasaun)
-        tab1, tab2, tab3 = st.tabs(["📊 Dashboard & Sumáriu", "⚙️ Preview & Treinu Modelu", "🔮 Prediksaun Funsionáriu Foun"])
+        # 3. Tabs Navegasaun
+        tab1, tab2, tab3 = st.tabs(["📊 Dashboard & Sumáriu", "⚙️ Preview & Treinu Modelu", "🔮 Prediksaun & Jere Relatóriu"])
 
         with tab1:
             st.subheader("📈 Estatistika & Sumáriu Kategoria Dezempenu")
-            
-            # KPI Metrics Cards
             total_funs = len(df)
             counts_real = df[target_col].value_counts()
             
@@ -139,13 +143,11 @@ if uploaded_file is not None:
                 st.markdown("##### 📁 Distribuisaun Dadus Reál (Excel)")
                 fig, ax = plt.subplots(figsize=(6, 3.5))
                 sns.countplot(data=df, x=target_col, order=['Muito Bom', 'Bom', 'Suficiente', 'Insuficiente'], palette='Blues', ax=ax)
-                plt.title("Dadus Reál CFP")
                 st.pyplot(fig)
             with col_g2:
                 st.markdown("##### 🤖 Distribuisaun Prediksaun (Decision Tree)")
                 fig2, ax2 = plt.subplots(figsize=(6, 3.5))
                 sns.countplot(data=df, x='Prediksaun', order=['Muito Bom', 'Bom', 'Suficiente', 'Insuficiente'], palette='Purples', ax=ax2)
-                plt.title("Prediksaun Algoritmu")
                 st.pyplot(fig2)
 
         with tab2:
@@ -154,57 +156,66 @@ if uploaded_file is not None:
             
             st.markdown("---")
             st.subheader("🚀 Informasaun Modelu Decision Tree")
-            st.success(f"✅ Modelu treinu ho suksesu! Akurasi Modelu (Accuracy): **{acc * 100:.2f}%**")
-            st.info("Algoritmu uza kriteria `Entropy` hodi kalkula Information Gain husi indikadór 8 avaliasaun nian.")
+            st.success(f"✅ Modelu treinu ho suksesu! Akurasi Modelu: **{acc * 100:.2f}%**")
 
         with tab3:
-            st.subheader("🔍 Halo Prediksaun ba Funsionáriu Unidade Foun")
+            st.subheader("🔍 Halo Prediksaun no Jere Relatóriu Funsionáriu Foun")
+            
+            # Check se iha dadus atu edit
+            idx_edit = st.session_state['edit_index']
+            def_val = {}
+            if idx_edit is not None and idx_edit < len(st.session_state['reports_list']):
+                def_val = st.session_state['reports_list'][idx_edit]
             
             with st.form("funsionariu_form"):
                 st.markdown("##### 📝 1. Informasaun Identidade Funsionáriu")
                 col_i1, col_i2, col_i3 = st.columns(3)
                 with col_i1:
-                    txt_nome = st.text_input("Naran Pessoal (nome_pessoal)", "Ex: João da Silva")
-                    txt_sigap = st.text_input("ID SIGAP (id_sigap)", "SIGAP-001")
-                    txt_sexo = st.selectbox("Sexo", ["M", "F"])
+                    txt_nome = st.text_input("Naran Pessoal (nome_pessoal)", def_val.get('nome_pessoal', "João da Silva"))
+                    txt_sigap = st.text_input("ID SIGAP (id_sigap)", def_val.get('id_sigap', "SIGAP-001"))
+                    txt_sexo = st.selectbox("Sexo", ["M", "F"], index=0 if def_val.get('sexo', 'M')=='M' else 1)
                 with col_i2:
-                    txt_inst = st.text_input("Instituisaun", "CFP")
-                    txt_local = st.text_input("Local Trabalhu", "Dili")
-                    txt_nascimento = st.text_input("Data de Nascimento", "1995-01-01")
+                    txt_inst = st.text_input("Instituisaun", def_val.get('instituicao', "CFP"))
+                    txt_local = st.text_input("Local Trabalhu", def_val.get('local_trabalho', "Dili"))
+                    txt_nascimento = st.text_input("Data de Nascimento", def_val.get('data_de_nascimento', "1995-01-01"))
                 with col_i3:
-                    txt_funcao = st.text_input("Funsaun", "Tékniku")
-                    txt_cargo = st.text_input("Kargo", "Staff")
-                    txt_grp = st.text_input("ID GRP", "GRP-123")
+                    txt_funcao = st.text_input("Funsaun", def_val.get('funcao', "Tékniku"))
+                    txt_cargo = st.text_input("Kargo", def_val.get('cargo', "Staff"))
+                    txt_grp = st.text_input("ID GRP", def_val.get('id_grp', "GRP-123"))
 
                 st.markdown("##### 📊 2. Indikadór Avaliasaun Funsionáriu (Skala 1 - 5)")
                 col_a, col_b, col_c, col_d = st.columns(4)
                 with col_a:
-                    p_asid = st.slider("Asiduidade", 1.0, 5.0, 4.0, 1.0)
-                    p_pont = st.slider("Pontualidade", 1.0, 5.0, 4.0, 1.0)
+                    p_asid = st.slider("Asiduidade", 1.0, 5.0, float(def_val.get('Asiduidade', 4.0)), 1.0)
+                    p_pont = st.slider("Pontualidade", 1.0, 5.0, float(def_val.get('Pontualidade', 4.0)), 1.0)
                 with col_b:
-                    p_prod = st.slider("Produtividade", 1.0, 5.0, 4.0, 1.0)
-                    p_kual = st.slider("Kualidade Servisu", 1.0, 5.0, 4.0, 1.0)
+                    p_prod = st.slider("Produtividade", 1.0, 5.0, float(def_val.get('Produtividade', 4.0)), 1.0)
+                    p_kual = st.slider("Kualidade Servisu", 1.0, 5.0, float(def_val.get('Kualidade_Servisu', 4.0)), 1.0)
                 with col_c:
-                    p_koop = st.slider("Kooperasaun", 1.0, 5.0, 4.0, 1.0)
-                    p_inis = st.slider("Inisiativa", 1.0, 5.0, 4.0, 1.0)
+                    p_koop = st.slider("Kooperasaun", 1.0, 5.0, float(def_val.get('Kooperasaun', 4.0)), 1.0)
+                    p_inis = st.slider("Inisiativa", 1.0, 5.0, float(def_val.get('Inisiativa', 4.0)), 1.0)
                 with col_d:
-                    p_disp = st.slider("Disiplina", 1.0, 5.0, 4.0, 1.0)
-                    p_resp = st.slider("Responsabilidade", 1.0, 5.0, 4.0, 1.0)
+                    p_disp = st.slider("Disiplina", 1.0, 5.0, float(def_val.get('Disiplina', 4.0)), 1.0)
+                    p_resp = st.slider("Responsabilidade", 1.0, 5.0, float(def_val.get('Responsabilidade', 4.0)), 1.0)
                 
-                submit_pred = st.form_submit_button("🔮 Predict & Hare Relatóriu")
+                btn_label = "💾 Update Relatóriu" if idx_edit is not None else "🔮 Predict & Hatama Relatóriu"
+                submit_pred = st.form_submit_button(btn_label)
                 
                 if submit_pred:
                     input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
                     pred_encoded = model.predict(input_data)
                     pred_label = le.inverse_transform(pred_encoded)[0]
                     
-                    st.session_state['last_report'] = {
+                    new_report = {
                         'nome_pessoal': txt_nome,
                         'id_sigap': txt_sigap,
                         'sexo': txt_sexo,
+                        'instituicao': txt_inst,
+                        'local_trabalho': txt_local,
+                        'data_de_nascimento': txt_nascimento,
                         'funcao': txt_funcao,
                         'cargo': txt_cargo,
-                        'local_trabalho': txt_local,
+                        'id_grp': txt_grp,
                         'Asiduidade': p_asid,
                         'Pontualidade': p_pont,
                         'Produtividade': p_prod,
@@ -215,32 +226,52 @@ if uploaded_file is not None:
                         'Responsabilidade': p_resp,
                         'Rezultadu_Prediksaun': pred_label
                     }
+                    
+                    if idx_edit is not None:
+                        st.session_state['reports_list'][idx_edit] = new_report
+                        st.session_state['edit_index'] = None
+                        st.success("✅ Relatóriu atualiza ho suksesu!")
+                        st.rerun()
+                    else:
+                        st.session_state['reports_list'].append(new_report)
+                        st.success("✅ Relatóriu foun rejista ho suksesu!")
 
-            # Relatóriu no Download Button
-            if 'last_report' in st.session_state:
-                rep = st.session_state['last_report']
+            # Hamosu Lista Relatóriu sira ne'ebé rai ona ho Opsaun Update (Edit) & Delete
+            if len(st.session_state['reports_list']) > 0:
                 st.markdown("---")
-                st.subheader("📄 Relatóriu Rezultadu Avaliasaun Funsionáriu Foun")
+                st.subheader("📋 Lista Relatóriu Funsionáriu Foun (Jere Dadus)")
                 
-                col_r1, col_r2 = st.columns(2)
-                with col_r1:
-                    st.markdown(f"**Naran Pessoal:** {rep['nome_pessoal']}")
-                    st.markdown(f"**ID SIGAP:** {rep['id_sigap']}")
-                    st.markdown(f"**Sexo:** {rep['sexo']}")
-                    st.markdown(f"**Funsaun:** {rep['funcao']}")
-                with col_r2:
-                    st.markdown(f"**Kargo:** {rep['cargo']}")
-                    st.markdown(f"**Fatin Trabalhu:** {rep['local_trabalho']}")
-                    st.markdown(f"✨ **Rezultadu Klasifikasaun:** `{rep['Rezultadu_Prediksaun']}`")
-                
-                # Botaun Download CSV
-                rep_df = pd.DataFrame([rep])
-                csv_data = rep_df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="📥 Download Relatóriu (CSV)",
-                    data=csv_data,
-                    file_name=f"relatorio_{rep['id_sigap']}.csv",
-                    mime='text/csv'
-                )
+                for idx, rep in enumerate(st.session_state['reports_list']):
+                    with st.expander(f"👤 {rep['nome_pessoal']} (SIGAP: {rep['id_sigap']}) - Rezultadu: {rep['Rezultadu_Prediksaun']}"):
+                        col_d1, col_d2 = st.columns(2)
+                        with col_d1:
+                            st.markdown(f"**Sexo:** {rep['sexo']} | **Fatin:** {rep['local_trabalho']}")
+                            st.markdown(f"**Funsaun:** {rep['funcao']} | **Kargo:** {rep['cargo']}")
+                        with col_d2:
+                            st.markdown(f"✨ **Klasifikasaun:** `{rep['Rezultadu_Prediksaun']}`")
+                        
+                        col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 4])
+                        with col_btn1:
+                            if st.button("✏️ Edit", key=f"edit_{idx}"):
+                                st.session_state['edit_index'] = idx
+                                st.rerun()
+                        with col_btn2:
+                            if st.button("🗑️ Hamos", key=f"del_{idx}"):
+                                st.session_state['reports_list'].pop(idx)
+                                if st.session_state['edit_index'] == idx:
+                                    st.session_state['edit_index'] = None
+                                st.success("Dadus hamos ona!")
+                                st.rerun()
+                                
+                        # Botaun Download CSV ba relatóriu ida-idak
+                        rep_df = pd.DataFrame([rep])
+                        csv_data = rep_df.to_csv(index=False).encode('utf-8')
+                        st.download_button(
+                            label="📥 Download Relatóriu (CSV)",
+                            data=csv_data,
+                            file_name=f"relatorio_{rep['id_sigap']}.csv",
+                            mime='text/csv',
+                            key=f"dl_{idx}"
+                        )
 else:
     st.info("👈 Favor upload uluk ficheiru Excel (`.xlsx`) iha sidebar sorin karuk hodi hahú sistema.")
