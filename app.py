@@ -362,7 +362,7 @@ if uploaded_file is not None:
                 st.subheader("🚀 Informasaun Modelu Decision Tree")
                 st.success(f"✅ Modelu treinu ho suksesu! Akurasi Modelu (Accuracy): **{acc * 100:.2f}%**")
                 
-                # --- [IMPLEMENTASI BARUK: CONFUSION MATRIX & CLASSIFICATION REPORT] ---
+                # --- [FIXED: Hodi evita error mismatch size target_names ho classes] ---
                 st.markdown("---")
                 st.subheader("🎯 Avaliasaun Detalladu Modelu (Confusion Matrix & Métricas)")
                 
@@ -382,7 +382,17 @@ if uploaded_file is not None:
                 
                 with col_eval2:
                     st.markdown("##### 📑 Classification Report (Precision, Recall, F1-Score)")
-                    report_dict = classification_report(y_test, y_pred_test, target_names=le.classes_, output_dict=True, zero_division=0)
+                    # Fiksasaun hodi resolve error mismatch uza labels no unique classes iha y_test
+                    unique_labels = np.unique(np.concatenate((y_test, y_pred_test)))
+                    present_class_names = [le.classes_[i] for i in unique_labels]
+                    
+                    report_dict = classification_report(
+                        y_test, y_pred_test, 
+                        labels=unique_labels,
+                        target_names=present_class_names, 
+                        output_dict=True, 
+                        zero_division=0
+                    )
                     df_report = pd.DataFrame(report_dict).transpose()
                     st.dataframe(df_report.style.format(subset=['precision', 'recall', 'f1-score', 'support'], formatter="{:.2f}"), use_container_width=True)
 
