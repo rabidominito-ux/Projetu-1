@@ -1,199 +1,156 @@
-import joblib
-import numpy as np
-import pandas as pd
-from sklearn.tree import DecisionTreeClassifier
 import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-# Konfiguratuan Pajina
-st.set_page_config(
-    page_title="Sistema Avaliasaun Desempenhu - CFP",
-    page_icon="🏛️",
-    layout="wide",
-)
+# Konfigurasaun Pajina Streamlit
+st.set_page_config(page_title="Sistema Klasifikasaun CFP - Decision Tree", page_icon="📊", layout="wide")
 
-# Karga Dataset CFP
-@st.cache_data
-def load_data():
-    df = pd.read_excel('Dadus CFP.xlsx', header=1)
-    # Kria model / train decision tree kedas husi dadus atu halo prediksaun real
-    features = [
-        'Asiduidade',
-        'Pontualidade',
-        'Produtividade',
-        'Kualidade_Servisu',
-        'Kooperasaun',
-        'Inisiativa',
-        'Disiplina',
-        'Responsabilidade',
-    ]
-    X = df[features]
-    y = df['Rezultadu_Avaliasaun']
+st.title("📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP")
+st.markdown("Aplikasaun ne'e uza algoritmu **Decision Tree** hodi klasifika dezempenu funsionáriu bazeia ba indikadór avaliasaun iha Komisaun Função Pública (CFP).")
 
-    model = DecisionTreeClassifier(random_state=42)
-    model.fit(X, y)
-    return df, model, features
+# Sidebar ba Upload Ficheiru
+st.sidebar.header("📁 Upload Dataset")
+uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
 
+if uploaded_file is not None:
+    # Karga Dadus
+    @st.cache_data
+    def load_data(file):
+        df_raw = pd.read_excel(file, sheet_name='Sheet1', header=0)
+        return df_raw
 
-df, model, features = load_data()
+    df_raw = load_data(uploaded_file)
+    
+    # Remapa koluna sira tuir kódigu Colab
+    rename_map = {
+        'Column1': 'controlo_ativo_identificacao',
+        'Column2': 'nome_pessoal',
+        'Column3': 'id_sigap',
+        'Column4': 'id_grp',
+        'Column5': 'sexo',
+        'Column6': 'data_de_nascimento',
+        'Column7': 'instituicao',
+        'Column8': 'local_trabalho',
+        'Column9': 'funcao',
+        'Column10': 'cargo',
+        'Column11': 'data_fim_nao_exercicio',
+        'Column12': 'temp1',
+        'Column13': 'Asiduidade',
+        'Column14': 'Pontualidade',
+        'Column15': 'Produtividade',
+        'Column16': 'Kualidade_Servisu',
+        'Column17': 'Kooperasaun',
+        'Column18': 'Inisiativa',
+        'Column19': 'Disiplina',
+        'Column20': 'Responsabilidade',
+        'Column21': 'Media',
+        'Column22': 'Rezultadu_Avaliasaun',
+        'Column23': 'temp2'
+    }
+    
+    # Asegura katak koluna sira iha baze de dadus
+    df_raw.rename(columns={k: v for k, v in rename_map.items() if k in df_raw.columns}, inplace=True)
 
-# --- SIDEBAR NAVIGATION ---
-st.sidebar.title("📌 Menu Navigasaun")
-menu = st.sidebar.selectbox(
-    "Hili Pajina:",
-    [
-        "🏠 Dashboard & Análize Dadus",
-        "🔍 Prediksaun Funsionáriu Foun",
-        "📋 Lista Funsionáriu & Filtru",
-    ],
-)
+    nota_cols = ['Asiduidade', 'Pontualidade', 'Produtividade', 'Kualidade_Servisu',
+                 'Kooperasaun', 'Inisiativa', 'Disiplina', 'Responsabilidade']
+    target_col = 'Rezultadu_Avaliasaun'
 
-st.sidebar.markdown('---')
-st.sidebar.info(
-    'Sistema Inteligente Uza Algoritma Decision Tree ba Komisaun Funsaun Públika (CFP).'
-)
+    if all(col in df_raw.columns for col in nota_cols + [target_col]):
+        df = df_raw[nota_cols + [target_col]].copy()
+        for col in nota_cols:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+        df = df.dropna()
 
-# ==========================================
-# 1. DASHBOARD & ANÁLIZE DADUS
-# ==========================================
-if menu == '🏠 Dashboard & Análize Dadus':
-  st.title('📊 Dashboard Análize Desempenhu Funsionáriu CFP')
-  st.write(
-     'Visaun jerál ba dadus avaliasaun desempenhu funsionáriu sira nian bazeia ba'
-     ' kriteria kuantitativu no kualitativu.'
-  )
+        st.subheader("📋 Dadus Amostra (Preview)")
+        st.dataframe(df.head())
 
-  # Metrika xave
-  col1, col2, col3, col4 = st.columns(4)
-  col1.metric('Total Funsionáriu', len(df))
-  col2.metric('Média Jerál Pontu', f"{df['Media'].mean():.2f} / 5.0")
-  col3.metric(
-      'Funsionáriu Muito Bom',
-      len(df[df['Rezultadu_Avaliasaun'] == 'Muito Bom']),
-  )
-  col4.metric(
-      'Funsionáriu Insuficiente',
-      len(df[df['Rezultadu_Avaliasaun'] == 'Insuficiente']),
-  )
+        # Botão 1: Treinu no Evaluasaun Modelu
+        if st.button("🚀 Prosesa no Treinu Modelu (Train Model)"):
+            with st.spinner("Modelu dada hela treinu... Favor hein minutu uitoan."):
+                le = LabelEncoder()
+                df['target_encoded'] = le.fit_transform(df[target_col])
+                y = df['target_encoded']
+                X = df[nota_cols].copy()
 
-  st.markdown('---')
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X, y, test_size=0.2, random_state=42, stratify=y
+                )
 
-  c1, c2 = st.columns(2)
+                # GridSearch ba Hyperparameter Tuning
+                param_grid = {
+                    'max_depth': [3, 5, 7, 10, None],
+                    'min_samples_split': [2, 5, 10, 20],
+                    'min_samples_leaf': [1, 2, 4, 8],
+                    'criterion': ['gini', 'entropy']
+                }
+                grid = GridSearchCV(DecisionTreeClassifier(random_state=42), param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+                grid.fit(X_train, y_train)
+                
+                dt_best = grid.best_estimator_
+                y_pred_best = dt_best.predict(X_test)
+                
+                acc = accuracy_score(y_test, y_pred_best)
+                cv_scores = cross_val_score(dt_best, X_train, y_train, cv=5)
 
-  with c1:
-    st.subheader('📈 Distribuisaun Kategoria Rezultadu Avaliasaun')
-    rez_counts = df['Rezultadu_Avaliasaun'].value_counts()
-    st.bar_chart(rez_counts)
+                st.success("✅ Modelu treinu ho susesu!")
+                
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Akurasi (Test Accuracy)", f"{acc * 100:.2f}%")
+                col2.metric("Cross-Validation Média", f"{cv_scores.mean() * 100:.2f}%")
+                col3.metric("Parametru Di'ak liu", str(grid.best_params_))
 
-  with c2:
-    st.subheader('👥 Distribuisaun tuir Kargu (Cargo)')
-    cargo_counts = df['cargo'].value_counts()
-    st.bar_chart(cargo_counts)
+                # Visualizasaun Confusion Matrix
+                st.subheader("📊 Matriz Konfuzaun (Confusion Matrix)")
+                cm = confusion_matrix(y_test, y_pred_best)
+                fig, ax = plt.subplots(figsize=(6, 4))
+                sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                            xticklabels=le.classes_, yticklabels=le.classes_, ax=ax)
+                plt.xlabel("Prediksaun")
+                plt.ylabel("Reál")
+                st.pyplot(fig)
 
-  st.markdown('---')
-  st.subheader('📉 Média Kriteria Avaliasaun Hotu-Hotu')
-  kriteria_mean = df[features].mean()
-  st.bar_chart(kriteria_mean)
-
-# ==========================================
-# 2. PREDIPSAUN FUNSIÓNARIU FOUN
-# ==========================================
-elif menu == '🔍 Prediksaun Funsionáriu Foun':
-  st.title('🔍 Simula Prediksaun Desempenhu Funsionáriu')
-  st.write(
-      'Hatama pontu husi kriteria oioin iha sorin (sidebar) atu hatene kategoria'
-      ' desizaun husi Decision Tree.'
-  )
-
-  st.sidebar.subheader('🎛️ Ajusta Pontu Kriteria (Skala 1 - 5)')
-  asiduidade = st.sidebar.slider('Asiduidade', 1, 5, 4)
-  pontualidade = st.sidebar.slider('Pontualidade', 1, 5, 4)
-  produtividade = st.sidebar.slider('Produtividade', 1, 5, 4)
-  kualidade_servisu = st.sidebar.slider('Kualidade Servisu', 1, 5, 4)
-  kooperasaun = st.sidebar.slider('Kooperasaun', 1, 5, 4)
-  inisiativa = st.sidebar.slider('Inisiativa', 1, 5, 4)
-  disiplina = st.sidebar.slider('Disiplina', 1, 5, 4)
-  responsabilidade = st.sidebar.slider('Responsabilidade', 1, 5, 4)
-
-  # DataFrame ba input
-  input_data = pd.DataFrame(
-      {
-          'Asiduidade': [asiduidade],
-          'Pontualidade': [pontualidade],
-          'Produtividade': [produtividade],
-          'Kualidade_Servisu': [kualidade_servisu],
-          'Kooperasaun': [kooperasaun],
-          'Inisiativa': [inisiativa],
-          'Disiplina': [disiplina],
-          'Responsabilidade': [responsabilidade],
-      }
-  )
-
-  st.subheader('📝 Dadus Kriteria Ne\'ebé Hili:')
-  st.dataframe(input_data, use_container_width=True)
-
-  if st.button('🚀 Halo Prediksaun Modelu', type='primary'):
-    prediction = model.predict(input_data)[0]
-    media_input = input_data.mean(axis=1)[0]
-
-    st.markdown('---')
-    st.subheader('🎯 Rezultadu Prediksaun Decision Tree:')
-
-    if prediction == 'Muito Bom':
-      st.success(
-          f'🌟 Kategoria: **{prediction}** (Média Pontu:'
-          f' {media_input:.2f}/5.0)'
-      )
-    elif prediction == 'Bom':
-      st.info(
-          f'👍 Kategoria: **{prediction}** (Média Pontu:'
-          f' {media_input:.2f}/5.0)'
-      )
-    elif prediction == 'Suficiente':
-      st.warning(
-          f'⚠️ Kategoria: **{prediction}** (Média Pontu:'
-          f' {media_input:.2f}/5.0)'
-      )
+        # Botão 2 / Formuláriu Prediksaun Foun ba Funsionáriu
+        st.markdown("---")
+        st.subheader("🔍 Halo Prediksaun ba Funsionáriu Unidade Foun")
+        
+        with st.form("pred_form"):
+            col_a, col_b, col_c, col_d = st.columns(4)
+            with col_a:
+                p_asid = st.slider("Asiduidade", 1.0, 5.0, 4.0, 1.0)
+                p_pont = st.slider("Pontualidade", 1.0, 5.0, 4.0, 1.0)
+            with col_b:
+                p_prod = st.slider("Produtividade", 1.0, 5.0, 4.0, 1.0)
+                p_kual = st.slider("Kualidade Servisu", 1.0, 5.0, 4.0, 1.0)
+            with col_c:
+                p_koop = st.slider("Kooperasaun", 1.0, 5.0, 4.0, 1.0)
+                p_inis = st.slider("Inisiativa", 1.0, 5.0, 4.0, 1.0)
+            with col_d:
+                p_disp = st.slider("Disiplina", 1.0, 5.0, 4.0, 1.0)
+                p_resp = st.slider("Responsabilidade", 1.0, 5.0, 4.0, 1.0)
+            
+            submit_pred = st.form_submit_button("🔮 Predict / Prediksa Rezultadu")
+            
+            if submit_pred:
+                le = LabelEncoder()
+                df['target_encoded'] = le.fit_transform(df[target_col])
+                X = df[nota_cols].copy()
+                y = df['target_encoded']
+                
+                model = DecisionTreeClassifier(criterion='entropy', max_depth=10, min_samples_split=5, random_state=42)
+                model.fit(X, y)
+                
+                input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
+                pred_encoded = model.predict(input_data)
+                pred_label = le.inverse_transform(pred_encoded)[0]
+                
+                st.info(f"✨ Rezultadu Klasifikasaun Dezempenu Funsionáriu: **{pred_label}**")
     else:
-      st.error(
-          f'❌ Kategoria: **{prediction}** (Média Pontu:'
-          f' {media_input:.2f}/5.0 - Presiza Mellora)'
-      )
-
-# ==========================================
-# 3. LISTA FUNSIÓNARIU & FILTRU
-# ==========================================
-elif menu == '📋 Lista Funsionáriu & Filtru':
-  st.title('📋 Dadus Detalhadu Funsionáriu CFP')
-  st.write('Buscador no filtru ba dadus funsionáriu sira iha sistema.')
-
-  # Filtru bazeia ba Kategoria Rezultadu
-  selected_cat = st.selectbox(
-      'Filtru tuir Kategoria Rezultadu Avaliasaun:',
-      ['Hotu-Hotu'] + list(df['Rezultadu_Avaliasaun'].unique()),
-  )
-
-  if selected_cat != 'Hotu-Hotu':
-    filtered_df = df[df['Rezultadu_Avaliasaun'] == selected_cat]
-  else:
-    filtered_df = df
-
-  # Peskiza naran
-  search_name = st.text_input('🔍 Peskiza Naran Funsionáriu:')
-  if search_name:
-    filtered_df = filtered_df[
-        filtered_df['nome_pessoal'].str.contains(search_name, case=False, na=False)
-    ]
-
-  st.write(f'Hatudu **{len(filtered_df)}** rejistu funsionáriu:')
-  st.dataframe(
-      filtered_df[
-          [
-              'nome_pessoal',
-              'cargo',
-              'sexo',
-              'Media',
-              'Rezultadu_Avaliasaun',
-          ]
-      ],
-      use_container_width=True,
-  )
+        st.error("⚠️ Koluna sira iha ficheiru Excel la hanesan ho estrutura ne'ebé espere (Keta haluha koluna nota no rezultadu avaliasaun).")
+else:
+    st.info("👈 Favor upload ficheiru `Dadus CFP.xlsx` liuhusi sidebar iha sorin karuk hಿತು hahú.")
