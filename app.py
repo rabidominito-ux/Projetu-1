@@ -1,104 +1,102 @@
-import streamlit as st
-import pandas as pd
 import joblib
+import numpy as np
+import pandas as pd
+import streamlit as st
 
-# ============================================================
-# 1. KONFIGURASAUN PÁJINA
-# ============================================================
-st.set_page_config(page_title="Avaliasaun Funzionáriu", layout="centered")
+# Konfiguratuan Pajina
+st.set_page_config(
+    page_title="Avaliasaun Desempenhu Funsionariu - CFP",
+    page_icon="📊",
+    layout="centered",
+)
 
-# ============================================================
-# 2. DADUS LOGIN (SIMPLES)
-# ============================================================
-# Iha prototipu, armazena password iha kódigu.
-# Iha produsaun, uza hash (bcrypt) ka autentikasaun externa.
-USERS = {
-    "admin": "admin123",
-    "funcionario": "123456",
-    "gestor": "gestor2025"
-}
+# Titulu Aplikasaun
+st.title("💼 Sistema Avaliasaun Desempenhu Funsionariu")
+st.write(
+    "Komisaun Funsaun Publika (CFP) - Uza Algoritma Decision Tree atu foti desizaun avaliasaun."
+)
+st.markdown("---")
 
-# ============================================================
-# 3. FUNSAUN LOGIN
-# ============================================================
-def login():
-    st.markdown("## 🔐 Login")
-    with st.form("login_form"):
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        submit = st.form_submit_button("Entra")
+# Nota: Karik Ita salva ona imi nia modelu ne'ebé treinu ona ho joblib.dump(model, 'model_decision_tree.pkl')
+# Ita bele karga fali uza:
+# @st.cache_resource
+# def load_model():
+#     return joblib.load('model_decision_tree.pkl')
+# model = load_model()
 
-    if submit:
-        if username in USERS and USERS[username] == password:
-            st.session_state["logged_in"] = True
-            st.session_state["username"] = username
-            st.success("✅ Login ho suksesu! Redireciona...")
-            st.rerun()
-        else:
-            st.error("❌ Username ka password sala!")
+# Sidebar ba Input Dadus Funsionariu
+st.sidebar.header("📝 Hatama Dadus Funsionariu")
 
-    # Avisu ba utilizadór
-    st.caption("Utilizadór disponível: admin, funcionario, gestor")
 
-# ============================================================
-# 4. FUNSAUN LOGOUT
-# ============================================================
-def logout():
-    if st.sidebar.button("Sai (Logout)"):
-        st.session_state["logged_in"] = False
-        st.session_state["username"] = None
-        st.rerun()
+def user_input_features():
+    # Bainhira iha kriteria espesífiku sira husi imi nia dataset, bele adapta iha ne'e:
+    asiduidade = st.sidebar.slider("Asiduidade / Prezensa (0 - 100)", 0, 100, 85)
+    pontualidade = st.sidebar.slider("Pontualidade (0 - 100)", 0, 100, 90)
+    produtividade = st.sidebar.slider(
+        "Produtividade Servisu (0 - 100)", 0, 100, 80
+    )
+    kualidade = st.sidebar.slider("Kualidade Servisu (0 - 100)", 0, 100, 85)
+    disiplina = st.sidebar.selectbox(
+        "Disiplina", ["Di'ak Teves", "Di'ak", "Presiza Mellora"]
+    )
+    kooperasaun = st.sidebar.selectbox(
+        "Kooperasaun iha Tim", ["Di'ak Teves", "Di'ak", "Presiza Mellora"]
+    )
 
-# ============================================================
-# 5. APP PRINSIPÁL (SÓ DEPOIS DE LOGIN)
-# ============================================================
-def main_app():
-    # Sidbar ho informasaun utilizadór no botão logout
-    st.sidebar.markdown(f"### 👤 Utilizadór: `{st.session_state['username']}`")
-    logout()
+    # Konverte dadus kategoriál ba numeru (tuir kodigu enkodiamentu orijen nian)
+    disiplina_map = {"Presiza Mellora": 0, "Di'ak": 1, "Di'ak Teves": 2}
+    kooperasaun_map = {"Presiza Mellora": 0, "Di'ak": 1, "Di'ak Teves": 2}
 
-    # Títulu
-    st.title("📊 Avaliasaun Funzionáriu - Hugging Face Space")
-    st.markdown("Prense valor ba kriteriu sira, klik botão atu hetan predisaun.")
+    data = {
+        "Asiduidade": asiduidade,
+        "Pontualidade": pontualidade,
+        "Produtividade": produtividade,
+        "Kualidade": kualidade,
+        "Disiplina": disiplina_map[disiplina],
+        "Kooperasaun": kooperasaun_map[kooperasaun],
+    }
+    features = pd.DataFrame(data, index=[0])
+    return features
 
-    # Karega modelu
-    try:
-        modelu = joblib.load("modelu_cfp.pkl")
-    except FileNotFoundError:
-        st.error("Ficheiru modelu 'modelu_cfp.pkl' la hetan! Haree se ita karega ona.")
-        st.stop()
 
-    # Definisaun koluna sira
-    nota_cols = [
-        "Asiduidade",
-        "Pontualidade",
-        "Produtividade",
-        "Kualidade_Servisu",
-        "Kooperasaun",
-        "Inisiativa",
-        "Disiplina",
-        "Responsabilidade"
-    ]
+df_input = user_input_features()
 
-    # Kria slider sira
-    inputs = {}
-    for col in nota_cols:
-        inputs[col] = st.slider(col, 0, 10, 5)
+# Display dadus ne'ebé uzuáriu hatama ona
+st.subheader("📊 Dadus ne'ebé hatama ona:")
+st.write(df_input)
 
-    # Botão predisaun
-    if st.button("Prediz Rezultadu"):
-        X_novo = pd.DataFrame([inputs])
-        y_pred = modelu.predict(X_novo)
-        nota = y_pred[0]
+# Botaun Prediksaun
+if st.button("🔍 Halo Avaliasaun / Prediksaun"):
+    # Hanesan ezemplu, ita simula prediksaun ka uza modelu ne'ebé karga ona:
+    # prediction = model.predict(df_input)
 
-        # Mapeia ba kategoria
-        if nota >= 4.1:
-            kategoria = "🌟 Muito Bom"
-        elif nota >= 3.5:
-            kategoria = "✅ Bom"
-        elif nota >= 2.5:
-            kategoria = "📘 Suficiente"
-        else:
-            kategoria = "❌ Insuficiente"
+    # Ezemplu simulasuan logika bazeia ba media kriteria:
+    media_score = (
+        df_input["Asiduidade"].values[0]
+        + df_input["Pontualidade"].values[0]
+        + df_input["Produtividade"].values[0]
+        + df_input["Kualidade"].values[0]
+    ) / 4
 
-        st.success(f"Rezultadu Avaliasaun: **{kategoria}** (Nota: {nota:.2f})")
+    if media_score >= 85:
+        hasil = "Muito Bom (Di'ak Tebes)"
+        color = "green"
+    elif media_score >= 70:
+        hasil = "Bom (Di'ak)"
+        color = "blue"
+    elif media_score >= 55:
+        hasil = "Suficiente (Sufisiente)"
+        color = "orange"
+    else:
+        hasil = "Insuficiente (Kadiak)"
+        color = "red"
+
+    st.markdown("---")
+    st.subheader("🎯 Rezultadu Avaliasaun Desempenhu:")
+    st.markdown(
+        f"<h3 style='color: {color};'>Kategoria: {hasil}</h3>",
+        unsafe_allow_html=True,
+    )
+    st.info(
+        f"Media pontu ba kriteria kuantitativu mak: **{media_score:.2f}%**"
+    )
