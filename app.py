@@ -444,7 +444,7 @@ if uploaded_file is not None:
                     
                     if submit_pred:
                         if not txt_nome.strip() or not txt_sigap.strip():
-                            st.warning("⚠️ Favor prennde Naran Pessoal no ID SIGAP!")
+                            st.warning("⚠️ Favor prense Naran Pessoal no ID SIGAP!")
                         else:
                             input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
                             pred_encoded = model.predict(input_data)
