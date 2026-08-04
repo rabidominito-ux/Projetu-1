@@ -46,7 +46,7 @@ st.markdown("""
 st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Aplikasaun uza algoritmu Decision Tree hodi klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
 
-# Inicializa session_state ba lista relatóriu se seidauk iha
+# Inicializa session_state
 if 'reports_list' not in st.session_state:
     st.session_state['reports_list'] = []
 
@@ -126,28 +126,65 @@ if uploaded_file is not None:
         tab1, tab2, tab3 = st.tabs(["📊 Dashboard & Sumáriu", "⚙️ Preview & Treinu Modelu", "🔮 Prediksaun & Jere Relatóriu"])
 
         with tab1:
-            st.subheader("📈 Estatistika & Sumáriu Kategoria Dezempenu")
+            st.subheader("📈 Dashboard Estatistika Dezempenu Funsionáriu")
+            
             total_funs = len(df)
             counts_real = df[target_col].value_counts()
             
+            # Kalkula porsentu
+            mb_pct = (counts_real.get('Muito Bom', 0) / total_funs) * 100 if total_funs > 0 else 0
+            b_pct = (counts_real.get('Bom', 0) / total_funs) * 100 if total_funs > 0 else 0
+            s_pct = (counts_real.get('Suficiente', 0) / total_funs) * 100 if total_funs > 0 else 0
+            i_pct = (counts_real.get('Insuficiente', 0) / total_funs) * 100 if total_funs > 0 else 0
+            
+            # KPI Cards modernu ho porsentu
             col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
-            col_m1.metric("Total Funsionáriu", total_funs)
-            col_m2.metric("Muito Bom", counts_real.get('Muito Bom', 0))
-            col_m3.metric("Bom", counts_real.get('Bom', 0))
-            col_m4.metric("Suficiente", counts_real.get('Suficiente', 0))
-            col_m5.metric("Insuficiente", counts_real.get('Insuficiente', 0))
+            col_m1.metric("Total Funsionáriu", f"{total_funs}")
+            col_m2.metric("Muito Bom", f"{counts_real.get('Muito Bom', 0)}", f"{mb_pct:.1f}%")
+            col_m3.metric("Bom", f"{counts_real.get('Bom', 0)}", f"{b_pct:.1f}%")
+            col_m4.metric("Suficiente", f"{counts_real.get('Suficiente', 0)}", f"{s_pct:.1f}%")
+            col_m5.metric("Insuficiente", f"{counts_real.get('Insuficiente', 0)}", f"{i_pct:.1f}%")
             
             st.markdown("---")
+            
+            # Gráfiku rua: Bar Chart & Donut Chart
             col_g1, col_g2 = st.columns(2)
+            
             with col_g1:
-                st.markdown("##### 📁 Distribuisaun Dadus Reál (Excel)")
-                fig, ax = plt.subplots(figsize=(6, 3.5))
-                sns.countplot(data=df, x=target_col, order=['Muito Bom', 'Bom', 'Suficiente', 'Insuficiente'], palette='Blues', ax=ax)
+                st.markdown("##### 📊 Komparasaun Kategoria (Reál vs Prediksaun)")
+                fig, ax = plt.subplots(figsize=(6, 4))
+                
+                # Bar plot komparativa
+                categories = ['Muito Bom', 'Bom', 'Suficiente', 'Insuficiente']
+                real_counts = [counts_real.get(cat, 0) for cat in categories]
+                pred_counts = [df['Prediksaun'].value_counts().get(cat, 0) for cat in categories]
+                
+                x = np.arange(len(categories))
+                width = 0.35
+                
+                ax.bar(x - width/2, real_counts, width, label='Dadus Reál', color='#3B82F6')
+                ax.bar(x + width/2, pred_counts, width, label='Prediksaun Tree', color='#10B981')
+                
+                ax.set_ylabel('Total Funsionáriu')
+                ax.set_title('Distribuisaun Kategoria Dezempenu')
+                ax.set_xticks(x)
+                ax.set_xticklabels(categories)
+                ax.legend()
                 st.pyplot(fig)
+
             with col_g2:
-                st.markdown("##### 🤖 Distribuisaun Prediksaun (Decision Tree)")
-                fig2, ax2 = plt.subplots(figsize=(6, 3.5))
-                sns.countplot(data=df, x='Prediksaun', order=['Muito Bom', 'Bom', 'Suficiente', 'Insuficiente'], palette='Purples', ax=ax2)
+                st.markdown("##### 🍩 Donut Chart (Proporsaun Reál)")
+                fig2, ax2 = plt.subplots(figsize=(6, 4))
+                
+                sizes = [counts_real.get(cat, 0) for cat in categories]
+                colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444']
+                
+                wedges, texts, autotexts = ax2.pie(
+                    sizes, labels=categories, autopct='%1.1f%%', 
+                    startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor='w')
+                )
+                plt.setp(autotexts, size=9, weight="bold")
+                ax2.set_title('Proporsaun Kategoria Reál')
                 st.pyplot(fig2)
 
         with tab2:
@@ -161,7 +198,6 @@ if uploaded_file is not None:
         with tab3:
             st.subheader("🔍 Halo Prediksaun no Jere Relatóriu Funsionáriu Foun")
             
-            # Check se iha dadus atu edit
             idx_edit = st.session_state['edit_index']
             def_val = {}
             if idx_edit is not None and idx_edit < len(st.session_state['reports_list']):
@@ -236,7 +272,6 @@ if uploaded_file is not None:
                         st.session_state['reports_list'].append(new_report)
                         st.success("✅ Relatóriu foun rejista ho suksesu!")
 
-            # Hamosu Lista Relatóriu sira ne'ebé rai ona ho Opsaun Update (Edit) & Delete
             if len(st.session_state['reports_list']) > 0:
                 st.markdown("---")
                 st.subheader("📋 Lista Relatóriu Funsionáriu Foun (Jere Dadus)")
@@ -263,7 +298,6 @@ if uploaded_file is not None:
                                 st.success("Dadus hamos ona!")
                                 st.rerun()
                                 
-                        # Botaun Download CSV ba relatóriu ida-idak
                         rep_df = pd.DataFrame([rep])
                         csv_data = rep_df.to_csv(index=False).encode('utf-8')
                         st.download_button(
