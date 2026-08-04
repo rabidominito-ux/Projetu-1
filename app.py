@@ -170,4 +170,4 @@ if uploaded_file is not None:
             with col_r2:
                 st.markdown(f"**Kargo:** {rep['cargo']}")
                 st.markdown(f"**Fatin Trabalhu:** {rep['local']}")
-                st.markdown(f"✨ **Rezultadu Klasifikasaun:** `
+                st.markdown(f"✨ **Rezultadu Klasifikasaun:** `{rep['result']}`")
