@@ -20,15 +20,15 @@ st.set_page_config(
 st.markdown("""
     <style>
     .main-title {
-        font-size: 2.0rem;
+        font-size: 2.2rem;
         color: #1E3A8A;
         font-weight: 700;
         margin-bottom: 0px;
     }
     .sub-title {
         color: #4B5563;
-        font-size: 1.0rem;
-        margin-bottom: 10px;
+        font-size: 1.1rem;
+        margin-bottom: 20px;
     }
     .stButton>button {
         background-color: #2563EB;
@@ -44,18 +44,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Layout Títulu hamutuk ho Logo CFP
-col_logo, col_title = st.columns([1, 6])
-with col_logo:
-    # Asegura katak fichieru imajen logo iha fatin ne'ebé loos ho naran OIP.webp
-    try:
-        st.image("OIP.webp", width=100)
-    except:
-        st.write("🏛️ **CFP**")
-
-with col_title:
-    st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-title">Aplikasaun uza algoritmu Decision Tree hodi klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">Aplikasaun uza algoritmu Decision Tree hodi klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
 
 # 2. Konfigurasaun Database SQLite local ho Try-Except (Robust)
 DB_NAME = "cfp_database.db"
@@ -212,7 +202,6 @@ if 'edit_index' not in st.session_state:
     st.session_state['edit_index'] = None
 
 # 3. Sidebar ba Upload Dataset & Download Backup
-st.sidebar.image("OIP.webp", width=120)
 st.sidebar.header("📁 Gestaun Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
 
@@ -492,8 +481,10 @@ if uploaded_file is not None:
                     st.markdown("---")
                     st.subheader("📋 Lista Relatóriu Funsionáriu Foun (Jere Dadus)")
                     
+                    # [FITUR TAMBAHAN 3]: Search Bar / Filtru Buka lalais
                     search_query = st.text_input("🔍 Buka Funsionáriu (Hakerek Naran Pessoal ka ID SIGAP):", "")
                     
+                    # Filtra dadus bazeia ba search query
                     filtered_reports = []
                     for idx_orig, rep in enumerate(extra_data_list):
                         if search_query.lower() in rep['nome_pessoal'].lower() or search_query.lower() in rep['id_sigap'].lower():
