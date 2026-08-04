@@ -8,47 +8,27 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score
 
-# 1. Konfigurasaun Pajina Streamlit (Layout Wide)
+# 1. Konfigurasaun Pajina Streamlit
 st.set_page_config(
     page_title="Sistema Klasifikasaun CFP - Decision Tree",
     page_icon="📊",
     layout="wide"
 )
 
-# Custom CSS ba UI ne'ebé modernu no kapás
 st.markdown("""
     <style>
-    .main-title {
-        font-size: 2.2rem;
-        color: #1E3A8A;
-        font-weight: 700;
-        margin-bottom: 0px;
-    }
-    .sub-title {
-        color: #4B5563;
-        font-size: 1.1rem;
-        margin-bottom: 20px;
-    }
-    .stButton>button {
-        background-color: #2563EB;
-        color: white;
-        border-radius: 8px;
-        padding: 0.5rem 1rem;
-        font-weight: 600;
-        border: none;
-    }
-    .stButton>button:hover {
-        background-color: #1D4ED8;
-    }
+    .main-title { font-size: 2.2rem; color: #1E3A8A; font-weight: 700; margin-bottom: 0px; }
+    .sub-title { color: #4B5563; font-size: 1.1rem; margin-bottom: 20px; }
+    .stButton>button { background-color: #2563EB; color: white; border-radius: 8px; padding: 0.5rem 1rem; font-weight: 600; border: none; }
+    .stButton>button:hover { background-color: #1D4ED8; }
     </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Aplikasaun uza algoritmu Decision Tree hodi klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
 
-# Inicializa session_state
-if 'reports_list' not in st.session_state:
-    st.session_state['reports_list'] = []
+if 'extra_reports' not in st.session_state:
+    st.session_state['extra_reports'] = []
 
 if 'edit_index' not in st.session_state:
     st.session_state['edit_index'] = None
@@ -65,7 +45,6 @@ if uploaded_file is not None:
 
     df_raw = load_data(uploaded_file)
     
-    # Remapa koluna sira
     rename_map = {
         'Column1': 'controlo_ativo_identificacao',
         'Column2': 'nome_pessoal',
@@ -99,12 +78,19 @@ if uploaded_file is not None:
     target_col = 'Rezultadu_Avaliasaun'
 
     if all(col in df_raw.columns for col in nota_cols + [target_col]):
-        df = df_raw.dropna(subset=nota_cols + [target_col]).copy()
+        df_base = df_raw.dropna(subset=nota_cols + [target_col]).copy()
         for col in nota_cols:
-            df[col] = pd.to_numeric(df[col], errors='coerce')
+            df_base[col] = pd.to_numeric(df_base[col], errors='coerce')
+
+        # Konjuga dadus foun ne'ebé input husi user ba dataset principal
+        if len(st.session_state['extra_reports']) > 0:
+            df_extra = pd.DataFrame(st.session_state['extra_reports'])
+            df = pd.concat([df_base, df_extra], ignore_index=True)
+        else:
+            df = df_base
 
         le = LabelEncoder()
-        df['target_encoded'] = le.fit_transform(df[target_col])
+        df['target_encoded'] = le.fit_transform(df[target_col].astype(str))
         y = df['target_encoded']
         X = df[nota_cols].copy()
 
@@ -122,22 +108,18 @@ if uploaded_file is not None:
         df['Prediksaun'] = le.inverse_transform(model.predict(X))
         acc = accuracy_score(y_test, model.predict(X_test))
 
-        # 3. Tabs Navegasaun
         tab1, tab2, tab3 = st.tabs(["📊 Dashboard & Sumáriu", "⚙️ Preview & Treinu Modelu", "🔮 Prediksaun & Jere Relatóriu"])
 
         with tab1:
             st.subheader("📈 Dashboard Estatistika Dezempenu Funsionáriu")
-            
             total_funs = len(df)
             counts_real = df[target_col].value_counts()
             
-            # Kalkula porsentu
             mb_pct = (counts_real.get('Muito Bom', 0) / total_funs) * 100 if total_funs > 0 else 0
             b_pct = (counts_real.get('Bom', 0) / total_funs) * 100 if total_funs > 0 else 0
             s_pct = (counts_real.get('Suficiente', 0) / total_funs) * 100 if total_funs > 0 else 0
             i_pct = (counts_real.get('Insuficiente', 0) / total_funs) * 100 if total_funs > 0 else 0
             
-            # KPI Cards modernu ho porsentu
             col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
             col_m1.metric("Total Funsionáriu", f"{total_funs}")
             col_m2.metric("Muito Bom", f"{counts_real.get('Muito Bom', 0)}", f"{mb_pct:.1f}%")
@@ -146,25 +128,18 @@ if uploaded_file is not None:
             col_m5.metric("Insuficiente", f"{counts_real.get('Insuficiente', 0)}", f"{i_pct:.1f}%")
             
             st.markdown("---")
-            
-            # Gráfiku rua: Bar Chart & Donut Chart
             col_g1, col_g2 = st.columns(2)
             
             with col_g1:
                 st.markdown("##### 📊 Komparasaun Kategoria (Reál vs Prediksaun)")
                 fig, ax = plt.subplots(figsize=(6, 4))
-                
-                # Bar plot komparativa
                 categories = ['Muito Bom', 'Bom', 'Suficiente', 'Insuficiente']
                 real_counts = [counts_real.get(cat, 0) for cat in categories]
                 pred_counts = [df['Prediksaun'].value_counts().get(cat, 0) for cat in categories]
-                
                 x = np.arange(len(categories))
                 width = 0.35
-                
                 ax.bar(x - width/2, real_counts, width, label='Dadus Reál', color='#3B82F6')
                 ax.bar(x + width/2, pred_counts, width, label='Prediksaun Tree', color='#10B981')
-                
                 ax.set_ylabel('Total Funsionáriu')
                 ax.set_title('Distribuisaun Kategoria Dezempenu')
                 ax.set_xticks(x)
@@ -175,10 +150,8 @@ if uploaded_file is not None:
             with col_g2:
                 st.markdown("##### 🍩 Donut Chart (Proporsaun Reál)")
                 fig2, ax2 = plt.subplots(figsize=(6, 4))
-                
                 sizes = [counts_real.get(cat, 0) for cat in categories]
                 colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444']
-                
                 wedges, texts, autotexts = ax2.pie(
                     sizes, labels=categories, autopct='%1.1f%%', 
                     startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor='w')
@@ -189,8 +162,7 @@ if uploaded_file is not None:
 
         with tab2:
             st.subheader("📋 Dadus Amostra (Preview)")
-            st.dataframe(df.head(10), use_container_width=True)
-            
+            st.dataframe(df.tail(10), use_container_width=True)
             st.markdown("---")
             st.subheader("🚀 Informasaun Modelu Decision Tree")
             st.success(f"✅ Modelu treinu ho suksesu! Akurasi Modelu: **{acc * 100:.2f}%**")
@@ -200,8 +172,8 @@ if uploaded_file is not None:
             
             idx_edit = st.session_state['edit_index']
             def_val = {}
-            if idx_edit is not None and idx_edit < len(st.session_state['reports_list']):
-                def_val = st.session_state['reports_list'][idx_edit]
+            if idx_edit is not None and idx_edit < len(st.session_state['extra_reports']):
+                def_val = st.session_state['extra_reports'][idx_edit]
             
             with st.form("funsionariu_form"):
                 st.markdown("##### 📝 1. Informasaun Identidade Funsionáriu")
@@ -260,30 +232,31 @@ if uploaded_file is not None:
                         'Inisiativa': p_inis,
                         'Disiplina': p_disp,
                         'Responsabilidade': p_resp,
-                        'Rezultadu_Prediksaun': pred_label
+                        'Rezultadu_Avaliasaun': pred_label
                     }
                     
                     if idx_edit is not None:
-                        st.session_state['reports_list'][idx_edit] = new_report
+                        st.session_state['extra_reports'][idx_edit] = new_report
                         st.session_state['edit_index'] = None
-                        st.success("✅ Relatóriu atualiza ho suksesu!")
+                        st.success("✅ Relatóriu atualiza no integra ona ba Dashboard!")
                         st.rerun()
                     else:
-                        st.session_state['reports_list'].append(new_report)
-                        st.success("✅ Relatóriu foun rejista ho suksesu!")
+                        st.session_state['extra_reports'].append(new_report)
+                        st.success("✅ Relatóriu foun rejista no integra ona ba Dashboard!")
+                        st.rerun()
 
-            if len(st.session_state['reports_list']) > 0:
+            if len(st.session_state['extra_reports']) > 0:
                 st.markdown("---")
                 st.subheader("📋 Lista Relatóriu Funsionáriu Foun (Jere Dadus)")
                 
-                for idx, rep in enumerate(st.session_state['reports_list']):
-                    with st.expander(f"👤 {rep['nome_pessoal']} (SIGAP: {rep['id_sigap']}) - Rezultadu: {rep['Rezultadu_Prediksaun']}"):
+                for idx, rep in enumerate(st.session_state['extra_reports']):
+                    with st.expander(f"👤 {rep['nome_pessoal']} (SIGAP: {rep['id_sigap']}) - Rezultadu: {rep['Rezultadu_Avaliasaun']}"):
                         col_d1, col_d2 = st.columns(2)
                         with col_d1:
                             st.markdown(f"**Sexo:** {rep['sexo']} | **Fatin:** {rep['local_trabalho']}")
                             st.markdown(f"**Funsaun:** {rep['funcao']} | **Kargo:** {rep['cargo']}")
                         with col_d2:
-                            st.markdown(f"✨ **Klasifikasaun:** `{rep['Rezultadu_Prediksaun']}`")
+                            st.markdown(f"✨ **Klasifikasaun:** `{rep['Rezultadu_Avaliasaun']}`")
                         
                         col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 4])
                         with col_btn1:
@@ -292,7 +265,7 @@ if uploaded_file is not None:
                                 st.rerun()
                         with col_btn2:
                             if st.button("🗑️ Hamos", key=f"del_{idx}"):
-                                st.session_state['reports_list'].pop(idx)
+                                st.session_state['extra_reports'].pop(idx)
                                 if st.session_state['edit_index'] == idx:
                                     st.session_state['edit_index'] = None
                                 st.success("Dadus hamos ona!")
