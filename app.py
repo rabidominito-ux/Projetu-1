@@ -481,10 +481,8 @@ if uploaded_file is not None:
                     st.markdown("---")
                     st.subheader("📋 Lista Relatóriu Funsionáriu Foun (Jere Dadus)")
                     
-                    # [FITUR TAMBAHAN 3]: Search Bar / Filtru Buka lalais
                     search_query = st.text_input("🔍 Buka Funsionáriu (Hakerek Naran Pessoal ka ID SIGAP):", "")
                     
-                    # Filtra dadus bazeia ba search query
                     filtered_reports = []
                     for idx_orig, rep in enumerate(extra_data_list):
                         if search_query.lower() in rep['nome_pessoal'].lower() or search_query.lower() in rep['id_sigap'].lower():
@@ -516,7 +514,7 @@ if uploaded_file is not None:
                                                 st.session_state['edit_index'] = None
                                             st.success("Dadus hamos ona husi database!")
                                             st.rerun()
-                                        
+                                
                                 rep_df = pd.DataFrame([rep])
                                 csv_data = rep_df.to_csv(index=False).encode('utf-8')
                                 st.download_button(
