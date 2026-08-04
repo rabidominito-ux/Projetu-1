@@ -97,20 +97,14 @@ def load_extra_from_db():
         return []
 
 def save_or_update_extra_to_db(report_dict):
-    """
-    Funsaun inteligente: Se id_sigap egziste ona, halo UPDATE. 
-    Se seidauk, halo INSERT foun.
-    """
     try:
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
         
-        # Verifika se id_sigap egziste ona
         cursor.execute("SELECT id FROM extra_reports WHERE id_sigap = ?", (report_dict['id_sigap'],))
         existing = cursor.fetchone()
         
         if existing:
-            # Update dadus ne'ebé iha ona
             cursor.execute('''
                 UPDATE extra_reports SET 
                     nome_pessoal=?, sexo=?, instituicao=?, local_trabalho=?, 
@@ -129,7 +123,6 @@ def save_or_update_extra_to_db(report_dict):
             ))
             action_type = "updated"
         else:
-            # Insert dadus foun
             cursor.execute('''
                 INSERT INTO extra_reports (
                     nome_pessoal, id_sigap, sexo, instituicao, local_trabalho, 
@@ -263,7 +256,6 @@ if uploaded_file is not None:
             for col in nota_cols:
                 df_base[col] = pd.to_numeric(df_base[col], errors='coerce')
 
-            # Konjuga dadus foun ne'ebé rai ona iha database SQLite
             st.session_state['extra_reports'] = load_extra_from_db()
             if len(st.session_state['extra_reports']) > 0:
                 df_extra = pd.DataFrame(st.session_state['extra_reports'])
@@ -403,8 +395,8 @@ if uploaded_file is not None:
                     st.markdown("##### 📝 1. Informasaun Identidade Funsionáriu")
                     col_i1, col_i2, col_i3 = st.columns(3)
                     with col_i1:
-                        txt_nome = st.text_input("Naran Pessoal (nome_pessoal)*", def_val.get('nome_pessoal', "João da Silva"))
-                        txt_sigap = st.text_input("ID SIGAP (id_sigap)*", def_val.get('id_sigap', "SIGAP-001"))
+                        txt_nome = st.text_input("Naran Pessoal (nome_pessoal)*", def_val.get('nome_pessoal', ""))
+                        txt_sigap = st.text_input("ID SIGAP (id_sigap)*", def_val.get('id_sigap', ""))
                         txt_sexo = st.selectbox("Sexo", ["M", "F"], index=0 if def_val.get('sexo', 'M')=='M' else 1)
                     with col_i2:
                         txt_inst = st.text_input("Instituisaun", def_val.get('instituicao', "CFP"))
@@ -464,17 +456,24 @@ if uploaded_file is not None:
                             
                             if idx_edit is not None:
                                 if update_extra_in_db_by_index(idx_edit, new_report):
-                                    st.session_state['edit_index'] = None
+                                    st.session_state['edit_index'] = None  # Reset edit index
                                     st.success("✅ Relatóriu atualiza no rai permanente ona iha database SQLite!")
                                     st.rerun()
                             else:
                                 res_type = save_or_update_extra_to_db(new_report)
-                                if res_type == "updated":
-                                    st.warning(f"⚠️ ID SIGAP **{txt_sigap}** egziste ona! Sistema halo **update/atualizasaun** automatikamente ba dadus foun ne'e.")
+                                if res_type in ["inserted", "updated"]:
+                                    st.session_state['edit_index'] = None  # Reset estadu foun
+                                    if res_type == "updated":
+                                        st.warning(f"⚠️ ID SIGAP **{txt_sigap}** egziste ona! Sistema halo **update/atualizasaun** automatikamente.")
+                                    else:
+                                        st.success("✅ Relatóriu foun rejista no rai permanente ona iha database SQLite!")
                                     st.rerun()
-                                elif res_type == "inserted":
-                                    st.success("✅ Relatóriu foun rejista no rai permanente ona iha database SQLite!")
-                                    st.rerun()
+
+                # Botão Cancel ba Mode Edit (Atu bele sai fali hosi edit ba mode normal)
+                if idx_edit is not None:
+                    if st.button("❌ Kansela Edit"):
+                        st.session_state['edit_index'] = None
+                        st.rerun()
 
                 st.session_state['extra_reports'] = load_extra_from_db()
                 if len(st.session_state['extra_reports']) > 0:
