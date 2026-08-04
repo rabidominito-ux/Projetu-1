@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import sqlite3
+from datetime import datetime  # <--- Import datetime hodi foti loron no oras atuál
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -47,7 +48,7 @@ st.markdown("""
 st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Aplikasaun uza algoritmu Decision Tree hodi klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
 
-# 2. Konfigurasaun Database SQLite local
+# 2. Konfigurasaun Database SQLite local ho data_timestamp
 DB_NAME = "cfp_database.db"
 
 def init_db():
@@ -74,7 +75,8 @@ def init_db():
                 Inisiativa REAL,
                 Disiplina REAL,
                 Responsabilidade REAL,
-                Rezultadu_Avaliasaun TEXT
+                Rezultadu_Avaliasaun TEXT,
+                data_timestamp TEXT
             )
         ''')
         conn.commit()
@@ -102,13 +104,16 @@ def save_or_update_extra_to_db(report_dict):
         cursor.execute("SELECT id FROM extra_reports WHERE id_sigap = ?", (report_dict['id_sigap'],))
         existing = cursor.fetchone()
         
+        # Foti oras no loron atuál
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
         if existing:
             cursor.execute('''
                 UPDATE extra_reports SET 
                     nome_pessoal=?, sexo=?, instituicao=?, local_trabalho=?, 
                     data_de_nascimento=?, funcao=?, cargo=?, id_grp=?, Asiduidade=?, 
                     Pontualidade=?, Produtividade=?, Kualidade_Servisu=?, Kooperasaun=?, 
-                    Inisiativa=?, Disiplina=?, Responsabilidade=?, Rezultadu_Avaliasaun=?
+                    Inisiativa=?, Disiplina=?, Responsabilidade=?, Rezultadu_Avaliasaun=?, data_timestamp=?
                 WHERE id_sigap=?
             ''', (
                 report_dict['nome_pessoal'], report_dict['sexo'],
@@ -117,7 +122,7 @@ def save_or_update_extra_to_db(report_dict):
                 report_dict['Asiduidade'], report_dict['Pontualidade'], report_dict['Produtividade'],
                 report_dict['Kualidade_Servisu'], report_dict['Kooperasaun'], report_dict['Inisiativa'],
                 report_dict['Disiplina'], report_dict['Responsabilidade'], report_dict['Rezultadu_Avaliasaun'],
-                report_dict['id_sigap']
+                current_time, report_dict['id_sigap']
             ))
             action_type = "updated"
         else:
@@ -126,15 +131,16 @@ def save_or_update_extra_to_db(report_dict):
                     nome_pessoal, id_sigap, sexo, instituicao, local_trabalho, 
                     data_de_nascimento, funcao, cargo, id_grp, Asiduidade, 
                     Pontualidade, Produtividade, Kualidade_Servisu, Kooperasaun, 
-                    Inisiativa, Disiplina, Responsabilidade, Rezultadu_Avaliasaun
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    Inisiativa, Disiplina, Responsabilidade, Rezultadu_Avaliasaun, data_timestamp
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 report_dict['nome_pessoal'], report_dict['id_sigap'], report_dict['sexo'],
                 report_dict['instituicao'], report_dict['local_trabalho'], report_dict['data_de_nascimento'],
                 report_dict['funcao'], report_dict['cargo'], report_dict['id_grp'],
                 report_dict['Asiduidade'], report_dict['Pontualidade'], report_dict['Produtividade'],
                 report_dict['Kualidade_Servisu'], report_dict['Kooperasaun'], report_dict['Inisiativa'],
-                report_dict['Disiplina'], report_dict['Responsabilidade'], report_dict['Rezultadu_Avaliasaun']
+                report_dict['Disiplina'], report_dict['Responsabilidade'], report_dict['Rezultadu_Avaliasaun'],
+                current_time
             ))
             action_type = "inserted"
             
@@ -152,12 +158,13 @@ def update_extra_in_db_by_index(index_val, report_dict):
         ids = [row[0] for row in cursor.fetchall()]
         if index_val < len(ids):
             row_id = ids[index_val]
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             cursor.execute('''
                 UPDATE extra_reports SET 
                     nome_pessoal=?, id_sigap=?, sexo=?, instituicao=?, local_trabalho=?, 
                     data_de_nascimento=?, funcao=?, cargo=?, id_grp=?, Asiduidade=?, 
                     Pontualidade=?, Produtividade=?, Kualidade_Servisu=?, Kooperasaun=?, 
-                    Inisiativa=?, Disiplina=?, Responsabilidade=?, Rezultadu_Avaliasaun=?
+                    Inisiativa=?, Disiplina=?, Responsabilidade=?, Rezultadu_Avaliasaun=?, data_timestamp=?
                 WHERE id=?
             ''', (
                 report_dict['nome_pessoal'], report_dict['id_sigap'], report_dict['sexo'],
@@ -166,7 +173,7 @@ def update_extra_in_db_by_index(index_val, report_dict):
                 report_dict['Asiduidade'], report_dict['Pontualidade'], report_dict['Produtividade'],
                 report_dict['Kualidade_Servisu'], report_dict['Kooperasaun'], report_dict['Inisiativa'],
                 report_dict['Disiplina'], report_dict['Responsabilidade'], report_dict['Rezultadu_Avaliasaun'],
-                row_id
+                current_time, row_id
             ))
             conn.commit()
         conn.close()
@@ -362,7 +369,6 @@ if uploaded_file is not None:
                 st.subheader("🚀 Informasaun Modelu Decision Tree")
                 st.success(f"✅ Modelu treinu ho suksesu! Akurasi Modelu (Accuracy): **{acc * 100:.2f}%**")
                 
-                # --- [FIXED: Hodi evita error mismatch size target_names ho classes] ---
                 st.markdown("---")
                 st.subheader("🎯 Avaliasaun Detalladu Modelu (Confusion Matrix & Métricas)")
                 
@@ -382,7 +388,6 @@ if uploaded_file is not None:
                 
                 with col_eval2:
                     st.markdown("##### 📑 Classification Report (Precision, Recall, F1-Score)")
-                    # Fiksasaun hodi resolve error mismatch uza labels no unique classes iha y_test
                     unique_labels = np.unique(np.concatenate((y_test, y_pred_test)))
                     present_class_names = [le.classes_[i] for i in unique_labels]
                     
@@ -477,16 +482,16 @@ if uploaded_file is not None:
                             if idx_edit is not None:
                                 if update_extra_in_db_by_index(idx_edit, new_report):
                                     st.session_state['edit_index'] = None
-                                    st.success("✅ Relatóriu atualiza no rai permanente ona iha database!")
+                                    st.success("✅ Relatóriu atualiza no rai permanente ona iha database ho timestamp atuál!")
                                     st.rerun()
                             else:
                                 res_type = save_or_update_extra_to_db(new_report)
                                 if res_type in ["inserted", "updated"]:
                                     st.session_state['edit_index'] = None
                                     if res_type == "updated":
-                                        st.warning(f"⚠️ ID SIGAP **{txt_sigap}** egziste ona! Sistema halo update automatikamente.")
+                                        st.warning(f"⚠️ ID SIGAP **{txt_sigap}** egziste ona! Sistema halo update automatikamente no atualiza oráriu.")
                                     else:
-                                        st.success("✅ Relatóriu foun rejista no rai permanente ona iha database!")
+                                        st.success("✅ Relatóriu foun rejista ho suksesu ho timestamp atuál!")
                                     st.rerun()
 
                 if idx_edit is not None:
@@ -513,13 +518,16 @@ if uploaded_file is not None:
                     else:
                         st.caption(f"Hetan dadus hamutuk: {len(filtered_reports)} funsionáriu.")
                         for idx, rep in filtered_reports:
-                            with st.expander(f"👤 {rep['nome_pessoal']} (SIGAP: {rep['id_sigap']}) - Rezultadu: {rep['Rezultadu_Avaliasaun']}"):
+                            # Hatudu data_timestamp iha expander nia titulu ka laran
+                            timestamp_str = rep.get('data_timestamp', 'Lia-fuan laiha')
+                            with st.expander(f"👤 {rep['nome_pessoal']} (SIGAP: {rep['id_sigap']}) - Rezultadu: {rep['Rezultadu_Avaliasaun']} [🕒 {timestamp_str}]"):
                                 col_d1, col_d2 = st.columns(2)
                                 with col_d1:
                                     st.markdown(f"**Sexo:** {rep['sexo']} | **Fatin:** {rep['local_trabalho']}")
                                     st.markdown(f"**Funsaun:** {rep['funcao']} | **Kargo:** {rep['cargo']}")
                                 with col_d2:
                                     st.markdown(f"✨ **Klasifikasaun:** `{rep['Rezultadu_Avaliasaun']}`")
+                                    st.markdown(f"🕒 **Ultimu Atualiza:** `{timestamp_str}`")
                                 
                                 col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 4])
                                 with col_btn1:
