@@ -456,61 +456,76 @@ if uploaded_file is not None:
                             
                             if idx_edit is not None:
                                 if update_extra_in_db_by_index(idx_edit, new_report):
-                                    st.session_state['edit_index'] = None  # Reset edit index
+                                    st.session_state['edit_index'] = None
                                     st.success("✅ Relatóriu atualiza no rai permanente ona iha database SQLite!")
                                     st.rerun()
                             else:
                                 res_type = save_or_update_extra_to_db(new_report)
                                 if res_type in ["inserted", "updated"]:
-                                    st.session_state['edit_index'] = None  # Reset estadu foun
+                                    st.session_state['edit_index'] = None
                                     if res_type == "updated":
                                         st.warning(f"⚠️ ID SIGAP **{txt_sigap}** egziste ona! Sistema halo **update/atualizasaun** automatikamente.")
                                     else:
                                         st.success("✅ Relatóriu foun rejista no rai permanente ona iha database SQLite!")
                                     st.rerun()
 
-                # Botão Cancel ba Mode Edit (Atu bele sai fali hosi edit ba mode normal)
                 if idx_edit is not None:
                     if st.button("❌ Kansela Edit"):
                         st.session_state['edit_index'] = None
                         st.rerun()
 
                 st.session_state['extra_reports'] = load_extra_from_db()
-                if len(st.session_state['extra_reports']) > 0:
+                extra_data_list = st.session_state['extra_reports']
+                
+                if len(extra_data_list) > 0:
                     st.markdown("---")
                     st.subheader("📋 Lista Relatóriu Funsionáriu Foun (Jere Dadus)")
                     
-                    for idx, rep in enumerate(st.session_state['extra_reports']):
-                        with st.expander(f"👤 {rep['nome_pessoal']} (SIGAP: {rep['id_sigap']}) - Rezultadu: {rep['Rezultadu_Avaliasaun']}"):
-                            col_d1, col_d2 = st.columns(2)
-                            with col_d1:
-                                st.markdown(f"**Sexo:** {rep['sexo']} | **Fatin:** {rep['local_trabalho']}")
-                                st.markdown(f"**Funsaun:** {rep['funcao']} | **Kargo:** {rep['cargo']}")
-                            with col_d2:
-                                st.markdown(f"✨ **Klasifikasaun:** `{rep['Rezultadu_Avaliasaun']}`")
-                            
-                            col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 4])
-                            with col_btn1:
-                                if st.button("✏️ Edit", key=f"edit_{idx}"):
-                                    st.session_state['edit_index'] = idx
-                                    st.rerun()
-                            with col_btn2:
-                                if st.button("🗑️ Hamos", key=f"del_{idx}"):
-                                    if delete_extra_from_db(idx):
-                                        if st.session_state['edit_index'] == idx:
-                                            st.session_state['edit_index'] = None
-                                        st.success("Dadus hamos ona husi database!")
+                    # [FITUR TAMBAHAN 3]: Search Bar / Filtru Buka lalais
+                    search_query = st.text_input("🔍 Buka Funsionáriu (Hakerek Naran Pessoal ka ID SIGAP):", "")
+                    
+                    # Filtra dadus bazeia ba search query
+                    filtered_reports = []
+                    for idx_orig, rep in enumerate(extra_data_list):
+                        if search_query.lower() in rep['nome_pessoal'].lower() or search_query.lower() in rep['id_sigap'].lower():
+                            filtered_reports.append((idx_orig, rep))
+                    
+                    if len(filtered_reports) == 0:
+                        st.info("💡 La hetan dadus ne'ebé tuir liafuan ne'ebé buka.")
+                    else:
+                        st.caption(f"Hetan dadus hamutuk: {len(filtered_reports)} funsionáriu.")
+                        
+                        for idx, rep in filtered_reports:
+                            with st.expander(f"👤 {rep['nome_pessoal']} (SIGAP: {rep['id_sigap']}) - Rezultadu: {rep['Rezultadu_Avaliasaun']}"):
+                                col_d1, col_d2 = st.columns(2)
+                                with col_d1:
+                                    st.markdown(f"**Sexo:** {rep['sexo']} | **Fatin:** {rep['local_trabalho']}")
+                                    st.markdown(f"**Funsaun:** {rep['funcao']} | **Kargo:** {rep['cargo']}")
+                                with col_d2:
+                                    st.markdown(f"✨ **Klasifikasaun:** `{rep['Rezultadu_Avaliasaun']}`")
+                                
+                                col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 4])
+                                with col_btn1:
+                                    if st.button("✏️ Edit", key=f"edit_{idx}"):
+                                        st.session_state['edit_index'] = idx
                                         st.rerun()
-                                    
-                            rep_df = pd.DataFrame([rep])
-                            csv_data = rep_df.to_csv(index=False).encode('utf-8')
-                            st.download_button(
-                                label="📥 Download Relatóriu (CSV)",
-                                data=csv_data,
-                                file_name=f"relatorio_{rep['id_sigap']}.csv",
-                                mime='text/csv',
-                                key=f"dl_{idx}"
-                            )
+                                with col_btn2:
+                                    if st.button("🗑️ Hamos", key=f"del_{idx}"):
+                                        if delete_extra_from_db(idx):
+                                            if st.session_state['edit_index'] == idx:
+                                                st.session_state['edit_index'] = None
+                                            st.success("Dadus hamos ona husi database!")
+                                            st.rerun()
+                                        
+                                rep_df = pd.DataFrame([rep])
+                                csv_data = rep_df.to_csv(index=False).encode('utf-8')
+                                st.download_button(
+                                    label="📥 Download Relatóriu (CSV)",
+                                    data=csv_data,
+                                    file_name=f"relatorio_{rep['id_sigap']}.csv",
+                                    mime='text/csv',
+                                    key=f"dl_{idx}"
+                                )
     except Exception as e:
         st.error(f"⚠️ Akontese Error ruma durante prosesamentu ficheiru Excel: `{str(e)}`")
         st.info("💡 Favor asegura katak ficheiru ne'e iha formato Excel (.xlsx) ne'ebé loos no la'ós korrutu.")
