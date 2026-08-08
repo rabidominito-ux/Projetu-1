@@ -59,13 +59,25 @@ def save_extra_to_db(report_dict):
                 Inisiativa, Disiplina, Responsabilidade, Rezultadu_Avaliasaun
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            report_dict["controlo_ativo_identificacao"], report_dict["nome_pessoal"], report_dict["id_sigap"],
-            report_dict["sexo"], report_dict["instituicao"], report_dict["local_trabalho"],
-            report_dict["data_de_nascimento"], report_dict["funcao"], report_dict["cargo"],
-            report_dict["id_grp"], report_dict["Asiduidade"], report_dict["Pontualidade"],
-            report_dict["Produtividade"], report_dict["Kualidade_Servisu"], report_dict["Kooperasaun"],
-            report_dict["Inisiativa"], report_dict["Disiplina"], report_dict["Responsabilidade"],
-            report_dict["Rezultadu_Avaliasaun"]
+            report_dict["controlo_ativo_identificacao"],
+            report_dict["nome_pessoal"],
+            report_dict["id_sigap"],
+            report_dict["sexo"],
+            report_dict["instituicao"],
+            report_dict["local_trabalho"],
+            report_dict["data_de_nascimento"],
+            report_dict["funcao"],
+            report_dict["cargo"],
+            report_dict["id_grp"],
+            report_dict["Asiduidade"],
+            report_dict["Pontualidade"],
+            report_dict["Produtividade"],
+            report_dict["Kualidade_Servisu"],
+            report_dict["Kooperasaun"],
+            report_dict["Inisiativa"],
+            report_dict["Disiplina"],
+            report_dict["Responsabilidade"],
+            report_dict["Rezultadu_Avaliasaun"],
         ))
         conn.commit()
         conn.close()
@@ -91,13 +103,26 @@ def update_extra_in_db_by_index(index_val, report_dict):
                     Inisiativa=?, Disiplina=?, Responsabilidade=?, Rezultadu_Avaliasaun=?
                 WHERE id=?
             """, (
-                report_dict["controlo_ativo_identificacao"], report_dict["nome_pessoal"], report_dict["id_sigap"],
-                report_dict["sexo"], report_dict["instituicao"], report_dict["local_trabalho"],
-                report_dict["data_de_nascimento"], report_dict["funcao"], report_dict["cargo"],
-                report_dict["id_grp"], report_dict["Asiduidade"], report_dict["Pontualidade"],
-                report_dict["Produtividade"], report_dict["Kualidade_Servisu"], report_dict["Kooperasaun"],
-                report_dict["Inisiativa"], report_dict["Disiplina"], report_dict["Responsabilidade"],
-                report_dict["Rezultadu_Avaliasaun"], row_id
+                report_dict["controlo_ativo_identificacao"],
+                report_dict["nome_pessoal"],
+                report_dict["id_sigap"],
+                report_dict["sexo"],
+                report_dict["instituicao"],
+                report_dict["local_trabalho"],
+                report_dict["data_de_nascimento"],
+                report_dict["funcao"],
+                report_dict["cargo"],
+                report_dict["id_grp"],
+                report_dict["Asiduidade"],
+                report_dict["Pontualidade"],
+                report_dict["Produtividade"],
+                report_dict["Kualidade_Servisu"],
+                report_dict["Kooperasaun"],
+                report_dict["Inisiativa"],
+                report_dict["Disiplina"],
+                report_dict["Responsabilidade"],
+                report_dict["Rezultadu_Avaliasaun"],
+                row_id,
             ))
             conn.commit()
         conn.close()
