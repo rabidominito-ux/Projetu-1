@@ -67,12 +67,13 @@ def init_db():
   try:
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+    # Hasai tiha UNIQUE husi id_sigap atu bele kontrola liuhusi kombinasaun Naran + SIGAP + GRP
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS extra_reports (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 controlo_ativo_identificacao TEXT,
                 nome_pessoal TEXT,
-                id_sigap TEXT UNIQUE,
+                id_sigap TEXT,
                 sexo TEXT,
                 instituicao TEXT,
                 local_trabalho TEXT,
@@ -126,88 +127,46 @@ def load_extra_from_db():
     return []
 
 
-def save_or_update_extra_to_db(report_dict):
+def save_extra_to_db(report_dict):
   try:
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id FROM extra_reports WHERE id_sigap = ?",
-        (report_dict["id_sigap"],),
+        """
+            INSERT INTO extra_reports (
+                controlo_ativo_identificacao, nome_pessoal, id_sigap, sexo, instituicao, local_trabalho, 
+                data_de_nascimento, funcao, cargo, id_grp, Asiduidade, 
+                Pontualidade, Produtividade, Kualidade_Servisu, Kooperasaun, 
+                Inisiativa, Disiplina, Responsabilidade, Rezultadu_Avaliasaun
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            report_dict["controlo_ativo_identificacao"],
+            report_dict["nome_pessoal"],
+            report_dict["id_sigap"],
+            report_dict["sexo"],
+            report_dict["instituicao"],
+            report_dict["local_trabalho"],
+            report_dict["data_de_nascimento"],
+            report_dict["funcao"],
+            report_dict["cargo"],
+            report_dict["id_grp"],
+            report_dict["Asiduidade"],
+            report_dict["Pontualidade"],
+            report_dict["Produtividade"],
+            report_dict["Kualidade_Servisu"],
+            report_dict["Kooperasaun"],
+            report_dict["Inisiativa"],
+            report_dict["Disiplina"],
+            report_dict["Responsabilidade"],
+            report_dict["Rezultadu_Avaliasaun"],
+    ),
     )
-    existing = cursor.fetchone()
-
-    if existing:
-      cursor.execute(
-          """
-                UPDATE extra_reports SET 
-                    controlo_ativo_identificacao=?, nome_pessoal=?, sexo=?, instituicao=?, local_trabalho=?, 
-                    data_de_nascimento=?, funcao=?, cargo=?, id_grp=?, Asiduidade=?, 
-                    Pontualidade=?, Produtividade=?, Kualidade_Servisu=?, Kooperasaun=?, 
-                    Inisiativa=?, Disiplina=?, Responsabilidade=?, Rezultadu_Avaliasaun=?
-                WHERE id_sigap=?
-            """,
-          (
-              report_dict["controlo_ativo_identificacao"],
-              report_dict["nome_pessoal"],
-              report_dict["sexo"],
-              report_dict["instituicao"],
-              report_dict["local_trabalho"],
-              report_dict["data_de_nascimento"],
-              report_dict["funcao"],
-              report_dict["cargo"],
-              report_dict["id_grp"],
-              report_dict["Asiduidade"],
-              report_dict["Pontualidade"],
-              report_dict["Produtividade"],
-              report_dict["Kualidade_Servisu"],
-              report_dict["Kooperasaun"],
-              report_dict["Inisiativa"],
-              report_dict["Disiplina"],
-              report_dict["Responsabilidade"],
-              report_dict["Rezultadu_Avaliasaun"],
-              report_dict["id_sigap"],
-      ),
-      )
-      action_type = "updated"
-    else:
-      cursor.execute(
-          """
-                INSERT INTO extra_reports (
-                    controlo_ativo_identificacao, nome_pessoal, id_sigap, sexo, instituicao, local_trabalho, 
-                    data_de_nascimento, funcao, cargo, id_grp, Asiduidade, 
-                    Pontualidade, Produtividade, Kualidade_Servisu, Kooperasaun, 
-                    Inisiativa, Disiplina, Responsabilidade, Rezultadu_Avaliasaun
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-          (
-              report_dict["controlo_ativo_identificacao"],
-              report_dict["nome_pessoal"],
-              report_dict["id_sigap"],
-              report_dict["sexo"],
-              report_dict["instituicao"],
-              report_dict["local_trabalho"],
-              report_dict["data_de_nascimento"],
-              report_dict["funcao"],
-              report_dict["cargo"],
-              report_dict["id_grp"],
-              report_dict["Asiduidade"],
-              report_dict["Pontualidade"],
-              report_dict["Produtividade"],
-              report_dict["Kualidade_Servisu"],
-              report_dict["Kooperasaun"],
-              report_dict["Inisiativa"],
-              report_dict["Disiplina"],
-              report_dict["Responsabilidade"],
-              report_dict["Rezultadu_Avaliasaun"],
-      ),
-      )
-      action_type = "inserted"
-
     conn.commit()
     conn.close()
-    return action_type
+    return True
   except Exception as e:
-    return None
+    return False
 
 
 def update_extra_in_db_by_index(index_val, report_dict):
@@ -922,18 +881,18 @@ if uploaded_file is not None:
           submit_pred = st.form_submit_button(btn_label)
 
           if submit_pred:
-            # Normaliza dadus hodi check duplikasaun (Koreksaun: Lowercase no Strip)
+            # Normaliza dadus hodi check duplikasaun
             df["nome_norm"] = (
                 df["nome_pessoal"].astype(str).str.strip().str.lower()
             )
             df["sigap_norm"] = df["id_sigap"].astype(str).str.strip()
-            df["grp_norm"] = df["id_grp"].astype(str).str.strip()
+            df["grp_norm"] = df["id_grp"].fillna("").astype(str).str.strip()
 
             in_nome = txt_nome.strip().lower()
             in_sigap = txt_sigap.strip()
             in_grp = txt_grp.strip()
 
-            # Check duplikasaun strict (Naran + SIGAP + GRP hotu-hotu hanesan)
+            # Check Duplikasaun Strit: Naran Pessoal + ID SIGAP + ID GRP
             is_exact_duplicate = df[
                 (df["nome_norm"] == in_nome)
                 & (df["sigap_norm"] == in_sigap)
@@ -949,8 +908,8 @@ if uploaded_file is not None:
             elif len(is_exact_duplicate) > 0 and idx_edit is None:
               st.error(
                   f"❌ ATENSAUN ERRO: Funsionáriu ho Naran **'{txt_nome}'**,"
-                  f" ID SIGAP **'{txt_sigap}'**, no ID GRP **'{txt_grp}'** iha"
-                  " ona iha sistema! Ami labele aumenta dadus ne'ebé hanesan."
+                  f" ID SIGAP **'{txt_sigap}'**, no ID GRP **'{txt_grp}'** eziste"
+                  " ona iha sistema! Labele aumenta dadus duplikadu ne'e."
               )
             else:
               input_data = np.array([[
@@ -991,23 +950,17 @@ if uploaded_file is not None:
               if idx_edit is not None:
                 if update_extra_in_db_by_index(idx_edit, new_report):
                   st.session_state["edit_index"] = None
-                  st.success(
-                      "✅ Relatóriu atualiza no rai permanente ona iha database!"
-                  )
+                  st.success("✅ Relatóriu atualiza ho suksesu iha database!")
                   st.rerun()
               else:
-                res_type = save_or_update_extra_to_db(new_report)
-                if res_type in ["inserted", "updated"]:
+                if save_extra_to_db(new_report):
                   st.session_state["edit_index"] = None
-                  st.success(
-                      "✅ Relatóriu foun rejista no rai permanente ona iha"
-                      " database!"
-                  )
+                  st.success("✅ Relatóriu foun rai ho suksesu iha database!")
                   st.rerun()
                 else:
                   st.error(
                       "⚠️ Falha atu rai dadus iha database. Favor check"
-                      " koneksaun ka koluna database."
+                      " koneksaun."
                   )
 
         if idx_edit is not None:
