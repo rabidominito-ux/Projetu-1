@@ -59,7 +59,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 2. Konfigurasaun Database SQLite local
+# 2. Konfigurasaun Database SQLite local ho Auto-Migration
 DB_NAME = "cfp_database.db"
 
 
@@ -91,6 +91,15 @@ def init_db():
                 Rezultadu_Avaliasaun TEXT
             )
         """)
+
+    # Asegura katak koluna controlo_ativo_identificacao eziste i ha database antigo
+    cursor.execute("PRAGMA table_info(extra_reports)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if "controlo_ativo_identificacao" not in columns:
+      cursor.execute(
+          "ALTER TABLE extra_reports ADD COLUMN controlo_ativo_identificacao TEXT"
+      )
+
     conn.commit()
     conn.close()
   except Exception as e:
@@ -801,7 +810,9 @@ if uploaded_file is not None:
             txt_nome = st.text_input(
                 "Naran Pessoal*", def_val.get("nome_pessoal", "")
             )
-            txt_sigap = st.text_input("ID SIGAP (Numeriku)*", def_val.get("id_sigap", ""))
+            txt_sigap = st.text_input(
+                "ID SIGAP (Numeriku)*", def_val.get("id_sigap", "")
+            )
             txt_sexo = st.selectbox(
                 "Sexo",
                 ["M", "F"],
@@ -838,7 +849,9 @@ if uploaded_file is not None:
             idx_cargo = cargos.index(cur_cargo) if cur_cargo in cargos else 0
             txt_cargo = st.selectbox("Kargo", cargos, index=idx_cargo)
 
-            txt_grp = st.text_input("ID GRP (Numeriku)", def_val.get("id_grp", ""))
+            txt_grp = st.text_input(
+                "ID GRP (Numeriku)", def_val.get("id_grp", "")
+            )
 
           st.markdown(
               "##### 📊 2. Indikadór Avaliasaun Funsionáriu (Skala 1 - 5)"
@@ -973,6 +986,11 @@ if uploaded_file is not None:
                         " database!"
                     )
                   st.rerun()
+                else:
+                  st.error(
+                      "⚠️ Falha atu rai dadus iha database. Favor check"
+                      " koneksaun ka koluna database."
+                  )
 
         if idx_edit is not None:
           if st.button("❌ Kansela Edit"):
