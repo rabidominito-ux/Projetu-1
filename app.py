@@ -391,13 +391,14 @@ if uploaded_file is not None:
 
         st.markdown("---")
 
-        # Filtru Interativu tuir Klik Metrika
+        # Filtru Interativu (Hili Kategoria... atu subar tabela molok hili)
         st.markdown(
             "##### 🔍 Hili Kategoria atu Haktuir Dadus iha Tabela Kraik:"
         )
         filter_option = st.radio(
             "Filtru Kategoria Dezempenu:",
             [
+                "Hili Kategoria...",
                 "Tomak (Hotu-hotu)",
                 "Muito Bom",
                 "Bom",
@@ -408,33 +409,34 @@ if uploaded_file is not None:
             label_visibility="collapsed",
         )
 
-        if filter_option == "Tomak (Hotu-hotu)":
-          df_filtered = df
-          st.markdown(f"📋 **Lista Funsionáriu Tomak** ({len(df_filtered)})")
-        else:
-          df_filtered = df[df[target_col] == filter_option]
-          st.markdown(
-              f"📋 **Lista Funsionáriu ba Kategoria: `{filter_option}`**"
-              f" ({len(df_filtered)})"
+        # TABELA MOSU DE'IT KUANDU USÚARIU HILI KATEGORIA (LA'ÓS "Hili Kategoria...")
+        if filter_option != "Hili Kategoria...":
+          if filter_option == "Tomak (Hotu-hotu)":
+            df_filtered = df
+            st.markdown(f"📋 **Lista Funsionáriu Tomak** ({len(df_filtered)})")
+          else:
+            df_filtered = df[df[target_col] == filter_option]
+            st.markdown(
+                f"📋 **Lista Funsionáriu ba Kategoria: `{filter_option}`**"
+                f" ({len(df_filtered)})"
+            )
+
+          st.dataframe(
+              df_filtered[
+                  [
+                      "controlo_ativo_identificacao",
+                      "nome_pessoal",
+                      "id_sigap",
+                      "id_grp",
+                      "sexo",
+                      "local_trabalho",
+                      "cargo",
+                      target_col,
+                  ]
+              ],
+              use_container_width=True,
           )
-
-        st.dataframe(
-            df_filtered[
-                [
-                    "controlo_ativo_identificacao",
-                    "nome_pessoal",
-                    "id_sigap",
-                    "id_grp",
-                    "sexo",
-                    "local_trabalho",
-                    "cargo",
-                    target_col,
-                ]
-            ],
-            use_container_width=True,
-        )
-
-        st.markdown("---")
+          st.markdown("---")
 
         col_g1, col_g2 = st.columns(2)
 
