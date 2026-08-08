@@ -863,7 +863,7 @@ if uploaded_file is not None:
                 "Naran Pessoal*", def_val.get("nome_pessoal", "")
             )
             txt_sigap = st.text_input(
-                "ID SIGAP ()*", def_val.get("id_sigap", "")
+                "ID SIGAP ", def_val.get("id_sigap", "")
             )
             txt_sexo = st.selectbox(
                 "Sexo",
@@ -898,7 +898,7 @@ if uploaded_file is not None:
             idx_cargo = cargos.index(cur_cargo) if cur_cargo in cargos else 0
             txt_cargo = st.selectbox("Kargo", cargos, index=idx_cargo)
             txt_grp = st.text_input(
-                "ID GRP ()", def_val.get("id_grp", "")
+                "ID GRP ", def_val.get("id_grp", "")
             )
 
           st.markdown(
