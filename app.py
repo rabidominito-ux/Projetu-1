@@ -70,6 +70,7 @@ def init_db():
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS extra_reports (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                controlo_ativo_identificacao TEXT,
                 nome_pessoal TEXT,
                 id_sigap TEXT UNIQUE,
                 sexo TEXT,
@@ -130,13 +131,14 @@ def save_or_update_extra_to_db(report_dict):
       cursor.execute(
           """
                 UPDATE extra_reports SET 
-                    nome_pessoal=?, sexo=?, instituicao=?, local_trabalho=?, 
+                    controlo_ativo_identificacao=?, nome_pessoal=?, sexo=?, instituicao=?, local_trabalho=?, 
                     data_de_nascimento=?, funcao=?, cargo=?, id_grp=?, Asiduidade=?, 
                     Pontualidade=?, Produtividade=?, Kualidade_Servisu=?, Kooperasaun=?, 
                     Inisiativa=?, Disiplina=?, Responsabilidade=?, Rezultadu_Avaliasaun=?
                 WHERE id_sigap=?
             """,
           (
+              report_dict["controlo_ativo_identificacao"],
               report_dict["nome_pessoal"],
               report_dict["sexo"],
               report_dict["instituicao"],
@@ -162,13 +164,14 @@ def save_or_update_extra_to_db(report_dict):
       cursor.execute(
           """
                 INSERT INTO extra_reports (
-                    nome_pessoal, id_sigap, sexo, instituicao, local_trabalho, 
+                    controlo_ativo_identificacao, nome_pessoal, id_sigap, sexo, instituicao, local_trabalho, 
                     data_de_nascimento, funcao, cargo, id_grp, Asiduidade, 
                     Pontualidade, Produtividade, Kualidade_Servisu, Kooperasaun, 
                     Inisiativa, Disiplina, Responsabilidade, Rezultadu_Avaliasaun
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
           (
+              report_dict["controlo_ativo_identificacao"],
               report_dict["nome_pessoal"],
               report_dict["id_sigap"],
               report_dict["sexo"],
@@ -209,13 +212,14 @@ def update_extra_in_db_by_index(index_val, report_dict):
       cursor.execute(
           """
                 UPDATE extra_reports SET 
-                    nome_pessoal=?, id_sigap=?, sexo=?, instituicao=?, local_trabalho=?, 
+                    controlo_ativo_identificacao=?, nome_pessoal=?, id_sigap=?, sexo=?, instituicao=?, local_trabalho=?, 
                     data_de_nascimento=?, funcao=?, cargo=?, id_grp=?, Asiduidade=?, 
                     Pontualidade=?, Produtividade=?, Kualidade_Servisu=?, Kooperasaun=?, 
                     Inisiativa=?, Disiplina=?, Responsabilidade=?, Rezultadu_Avaliasaun=?
                 WHERE id=?
             """,
           (
+              report_dict["controlo_ativo_identificacao"],
               report_dict["nome_pessoal"],
               report_dict["id_sigap"],
               report_dict["sexo"],
@@ -601,12 +605,203 @@ if uploaded_file is not None:
 
         with st.form("funsionariu_form"):
           st.markdown("##### 📝 1. Informasaun Identidade Funsionáriu")
+
+          # Listaopsaun Municipio
+          municipios = [
+              "Aileu",
+              "Ainaro",
+              "Baucau",
+              "Bobonaro",
+              "Covalima",
+              "Díli",
+              "Ermera",
+              "Lautém",
+              "Liquiçá",
+              "Manatuto",
+              "Manufahi",
+              "Oe-Cusse Ambeno",
+              "Viqueque",
+          ]
+
+          # Listaopsaun Funsaun
+          funcoes = [
+              (
+                  "Regime Geral das Carreiras, Técnico Superior Grau B, 10,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Administrativo Grau E, 1,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Administrativo Grau E, 4,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Profissional Grau C, 1,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Superior Grau A, 4,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Profissional Grau C, 5,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Administrativo Grau E, 3,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Administrativo Grau E, 6,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Administrativo Grau E, 5,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Administrativo Grau E, 1,"
+                  " NOMEAÇÃO PROBATÓRIA"
+              ),
+              (
+                  "Regime Geral das Carreiras, Assistente Grau F, 5,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Assistente Grau F, 3,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Superior Grau B, 1,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Profissional Grau D, 1,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Superior Grau A, 3,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Profissional Grau D, 2,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Profissional Grau D, 1,"
+                  " NOMEAÇÃO PROBATÓRIA"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Profissional Grau C, 1,"
+                  " NOMEAÇÃO PROBATÓRIA"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Superior Grau B, 2,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Superior Grau A, 8,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Profissional Grau D, 7,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Superior Grau A, 2,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Superior Grau A, 1,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Administrativo Grau E, 2,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Profissional Grau D, 3,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Profissional Grau C, 3,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Profissional Grau D, 4,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Profissional Grau C, 4,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Profissional Grau C, 2,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Superior Grau B, 4,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Assistente Grau F, 2,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Profissional Grau D, 5,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Superior Grau B, 5,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Superior Grau B, 7,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Superior Grau B, 3,"
+                  " PERMANENTE"
+              ),
+              (
+                  "Regime Geral das Carreiras, Técnico Superior Grau B, 9,"
+                  " PERMANENTE"
+              ),
+          ]
+
+          # Listaopsaun Kargo
+          cargos = [
+              "Técnico Superior",
+              "Técnico Profissional",
+              "Assistente Administrativo",
+              "Oficial Administrativo",
+              "Assistente Técnico",
+              "Técnico Informática",
+              "Analista de Dados",
+              "Chefe de Unidade",
+              "Chefe de Departamento",
+              "Diretor Nacional",
+          ]
+
           col_i1, col_i2, col_i3 = st.columns(3)
           with col_i1:
+            ativo_opts = ["Ativo", "La Ativo"]
+            cur_ativo = def_val.get("controlo_ativo_identificacao", "Ativo")
+            idx_ativo = (
+                ativo_opts.index(cur_ativo)
+                if cur_ativo in ativo_opts
+                else 0
+            )
+            txt_ativo = st.selectbox(
+                "Controlo Ativo Identifikasaun", ativo_opts, index=idx_ativo
+            )
+
             txt_nome = st.text_input(
                 "Naran Pessoal*", def_val.get("nome_pessoal", "")
             )
-            txt_sigap = st.text_input("ID SIGAP*", def_val.get("id_sigap", ""))
+            txt_sigap = st.text_input("ID SIGAP (Numeriku)*", def_val.get("id_sigap", ""))
             txt_sexo = st.selectbox(
                 "Sexo",
                 ["M", "F"],
@@ -616,19 +811,34 @@ if uploaded_file is not None:
             txt_inst = st.text_input(
                 "Instituisaun", def_val.get("instituicao", "CFP")
             )
-            txt_local = st.text_input(
-                "Local Trabalhu", def_val.get("local_trabalho", "Dili")
+
+            cur_local = def_val.get("local_trabalho", "Díli")
+            idx_local = (
+                municipios.index(cur_local) if cur_local in municipios else 5
             )
-            txt_nascimento = st.text_input(
-                "Data de Nascimento",
-                def_val.get("data_de_nascimento", "1995-01-01"),
+            txt_local = st.selectbox(
+                "Local Trabalhu", municipios, index=idx_local
+            )
+
+            try:
+              default_date = pd.to_datetime(
+                  def_val.get("data_de_nascimento", "1995-01-01")
+              ).date()
+            except:
+              default_date = pd.to_datetime("1995-01-01").date()
+            txt_nascimento = st.date_input(
+                "Data de Nascimento", value=default_date
             )
           with col_i3:
-            txt_funcao = st.text_input(
-                "Funsaun", def_val.get("funcao", "Tékniku")
-            )
-            txt_cargo = st.text_input("Kargo", def_val.get("cargo", "Staff"))
-            txt_grp = st.text_input("ID GRP", def_val.get("id_grp", "GRP-123"))
+            cur_func = def_val.get("funcao", funcoes[0])
+            idx_func = funcoes.index(cur_func) if cur_func in funcoes else 0
+            txt_funcao = st.selectbox("Funsaun", funcoes, index=idx_func)
+
+            cur_cargo = def_val.get("cargo", cargos[0])
+            idx_cargo = cargos.index(cur_cargo) if cur_cargo in cargos else 0
+            txt_cargo = st.selectbox("Kargo", cargos, index=idx_cargo)
+
+            txt_grp = st.text_input("ID GRP (Numeriku)", def_val.get("id_grp", ""))
 
           st.markdown(
               "##### 📊 2. Indikadór Avaliasaun Funsionáriu (Skala 1 - 5)"
@@ -701,6 +911,10 @@ if uploaded_file is not None:
           if submit_pred:
             if not txt_nome.strip() or not txt_sigap.strip():
               st.warning("⚠️ Favor prennde Naran Pessoal no ID SIGAP!")
+            elif not txt_sigap.isdigit():
+              st.warning("⚠️ ID SIGAP tenke numeriku de'it!")
+            elif txt_grp.strip() and not txt_grp.isdigit():
+              st.warning("⚠️ ID GRP tenke numeriku de'it!")
             else:
               input_data = np.array([[
                   p_asid,
@@ -716,12 +930,13 @@ if uploaded_file is not None:
               pred_label = le.inverse_transform(pred_encoded)[0]
 
               new_report = {
+                  "controlo_ativo_identificacao": txt_ativo,
                   "nome_pessoal": txt_nome,
                   "id_sigap": txt_sigap,
                   "sexo": txt_sexo,
                   "instituicao": txt_inst,
                   "local_trabalho": txt_local,
-                  "data_de_nascimento": txt_nascimento,
+                  "data_de_nascimento": str(txt_nascimento),
                   "funcao": txt_funcao,
                   "cargo": txt_cargo,
                   "id_grp": txt_grp,
@@ -797,12 +1012,15 @@ if uploaded_file is not None:
                 col_d1, col_d2 = st.columns(2)
                 with col_d1:
                   st.markdown(
-                      f"**Sexo:** {rep['sexo']} | **Fatin:**"
-                      f" {rep['local_trabalho']}"
+                      f"**Ativu/La Ativu:**"
+                      f" {rep.get('controlo_ativo_identificacao', 'Ativo')} |"
+                      f" **Sexo:** {rep['sexo']}"
                   )
                   st.markdown(
-                      f"**Funsaun:** {rep['funcao']} | **Kargo:** {rep['cargo']}"
+                      f"**Fatin:** {rep['local_trabalho']} | **Funsaun:**"
+                      f" {rep['funcao']}"
                   )
+                  st.markdown(f"**Kargo:** {rep['cargo']}")
                 with col_d2:
                   st.markdown(
                       f"✨ **Klasifikasaun:** `{rep['Rezultadu_Avaliasaun']}`"
