@@ -40,21 +40,6 @@ st.markdown(
         margin-bottom: 25px;
     }
 
-    /* Card / Metric Container Styling */
-    .metric-container {
-        background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        text-align: center;
-        transition: all 0.3s ease;
-    }
-    .metric-container:hover {
-        border-color: #3B82F6;
-        box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
-    }
-
     /* Button Styling */
     .stButton>button {
         background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
@@ -390,9 +375,7 @@ if uploaded_file is not None:
 
       # --- TAB 1: DASHBOARD ---
       with tab1:
-        st.markdown(
-            "### 📈 Sumáriu Dezempenu Funsionáriu"
-        )
+        st.markdown("### 📈 Sumáriu Dezempenu Funsionáriu")
         total_funs = len(df)
         counts_real = df[target_col].value_counts()
 
@@ -418,8 +401,8 @@ if uploaded_file is not None:
         )
 
         st.markdown(
-            "*(Klik iha kardaun sira iha kraik atu hatudu ka subar lista"
-            " dadus detalladu)*"
+            "*(Klike iha kardaun metrika sira iha kraik atu hatudu ka subar"
+            " lista dadus detalladu)*"
         )
 
         col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
@@ -468,21 +451,34 @@ if uploaded_file is not None:
                 else None
             )
 
-        # Hatudu Tabela Se Kategoria Hili Ona
+        # Hatudu Tabela & Filtru Munisípiu Se Kategoria Hili Ona
         selected_cat = st.session_state["selected_category"]
         if selected_cat is not None:
           st.markdown("---")
-          if selected_cat == "Tomak":
-            df_filtered = df
-            st.markdown(
-                f"### 📋 Lista Funsionáriu Tomak ({len(df_filtered)})"
+          col_f1, col_f2 = st.columns(2)
+
+          with col_f1:
+            if selected_cat == "Tomak":
+              df_filtered = df
+              st.markdown(
+                  f"### 📋 Lista Funsionáriu Tomak ({len(df_filtered)})"
+              )
+            else:
+              df_filtered = df[df[target_col] == selected_cat]
+              st.markdown(
+                  f"### 📋 Lista Funsionáriu ba Kategoria: `{selected_cat}`"
+                  f" ({len(df_filtered)})"
+              )
+
+          with col_f2:
+            mun_list = ["Tomak (Hotu-hotu)"] + list(
+                df["local_trabalho"].dropna().unique()
             )
-          else:
-            df_filtered = df[df[target_col] == selected_cat]
-            st.markdown(
-                f"### 📋 Lista Funsionáriu ba Kategoria: `{selected_cat}`"
-                f" ({len(df_filtered)})"
-            )
+            selected_mun = st.selectbox("Filtru tuir Munisípiu:", mun_list)
+            if selected_mun != "Tomak (Hotu-hotu)":
+              df_filtered = df_filtered[
+                  df_filtered["local_trabalho"] == selected_mun
+              ]
 
           st.dataframe(
               df_filtered[
@@ -498,6 +494,15 @@ if uploaded_file is not None:
                   ]
               ],
               use_container_width=True,
+          )
+
+          # Botaun Download ba dadus ne'ebé filtra ona
+          csv_filtered = df_filtered.to_csv(index=False).encode("utf-8")
+          st.download_button(
+              label="📥 Download Dadus Filtra Ne'e (CSV)",
+              data=csv_filtered,
+              file_name=f"relatorio_cfp_{selected_cat}.csv",
+              mime="text/csv",
           )
 
           if st.button("❌ Subar Tabela"):
@@ -863,7 +868,7 @@ if uploaded_file is not None:
                 "Naran Pessoal*", def_val.get("nome_pessoal", "")
             )
             txt_sigap = st.text_input(
-                "ID SIGAP ", def_val.get("id_sigap", "")
+                "ID SIGAP (Numeriku/Símbolu)*", def_val.get("id_sigap", "")
             )
             txt_sexo = st.selectbox(
                 "Sexo",
@@ -898,7 +903,7 @@ if uploaded_file is not None:
             idx_cargo = cargos.index(cur_cargo) if cur_cargo in cargos else 0
             txt_cargo = st.selectbox("Kargo", cargos, index=idx_cargo)
             txt_grp = st.text_input(
-                "ID GRP ", def_val.get("id_grp", "")
+                "ID GRP (Numeriku/Símbolu)", def_val.get("id_grp", "")
             )
 
           st.markdown(
