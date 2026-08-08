@@ -27,11 +27,9 @@ def treinar_modelo(df, nota_cols, target_col):
     
     return model, le, X_train, X_test, y_train, y_test
 
-
-# 2. Funsaun foun hodi carrega Modelu ne'ebé Rai ona (.pkl)
+# 2. Funsaun hodi carrega Modelu ne'ebé Rai ona (.pkl)
 def carregar_modelo_pkl(filename="modelu_cfp.pkl"):
     try:
-        # Karrega fail pkl ne'ebé iha model no LabelEncoder hamutuk (se save hamutuk)
         dados_salvos = joblib.load(filename)
         return dados_salvos
     except Exception as e:
