@@ -1,3 +1,4 @@
+import re
 import sqlite3
 import matplotlib.pyplot as plt
 import numpy as np
@@ -67,7 +68,6 @@ def init_db():
   try:
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    # Hateten katak id_sigap tenke UNIQUE hodi labele iha id ne'ebé dobru
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS extra_reports (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -157,7 +157,6 @@ def save_extra_to_db(report_dict):
     conn.close()
     return True
   except sqlite3.IntegrityError:
-    # Se ID SIGAP duplikadu iha database, SQL sei tira IntegrityError ne'e
     return False
   except Exception as e:
     return False
@@ -303,7 +302,6 @@ if uploaded_file is not None:
       if len(st.session_state["extra_reports"]) > 0:
         df_extra = pd.DataFrame(st.session_state["extra_reports"])
         df = pd.concat([df_base, df_extra], ignore_index=True)
-        # Tenke drop duplicates bazeia ba id_sigap hodi evita duplikasaun iha memória
         df = df.drop_duplicates(subset=["id_sigap"], keep="last")
       else:
         df = df_base
@@ -349,10 +347,8 @@ if uploaded_file is not None:
 
       with tab1:
         st.subheader("📈 Dashboard Estatistika Dezempenu Funsionáriu")
-
         total_funs = len(df)
         counts_real = df[target_col].value_counts()
-
         mb_pct = (
             (counts_real.get("Muito Bom", 0) / total_funs) * 100
             if total_funs > 0
@@ -392,9 +388,7 @@ if uploaded_file is not None:
         )
 
         st.markdown("---")
-
         col_g1, col_g2 = st.columns(2)
-
         with col_g1:
           st.markdown("##### 📊 Komparasaun Kategoria (Reál vs Prediksaun)")
           fig, ax = plt.subplots(figsize=(6, 4))
@@ -403,7 +397,6 @@ if uploaded_file is not None:
           pred_counts = [
               df["Prediksaun"].value_counts().get(cat, 0) for cat in categories
           ]
-
           x = np.arange(len(categories))
           width = 0.35
           ax.bar(
@@ -487,12 +480,10 @@ if uploaded_file is not None:
         st.subheader(
             "🎯 Avaliasaun Detalladu Modelu (Confusion Matrix & Métricas)"
         )
-
         y_pred_test = model.predict(X_test)
         cm = confusion_matrix(y_test, y_pred_test)
 
         col_eval1, col_eval2 = st.columns(2)
-
         with col_eval1:
           st.markdown("##### 📉 Confusion Matrix")
           fig_cm, ax_cm = plt.subplots(figsize=(5, 4))
@@ -569,7 +560,6 @@ if uploaded_file is not None:
         with st.form("funsionariu_form"):
           st.markdown("##### 📝 1. Informasaun Identidade Funsionáriu")
 
-          # Listaopsaun Municipio
           municipios = [
               "Aileu",
               "Ainaro",
@@ -585,8 +575,6 @@ if uploaded_file is not None:
               "Oe-Cusse Ambeno",
               "Viqueque",
           ]
-
-          # Listaopsaun Funsaun
           funcoes = [
               (
                   "Regime Geral das Carreiras, Técnico Superior Grau B, 10,"
@@ -733,8 +721,6 @@ if uploaded_file is not None:
                   " PERMANENTE"
               ),
           ]
-
-          # Listaopsaun Kargo
           cargos = [
               "Técnico Superior",
               "Técnico Profissional",
@@ -765,7 +751,7 @@ if uploaded_file is not None:
                 "Naran Pessoal*", def_val.get("nome_pessoal", "")
             )
             txt_sigap = st.text_input(
-                "ID SIGAP (Numeriku)*", def_val.get("id_sigap", "")
+                "ID SIGAP (Numeriku/Símbolu)*", def_val.get("id_sigap", "")
             )
             txt_sexo = st.selectbox(
                 "Sexo",
@@ -776,7 +762,6 @@ if uploaded_file is not None:
             txt_inst = st.text_input(
                 "Instituisaun", def_val.get("instituicao", "CFP")
             )
-
             cur_local = def_val.get("local_trabalho", "Díli")
             idx_local = (
                 municipios.index(cur_local) if cur_local in municipios else 5
@@ -804,7 +789,7 @@ if uploaded_file is not None:
             txt_cargo = st.selectbox("Kargo", cargos, index=idx_cargo)
 
             txt_grp = st.text_input(
-                "ID GRP (Numeriku)", def_val.get("id_grp", "")
+                "ID GRP (Numeriku/Símbolu)", def_val.get("id_grp", "")
             )
 
           st.markdown(
@@ -876,23 +861,30 @@ if uploaded_file is not None:
           submit_pred = st.form_submit_button(btn_label)
 
           if submit_pred:
-            # Check ID SIGAP iha DataFrame tomak (Excel + Database)
             existing_sigaps = df["id_sigap"].astype(str).str.strip().tolist()
             in_sigap = txt_sigap.strip()
+            in_grp = txt_grp.strip()
+
+            # FUNGSAUN REGEX: Blokeia letas alfabetu (A-Z)
+            has_letters = lambda x: bool(re.search(r"[A-Za-z]", x))
 
             if not txt_nome.strip() or not txt_sigap.strip():
               st.warning("⚠️ Favor prennde Naran Pessoal no ID SIGAP!")
-            elif not txt_sigap.isdigit():
-              st.warning("⚠️ ID SIGAP tenke numeriku de'it!")
-            elif txt_grp.strip() and not txt_grp.isdigit():
-              st.warning("⚠️ ID GRP tenke numeriku de'it!")
-            # STRICT CHECK: Se ID SIGAP eziste ona no ita la'ós iha mode EDIT
+            # KONTROLU: Se iha letra alfabetu (A-Z), sei hatudu erru
+            elif has_letters(in_sigap):
+              st.warning(
+                  "⚠️ ID SIGAP labele uza letra alfabetu (A-Z)! Uza de'it"
+                  " numériku ka símbolu."
+              )
+            elif in_grp and has_letters(in_grp):
+              st.warning(
+                  "⚠️ ID GRP labele uza letra alfabetu (A-Z)! Uza de'it"
+                  " numériku ka símbolu."
+              )
             elif in_sigap in existing_sigaps and idx_edit is None:
               st.error(
                   f"❌ ATENSAUN ERRO: ID SIGAP **'{in_sigap}'** eziste ona iha"
-                  " sistema! Funsionáriu ne'e rejistradu ona. Labele utiliza"
-                  " tan ID SIGAP ne'e atu nune'e labele mosu problema akurasi"
-                  " diferente."
+                  " sistema! Labele uza tan ID ne'ebé hanesan."
               )
             else:
               input_data = np.array([[
@@ -1025,7 +1017,7 @@ if uploaded_file is not None:
                 )
   except Exception as e:
     st.error(
-        f"⚠️ Akontese Error ruma durante prosesamentu ficheiru Excel:"
+        f"⚠️ Akontese Error ruma während prosesamentu ficheiru Excel:"
         f" `{str(e)}`"
     )
 else:
