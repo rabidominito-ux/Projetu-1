@@ -1,48 +1,27 @@
-import re
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 import streamlit as st
 
-# Import funsaun hosi fail seluk
-from database import init_db, load_extra_from_db, save_extra_to_db, update_extra_in_db_by_index, delete_extra_from_db
+from database import init_db, load_extra_from_db, save_extra_to_db, update_extra_in_db_by_index
 from utils import load_data
+from models import treinar_modelo
+from ui_components import render_custom_css
 
-# 1. Konfigurasaun Pajina Streamlit (Layout Wide)
 st.set_page_config(
     page_title="Sistema Klasifikasaun CFP - Decision Tree",
     page_icon="📊",
     layout="wide",
 )
 
-# 2. Custom CSS ba UI
-st.markdown("""
-    <style>
-    .main { background-color: #F8FAFC; }
-    .main-title { font-size: 2.4rem; color: #0F172A; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0px; }
-    .sub-title { color: #475569; font-size: 1.1rem; margin-bottom: 25px; }
-    .stButton>button {
-        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
-        color: white; border-radius: 8px; padding: 0.6rem 1.2rem; font-weight: 600; border: none;
-        box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2); transition: all 0.2s ease-in-out;
-    }
-    .stButton>button:hover { background: linear-gradient(135deg, #1D4ED8 100%, #1E40AF 100%); }
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
-    .stTabs [data-baseweb="tab"] { background-color: #F1F5F9; border-radius: 8px 8px 0px 0px; padding: 10px 20px; font-weight: 600; color: #334155; }
-    .stTabs [aria-selected="true"] { background-color: #2563EB !important; color: white !important; }
-    </style>
-""", unsafe_allow_html=True)
+render_custom_css()
 
-# Header Principal
 st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Aplikasaun Inteligénsia Artifisiál uza algoritmu Decision Tree hodi analiza no klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
 
-# Inicializa Database
 init_db()
 
 if "extra_reports" not in st.session_state:
@@ -54,13 +33,13 @@ if "edit_index" not in st.session_state:
 if "selected_category" not in st.session_state:
     st.session_state["selected_category"] = None
 
-# Sidebar ba Gestaun Dataset
 st.sidebar.markdown("### 📁 Gestaun Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
 
 if uploaded_file is not None:
     try:
         df_raw = load_data(uploaded_file)
+
         rename_map = {
             "Column1": "controlo_ativo_identificacao", "Column2": "nome_pessoal", "Column3": "id_sigap",
             "Column4": "id_grp", "Column5": "sexo", "Column6": "data_de_nascimento", "Column7": "instituicao",
@@ -70,9 +49,13 @@ if uploaded_file is not None:
             "Column19": "Disiplina", "Column20": "Responsabilidade", "Column21": "Media",
             "Column22": "Rezultadu_Avaliasaun", "Column23": "temp2",
         }
+
         df_raw.rename(columns={k: v for k, v in rename_map.items() if k in df_raw.columns}, inplace=True)
 
-        nota_cols = ["Asiduidade", "Pontualidade", "Produtividade", "Kualidade_Servisu", "Kooperasaun", "Inisiativa", "Disiplina", "Responsabilidade"]
+        nota_cols = [
+            "Asiduidade", "Pontualidade", "Produtividade", "Kualidade_Servisu",
+            "Kooperasaun", "Inisiativa", "Disiplina", "Responsabilidade"
+        ]
         target_col = "Rezultadu_Avaliasaun"
 
         missing_cols = [col for col in nota_cols + [target_col] if col not in df_raw.columns]
@@ -101,28 +84,22 @@ if uploaded_file is not None:
                 mime="text/csv",
             )
 
-            le = LabelEncoder()
-            df["target_encoded"] = le.fit_transform(df[target_col].astype(str))
-            y = df["target_encoded"]
-            X = df[nota_cols].copy()
+            model, le, X_train, X_test, y_train, y_test = treinar_modelo(df, nota_cols, target_col)
 
-            try:
-                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-            except ValueError:
-                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-            model = DecisionTreeClassifier(criterion="entropy", max_depth=5, random_state=42)
-            model.fit(X_train, y_train)
-
-            df["Prediksaun"] = le.inverse_transform(model.predict(X))
+            df["Prediksaun"] = le.inverse_transform(model.predict(df[nota_cols]))
             acc = accuracy_score(y_test, model.predict(X_test))
 
-            tab1, tab2, tab3 = st.tabs(["📊 Dashboard Analítiku", "⚙️ Modelu & Performance", "🔮 Prediksaun & Jere Dadus"])
+            tab1, tab2, tab3 = st.tabs([
+                "📊 Dashboard Analítiku",
+                "⚙️ Modelu & Performance",
+                "🔮 Prediksaun & Jere Dadus",
+            ])
 
             with tab1:
                 st.markdown("### 📈 Sumáriu Dezempenu Funsionáriu")
                 total_funs = len(df)
                 counts_real = df[target_col].value_counts()
+
                 mb_pct = (counts_real.get("Muito Bom", 0) / total_funs) * 100 if total_funs > 0 else 0
                 b_pct = (counts_real.get("Bom", 0) / total_funs) * 100 if total_funs > 0 else 0
                 s_pct = (counts_real.get("Suficiente", 0) / total_funs) * 100 if total_funs > 0 else 0
@@ -192,8 +169,8 @@ if uploaded_file is not None:
                     st.markdown("##### 🍩 Proporsaun Kategoria Dezempenu")
                     fig2, ax2 = plt.subplots(figsize=(6, 4))
                     sizes = [counts_real.get(cat, 0) for cat in categories]
-                    colors_list = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444"]
-                    ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors_list, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
+                    colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444"]
+                    ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
                     st.pyplot(fig2)
 
             with tab2:
