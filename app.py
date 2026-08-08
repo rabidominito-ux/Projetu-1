@@ -922,13 +922,23 @@ if uploaded_file is not None:
           submit_pred = st.form_submit_button(btn_label)
 
           if submit_pred:
-            # Lista ID SIGAP no ID GRP ne'ebé iha ona iha dataframe tomak (Excel + Database)
-            existing_sigaps = df["id_sigap"].astype(str).tolist()
-            existing_grps = (
-                df["id_grp"].dropna().astype(str).tolist()
-                if "id_grp" in df.columns
-                else []
+            # Normaliza dadus hodi check duplikasaun (Koreksaun: Lowercase no Strip)
+            df["nome_norm"] = (
+                df["nome_pessoal"].astype(str).str.strip().str.lower()
             )
+            df["sigap_norm"] = df["id_sigap"].astype(str).str.strip()
+            df["grp_norm"] = df["id_grp"].astype(str).str.strip()
+
+            in_nome = txt_nome.strip().lower()
+            in_sigap = txt_sigap.strip()
+            in_grp = txt_grp.strip()
+
+            # Check duplikasaun strict (Naran + SIGAP + GRP hotu-hotu hanesan)
+            is_exact_duplicate = df[
+                (df["nome_norm"] == in_nome)
+                & (df["sigap_norm"] == in_sigap)
+                & (df["grp_norm"] == in_grp)
+            ]
 
             if not txt_nome.strip() or not txt_sigap.strip():
               st.warning("⚠️ Favor prennde Naran Pessoal no ID SIGAP!")
@@ -936,21 +946,11 @@ if uploaded_file is not None:
               st.warning("⚠️ ID SIGAP tenke numeriku de'it!")
             elif txt_grp.strip() and not txt_grp.isdigit():
               st.warning("⚠️ ID GRP tenke numeriku de'it!")
-            elif (
-                txt_sigap in existing_sigaps and idx_edit is None
-            ):  # Check se ID SIGAP iha ona
+            elif len(is_exact_duplicate) > 0 and idx_edit is None:
               st.error(
-                  f"❌ ATENSAUN: ID SIGAP **{txt_sigap}** rejistradu ona iha"
-                  " sistema! Funsionáriu ne'e iha ona."
-              )
-            elif (
-                txt_grp.strip()
-                and txt_grp in existing_grps
-                and idx_edit is None
-            ):  # Check se ID GRP iha ona
-              st.error(
-                  f"❌ ATENSAUN: ID GRP **{txt_grp}** rejistradu ona iha"
-                  " sistema!"
+                  f"❌ ATENSAUN ERRO: Funsionáriu ho Naran **'{txt_nome}'**,"
+                  f" ID SIGAP **'{txt_sigap}'**, no ID GRP **'{txt_grp}'** iha"
+                  " ona iha sistema! Ami labele aumenta dadus ne'ebé hanesan."
               )
             else:
               input_data = np.array([[
@@ -1086,7 +1086,7 @@ if uploaded_file is not None:
                 )
   except Exception as e:
     st.error(
-        f"⚠️ Akontese Error ruma tijdens prosesamentu ficheiru Excel:"
+        f"⚠️ Akontese Error ruma durante prosesamentu ficheiru Excel:"
         f" `{str(e)}`"
     )
 else:
