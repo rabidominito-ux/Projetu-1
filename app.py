@@ -418,7 +418,7 @@ if uploaded_file is not None:
         )
 
         st.markdown(
-            "*(Klik iha kardaun sira iha kraik atu hatudu ka subar lista"
+            "*(lista"
             " dadus detalladu)*"
         )
 
