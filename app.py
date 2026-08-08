@@ -92,7 +92,7 @@ def init_db():
             )
         """)
 
-    # Asegura katak koluna controlo_ativo_identificacao eziste i ha database antigo
+    # Asegura katak koluna controlo_ativo_identificacao eziste iha database antigo
     cursor.execute("PRAGMA table_info(extra_reports)")
     columns = [col[1] for col in cursor.fetchall()]
     if "controlo_ativo_identificacao" not in columns:
