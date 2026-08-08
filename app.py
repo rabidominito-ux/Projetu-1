@@ -376,8 +376,7 @@ if uploaded_file is not None:
         )
 
         st.markdown(
-            "##### 💡 Klik iha kardaun sira iha kraik atu hatudu ka subar"
-            " tabela dadus:"
+           
         )
         col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
 
