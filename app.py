@@ -1,4 +1,3 @@
-import io
 import re
 import sqlite3
 import matplotlib.pyplot as plt
@@ -11,17 +10,6 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 import streamlit as st
 
-# ReportLab imports ba PDF Generation
-try:
-  from reportlab.lib import colors
-  from reportlab.lib.pagesizes import letter
-  from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
-  from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-
-  REPORTLAB_AVAILABLE = True
-except ImportError:
-  REPORTLAB_AVAILABLE = False
-
 # 1. Konfigurasaun Pajina Streamlit (Layout Wide)
 st.set_page_config(
     page_title="Sistema Klasifikasaun CFP - Decision Tree",
@@ -29,22 +17,60 @@ st.set_page_config(
     layout="wide",
 )
 
-# 2. Custom CSS ba UI ne'ebé modernu no profesional
+# 2. Custom CSS ba UI ne'ebé modernu, kapás no profesional
 st.markdown(
     """
     <style>
-    .main { background-color: #F8FAFC; }
-    .main-title { font-size: 2.4rem; color: #0F172A; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0px; }
-    .sub-title { color: #475569; font-size: 1.1rem; margin-bottom: 25px; }
+    /* Global Styling */
+    .main {
+        background-color: #F8FAFC;
+    }
+    
+    /* Header Styling */
+    .main-title {
+        font-size: 2.4rem;
+        color: #0F172A;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 0px;
+    }
+    .sub-title {
+        color: #475569;
+        font-size: 1.1rem;
+        margin-bottom: 25px;
+    }
+
+    /* Button Styling */
     .stButton>button {
         background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
-        color: white; border-radius: 8px; padding: 0.6rem 1.2rem; font-weight: 600; border: none;
-        box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2); transition: all 0.2s ease-in-out;
+        color: white;
+        border-radius: 8px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+        border: none;
+        box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+        transition: all 0.2s ease-in-out;
     }
-    .stButton>button:hover { background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%); }
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
-    .stTabs [data-baseweb="tab"] { background-color: #F1F5F9; border-radius: 8px 8px 0px 0px; padding: 10px 20px; font-weight: 600; color: #334155; }
-    .stTabs [aria-selected="true"] { background-color: #2563EB !important; color: white !important; }
+    .stButton>button:hover {
+        background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%);
+        box-shadow: 0 6px 8px rgba(37, 99, 235, 0.3);
+    }
+
+    /* Tabs Styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: #F1F5F9;
+        border-radius: 8px 8px 0px 0px;
+        padding: 10px 20px;
+        font-weight: 600;
+        color: #334155;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #2563EB !important;
+        color: white !important;
+    }
     </style>
 """,
     unsafe_allow_html=True,
@@ -58,7 +84,8 @@ st.markdown(
 )
 st.markdown(
     '<p class="sub-title">Aplikasaun Inteligénsia Artifisiál uza algoritmu'
-    " Decision Tree ho Autentikasaun, Radar Chart no Gera PDF Ofisiál.</p>",
+    " Decision Tree hodi analiza no klasifika dezempenu funsionáriu bazeia ba"
+    " indikadór Komisaun Função Pública (CFP).</p>",
     unsafe_allow_html=True,
 )
 
@@ -101,63 +128,6 @@ def init_db():
 
 
 init_db()
-
-# Session State ba Login & Edit
-if "logged_in" not in st.session_state:
-  st.session_state["logged_in"] = False
-if "username" not in st.session_state:
-  st.session_state["username"] = ""
-if "role" not in st.session_state:
-  st.session_state["role"] = "User"
-if "edit_index" not in st.session_state:
-  st.session_state["edit_index"] = None
-if "selected_category" not in st.session_state:
-  st.session_state["selected_category"] = None
-
-# --- TELA LOGIN (SE SEIDAAK LOGGED IN, APLIKASAUN TAU PAUSA TO'O LOGIN SUKSESU) ---
-if not st.session_state["logged_in"]:
-  st.warning("🔒 **Seguransa Sistema:** Favor hatama Ita-nia Username no Password molok asesu ba sistema.")
-  col1, col2, col3 = st.columns([1, 1.5, 1])
-  with col2:
-    with st.form("main_login_form"):
-      st.markdown("### 🔐 Autentikasaun Usuáriu")
-      u_input = st.text_input("Username")
-      p_input = st.text_input("Password", type="password")
-      login_btn = st.form_submit_button("🔑 Tama ba Sistema (Login)")
-      if login_btn:
-        if u_input == "admin" and p_input == "admin123":
-          st.session_state["logged_in"] = True
-          st.session_state["username"] = "Administrador"
-          st.session_state["role"] = "Admin"
-          st.success("Login nu'udar Admin susesu!")
-          st.rerun()
-        elif u_input == "user" and p_input == "user123":
-          st.session_state["logged_in"] = True
-          st.session_state["username"] = "Funsionáriu"
-          st.session_state["role"] = "User"
-          st.success("Login nu'udar User susesu!")
-          st.rerun()
-        else:
-          st.error("⚠️ Username ka Password sala! Uza admin/admin123 ka user/user123")
-    st.info("💡 **Nota Default:** Admin (`admin`/`admin123`) ka User (`user`/`user123`)")
-  st.stop()  # Hapoi prosesu seluk tomak to'o de'it kuandu login ona
-
-# --- SE LOGGED IN ONA, HATUDU KONTROLUS IHA SIDEBAR NO DADOS APLIKASAUN ---
-st.sidebar.success(
-    f"👤 Logged in as: **{st.session_state['username']}**"
-    f" ({st.session_state['role']})"
-)
-if st.sidebar.button("🚪 Logout"):
-  st.session_state["logged_in"] = False
-  st.session_state["username"] = ""
-  st.session_state["role"] = "User"
-  st.rerun()
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 📁 Gestaun Dataset")
-uploaded_file = st.sidebar.file_uploader(
-    "Upload ficheiru Excel (.xlsx)", type=["xlsx"]
-)
 
 
 @st.cache_data
@@ -284,68 +254,25 @@ def delete_extra_from_db(index_val):
     return False
 
 
-# Função ba Gera PDF Ofisiál uza ReportLab
-def generate_pdf_report(rep):
-  buffer = io.BytesIO()
-  doc = SimpleDocTemplate(buffer, pagesize=letter)
-  story = []
-  styles = getSampleStyleSheet()
-
-  title_style = ParagraphStyle(
-      'TitleStyle',
-      parent=styles['Heading1'],
-      fontSize=18,
-      textColor=colors.HexColor('#1E3A8A'),
-      alignment=1,
-  )
-
-  story.append(Paragraph("REPUBLICA DEMOCRATICA DE TIMOR-LESTE", title_style))
-  story.append(Paragraph("COMISAUN FUNÇÃO PÚBLICA (CFP)", title_style))
-  story.append(
-      Paragraph("<b>RELATÓRIU AVALIAZAUN DEZEMPENU FUNSIÓRIU</b>", title_style)
-  )
-  story.append(Spacer(1, 20))
-
-  data = [
-      ["Naran Pessoal:", rep["nome_pessoal"]],
-      ["ID SIGAP:", rep["id_sigap"]],
-      ["Sexo:", rep["sexo"]],
-      ["Local Trabalhu:", rep["local_trabalho"]],
-      ["Cargo / Funsaun:", f"{rep['cargo']} - {rep['funcao']}"],
-      ["Asiduidade:", str(rep["Asiduidade"])],
-      ["Pontualidade:", str(rep["Pontualidade"])],
-      ["Produtividade:", str(rep["Produtividade"])],
-      ["Kualidade Servisu:", str(rep["Kualidade_Servisu"])],
-      ["Kooperasaun:", str(rep["Kooperasaun"])],
-      ["Inisiativa:", str(rep["Inisiativa"])],
-      ["Disiplina:", str(rep["Disiplina"])],
-      ["Responsabilidade:", str(rep["Responsabilidade"])],
-      ["REZULTADU AVALIAZAUN:", str(rep["Rezultadu_Avaliasaun"])],
-  ]
-
-  t = Table(data, colWidths=[150, 300])
-  t.setStyle(
-      TableStyle([
-          ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F1F5F9")),
-          ("TEXTCOLOR", (0, 0), (-1, -1), colors.HexColor("#0F172A")),
-          ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-          ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-          ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-          ("GRID", (0, 0), (-1, -1), 1, colors.HexColor("#CBD5E1")),
-      ])
-  )
-  story.append(t)
-  doc.build(story)
-  buffer.seek(0)
-  return buffer
-
-
 if "extra_reports" not in st.session_state:
   st.session_state["extra_reports"] = load_extra_from_db()
+
+if "edit_index" not in st.session_state:
+  st.session_state["edit_index"] = None
+
+if "selected_category" not in st.session_state:
+  st.session_state["selected_category"] = None
+
+# Sidebar ba Gestaun Dataset
+st.sidebar.markdown("### 📁 Gestaun Dataset")
+uploaded_file = st.sidebar.file_uploader(
+    "Upload ficheiru Excel (.xlsx)", type=["xlsx"]
+)
 
 if uploaded_file is not None:
   try:
     df_raw = load_data(uploaded_file)
+
     rename_map = {
         "Column1": "controlo_ativo_identificacao",
         "Column2": "nome_pessoal",
@@ -371,6 +298,7 @@ if uploaded_file is not None:
         "Column22": "Rezultadu_Avaliasaun",
         "Column23": "temp2",
     }
+
     df_raw.rename(
         columns={k: v for k, v in rename_map.items() if k in df_raw.columns},
         inplace=True,
@@ -438,13 +366,14 @@ if uploaded_file is not None:
       df["Prediksaun"] = le.inverse_transform(model.predict(X))
       acc = accuracy_score(y_test, model.predict(X_test))
 
-      # Tabs Navigasaun
+      # Tabs Navigasaun Formatadu
       tab1, tab2, tab3 = st.tabs([
           "📊 Dashboard Analítiku",
           "⚙️ Modelu & Performance",
           "🔮 Prediksaun & Jere Dadus",
       ])
 
+      # --- TAB 1: DASHBOARD ---
       with tab1:
         st.markdown("### 📈 Sumáriu Dezempenu Funsionáriu")
         total_funs = len(df)
@@ -471,7 +400,13 @@ if uploaded_file is not None:
             else 0
         )
 
+        st.markdown(
+            "*(Klike iha kardaun metrika sira iha kraik atu hatudu ka subar"
+            " lista dadus detalladu)*"
+        )
+
         col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
+
         with col_m1:
           if st.button(f"📊 Total Funsionáriu\n\n{total_funs}"):
             st.session_state["selected_category"] = (
@@ -516,10 +451,12 @@ if uploaded_file is not None:
                 else None
             )
 
+        # Hatudu Tabela & Filtru Munisípiu Se Kategoria Hili Ona
         selected_cat = st.session_state["selected_category"]
         if selected_cat is not None:
           st.markdown("---")
           col_f1, col_f2 = st.columns(2)
+
           with col_f1:
             if selected_cat == "Tomak":
               df_filtered = df
@@ -532,6 +469,7 @@ if uploaded_file is not None:
                   f"### 📋 Lista Funsionáriu ba Kategoria: `{selected_cat}`"
                   f" ({len(df_filtered)})"
               )
+
           with col_f2:
             mun_list = ["Tomak (Hotu-hotu)"] + list(
                 df["local_trabalho"].dropna().unique()
@@ -557,6 +495,8 @@ if uploaded_file is not None:
               ],
               use_container_width=True,
           )
+
+          # Botaun Download ba dadus ne'ebé filtra ona
           csv_filtered = df_filtered.to_csv(index=False).encode("utf-8")
           st.download_button(
               label="📥 Download Dadus Filtra Ne'e (CSV)",
@@ -564,20 +504,27 @@ if uploaded_file is not None:
               file_name=f"relatorio_cfp_{selected_cat}.csv",
               mime="text/csv",
           )
+
           if st.button("❌ Subar Tabela"):
             st.session_state["selected_category"] = None
             st.rerun()
 
         st.markdown("---")
+
+        # Grafikku sira ho dizain professional
         col_g1, col_g2 = st.columns(2)
+
         with col_g1:
-          st.markdown("##### 📊 Komparasaun Kategoria (Reál vs Prediksaun)")
+          st.markdown(
+              "##### 📊 Komparasaun Kategoria (Reál vs Prediksaun Algoritmu)"
+          )
           fig, ax = plt.subplots(figsize=(6, 4))
           categories = ["Muito Bom", "Bom", "Suficiente", "Insuficiente"]
           real_counts = [counts_real.get(cat, 0) for cat in categories]
           pred_counts = [
               df["Prediksaun"].value_counts().get(cat, 0) for cat in categories
           ]
+
           x = np.arange(len(categories))
           width = 0.35
           ax.bar(
@@ -604,26 +551,56 @@ if uploaded_file is not None:
           st.pyplot(fig)
 
         with col_g2:
-          st.markdown("##### 🍩 Proporsaun Kategoria Dezempenu")
+          st.markdown("##### 🍩 Proporsaun Kategoria Dezempenu (Donut Chart)")
           fig2, ax2 = plt.subplots(figsize=(6, 4))
           sizes = [counts_real.get(cat, 0) for cat in categories]
-          colors_list = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444"]
-          ax2.pie(
+          colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444"]
+          wedges, texts, autotexts = ax2.pie(
               sizes,
               labels=categories,
               autopct="%1.1f%%",
               startangle=90,
-              colors=colors_list,
+              colors=colors,
               wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2),
           )
+          plt.setp(autotexts, size=9, weight="bold", color="white")
           st.pyplot(fig2)
 
+        st.markdown("---")
+        st.markdown(
+            "##### 📊 Média Pontuasaun Indikadór Avaliasaun (Skala 1 - 5)"
+        )
+        avg_scores = df[nota_cols].mean()
+        fig3, ax3 = plt.subplots(figsize=(10, 3.8))
+        sns.barplot(
+            x=avg_scores.index, y=avg_scores.values, palette="crest", ax=ax3
+        )
+        ax3.set_ylim(0, 5)
+        ax3.set_ylabel("Média")
+        ax3.set_xticklabels(nota_cols, rotation=15)
+        sns.despine()
+        for p in ax3.patches:
+          ax3.annotate(
+              f"{p.get_height():.2f}",
+              (p.get_x() + p.get_width() / 2.0, p.get_height()),
+              ha="center",
+              va="bottom",
+              fontsize=9,
+              fontweight="bold",
+          )
+        st.pyplot(fig3)
+
+      # --- TAB 2: MODELU & PERFORMANCE ---
       with tab2:
         st.subheader("📋 Amostra Dadus (Preview)")
         st.dataframe(df.head(10), use_container_width=True)
+
         st.markdown("---")
         st.subheader("🚀 Performance Modelu Decision Tree")
-        st.success(f"✅ Akurasi Modelu (Accuracy): **{acc * 100:.2f}%**")
+        st.success(
+            "✅ Modelu treinu ho suksesu! Akurasi Modelu (Accuracy):"
+            f" **{acc * 100:.2f}%**"
+        )
 
         col_eval1, col_eval2 = st.columns(2)
         y_pred_test = model.predict(X_test)
@@ -642,6 +619,8 @@ if uploaded_file is not None:
               yticklabels=le.classes_,
               ax=ax_cm,
           )
+          ax_cm.set_xlabel("Prediksaun")
+          ax_cm.set_ylabel("Reál")
           st.pyplot(fig_cm)
 
         with col_eval2:
@@ -666,12 +645,13 @@ if uploaded_file is not None:
           )
 
         st.markdown("---")
-        st.subheader("🌳 Vizualizasaun Árbore Desizaun")
+        st.subheader("🌳 Vizualizasaun Árbore Desizaun (Decision Tree)")
         max_depth_vis = st.slider("Hili Profundidade Árbore (Max Depth)", 1, 5, 3)
         vis_model = DecisionTreeClassifier(
             criterion="entropy", max_depth=max_depth_vis, random_state=42
         )
         vis_model.fit(X_train, y_train)
+
         fig_tree, ax_tree = plt.subplots(figsize=(16, 9), dpi=100)
         plot_tree(
             vis_model,
@@ -684,6 +664,7 @@ if uploaded_file is not None:
         )
         st.pyplot(fig_tree)
 
+      # --- TAB 3: PREDICSAUN & JERE DADUS ---
       with tab3:
         st.subheader("🔍 Prediksaun Funsionáriu Foun & Jere Dadus")
 
@@ -926,8 +907,7 @@ if uploaded_file is not None:
             )
 
           st.markdown(
-              "##### 📊 2. Indikadór Avaliasaun Funsionáriu (Skala 1 - 5, Step"
-              " 0.5)"
+              "##### 📊 2. Indikadór Avaliasaun Funsionáriu (Skala 1 - 5)"
           )
           col_a, col_b, col_c, col_d = st.columns(4)
           with col_a:
@@ -1105,77 +1085,18 @@ if uploaded_file is not None:
                     f"✨ **Klasifikasaun:** `{rep['Rezultadu_Avaliasaun']}`"
                 )
 
-              # Radar Chart ba individual funsionáriu
-              st.markdown("##### 🕷️ Perfíl Kompeténsia (Radar Chart)")
-              categories_radar = [
-                  "Asiduidade",
-                  "Pontualidade",
-                  "Produtividade",
-                  "Kualidade",
-                  "Kooperasaun",
-                  "Inisiativa",
-                  "Disiplina",
-                  "Responsabilidade",
-              ]
-              values_radar = [
-                  rep["Asiduidade"],
-                  rep["Pontualidade"],
-                  rep["Produtividade"],
-                  rep["Kualidade_Servisu"],
-                  rep["Kooperasaun"],
-                  rep["Inisiativa"],
-                  rep["Disiplina"],
-                  rep["Responsabilidade"],
-              ]
-              values_radar += values_radar[:1]
-
-              angles = [
-                  n / float(len(categories_radar)) * 2 * np.pi
-                  for n in range(len(categories_radar))
-              ]
-              angles += angles[:1]
-
-              fig_radar, ax_radar = plt.subplots(
-                  figsize=(4, 4), subplot_kw=dict(polar=True)
-              )
-              ax_radar.plot(
-                  angles, values_radar, linewidth=2, linestyle="solid", color="#2563EB"
-              )
-              ax_radar.fill(angles, values_radar, color="#3B82F6", alpha=0.3)
-              ax_radar.set_xticks(angles[:-1])
-              ax_radar.set_xticklabels(categories_radar, size=8)
-              ax_radar.set_yticks([1, 2, 3, 4, 5])
-              ax_radar.set_ylim(0, 5)
-              st.pyplot(fig_radar)
-
-              c1, c2, c3, c4 = st.columns([1, 1, 1, 3])
+              c1, c2, c3 = st.columns([1, 1, 4])
               with c1:
-                if st.session_state["role"] == "Admin":
-                  if st.button("✏️ Edit", key=f"edit_{idx}"):
-                    st.session_state["edit_index"] = idx
-                    st.rerun()
-                else:
-                  st.caption("🔒 Admin de'it")
+                if st.button("✏️ Edit", key=f"edit_{idx}"):
+                  st.session_state["edit_index"] = idx
+                  st.rerun()
               with c2:
-                if st.session_state["role"] == "Admin":
-                  if st.button("🗑️ Hamos", key=f"del_{idx}"):
-                    if delete_extra_from_db(idx):
-                      if st.session_state["edit_index"] == idx:
-                        st.session_state["edit_index"] = None
-                      st.success("Dadus hamos ona!")
-                      st.rerun()
-                else:
-                  st.caption("🔒 Admin de'it")
-              with c3:
-                if REPORTLAB_AVAILABLE:
-                  pdf_buffer = generate_pdf_report(rep)
-                  st.download_button(
-                      label="📥 PDF",
-                      data=pdf_buffer,
-                      file_name=f"relatorio_{rep['id_sigap']}.pdf",
-                      mime="application/pdf",
-                      key=f"pdf_{idx}",
-                  )
+                if st.button("🗑️ Hamos", key=f"del_{idx}"):
+                  if delete_extra_from_db(idx):
+                    if st.session_state["edit_index"] == idx:
+                      st.session_state["edit_index"] = None
+                    st.success("Dadus hamos ona!")
+                    st.rerun()
   except Exception as e:
     st.error(f"⚠️ Erro iha prosesamentu fail: `{str(e)}`")
 else:
