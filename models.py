@@ -1,18 +1,26 @@
+import numpy as np
 import pandas as pd
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 
-def treinar_modelo(df, nota_cols, target_col="Rezultadu_Avaliasaun"):
+def treinar_modelo(df, nota_cols, target_col):
     le = LabelEncoder()
     df["target_encoded"] = le.fit_transform(df[target_col].astype(str))
-    
-    X = df[nota_cols]
     y = df["target_encoded"]
-    
-    model = DecisionTreeClassifier(criterion="entropy", max_depth=5, random_state=42)
-    model.fit(X, y)
-    return model, le
+    X = df[nota_cols].copy()
 
-def fazer_predicao(model, le, input_data):
-    pred_encoded = model.predict(input_data)
-    return le.inverse_transform(pred_encoded)[0]
+    try:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=y
+        )
+    except ValueError:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+
+    model = DecisionTreeClassifier(criterion="entropy", max_depth=5, random_state=42)
+    model.fit(X_train, y_train)
+    
+    return model, le, X_train, X_test, y_train, y_test
