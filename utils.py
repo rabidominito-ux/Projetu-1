@@ -1,9 +1,6 @@
-def calcular_resultado(lista_notas):
-    # Ezemplu kálkulu simples
-    media = sum(lista_notas) / len(lista_notas)
-    if media >= 80:
-        return "Excelente"
-    elif media >= 60:
-        return "Bom"
-    else:
-        return "Satisfatório"
+import pandas as pd
+import streamlit as st
+
+@st.cache_data
+def load_data(file):
+    return pd.read_excel(file, sheet_name="Sheet1", header=0)
