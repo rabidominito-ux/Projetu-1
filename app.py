@@ -114,39 +114,44 @@ if "edit_index" not in st.session_state:
 if "selected_category" not in st.session_state:
   st.session_state["selected_category"] = None
 
-# Sidebar ba Login & Gestaun Dataset
-st.sidebar.markdown("### 🔐 Autentikasaun Sistema")
+# --- TELA LOGIN (SE SEIDAAK LOGGED IN, APLIKASAUN TAU PAUSA TO'O LOGIN SUKSESU) ---
 if not st.session_state["logged_in"]:
-  with st.sidebar.form("login_form"):
-    u_input = st.text_input("Username")
-    p_input = st.text_input("Password", type="password")
-    login_btn = st.form_submit_button("🔑 Login")
-    if login_btn:
-      if u_input == "admin" and p_input == "admin123":
-        st.session_state["logged_in"] = True
-        st.session_state["username"] = "Administrador"
-        st.session_state["role"] = "Admin"
-        st.success("Login nu'udar Admin susesu!")
-        st.rerun()
-      elif u_input == "user" and p_input == "user123":
-        st.session_state["logged_in"] = True
-        st.session_state["username"] = "Funsionáriu"
-        st.session_state["role"] = "User"
-        st.success("Login nu'udar User susesu!")
-        st.rerun()
-      else:
-        st.error("⚠️ Username ka Password sala! (Uza admin/admin123 ka user/user123)")
-  st.sidebar.info("💡 **Nota:** Default login — Admin: `admin`/`admin123`")
-else:
-  st.sidebar.success(
-      f"👤 Logged in as: **{st.session_state['username']}**"
-      f" ({st.session_state['role']})"
-  )
-  if st.sidebar.button("🚪 Logout"):
-    st.session_state["logged_in"] = False
-    st.session_state["username"] = ""
-    st.session_state["role"] = "User"
-    st.rerun()
+  st.warning("🔒 **Seguransa Sistema:** Favor hatama Ita-nia Username no Password molok asesu ba sistema.")
+  col1, col2, col3 = st.columns([1, 1.5, 1])
+  with col2:
+    with st.form("main_login_form"):
+      st.markdown("### 🔐 Autentikasaun Usuáriu")
+      u_input = st.text_input("Username")
+      p_input = st.text_input("Password", type="password")
+      login_btn = st.form_submit_button("🔑 Tama ba Sistema (Login)")
+      if login_btn:
+        if u_input == "admin" and p_input == "admin123":
+          st.session_state["logged_in"] = True
+          st.session_state["username"] = "Administrador"
+          st.session_state["role"] = "Admin"
+          st.success("Login nu'udar Admin susesu!")
+          st.rerun()
+        elif u_input == "user" and p_input == "user123":
+          st.session_state["logged_in"] = True
+          st.session_state["username"] = "Funsionáriu"
+          st.session_state["role"] = "User"
+          st.success("Login nu'udar User susesu!")
+          st.rerun()
+        else:
+          st.error("⚠️ Username ka Password sala! Uza admin/admin123 ka user/user123")
+    st.info("💡 **Nota Default:** Admin (`admin`/`admin123`) ka User (`user`/`user123`)")
+  st.stop()  # Hapoi prosesu seluk tomak to'o de'it kuandu login ona
+
+# --- SE LOGGED IN ONA, HATUDU KONTROLUS IHA SIDEBAR NO DADOS APLIKASAUN ---
+st.sidebar.success(
+    f"👤 Logged in as: **{st.session_state['username']}**"
+    f" ({st.session_state['role']})"
+)
+if st.sidebar.button("🚪 Logout"):
+  st.session_state["logged_in"] = False
+  st.session_state["username"] = ""
+  st.session_state["role"] = "User"
+  st.rerun()
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📁 Gestaun Dataset")
@@ -293,7 +298,6 @@ def generate_pdf_report(rep):
       textColor=colors.HexColor('#1E3A8A'),
       alignment=1,
   )
-  normal_style = styles['Normal']
 
   story.append(Paragraph("REPUBLICA DEMOCRATICA DE TIMOR-LESTE", title_style))
   story.append(Paragraph("COMISAUN FUNÇÃO PÚBLICA (CFP)", title_style))
