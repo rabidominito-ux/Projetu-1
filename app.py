@@ -231,6 +231,9 @@ if "extra_reports" not in st.session_state:
 if "edit_index" not in st.session_state:
   st.session_state["edit_index"] = None
 
+if "selected_category" not in st.session_state:
+  st.session_state["selected_category"] = None
+
 # 3. Sidebar ba Upload Dataset & Download Backup
 st.sidebar.header("📁 Gestaun Dataset")
 uploaded_file = st.sidebar.file_uploader(
@@ -372,52 +375,71 @@ if uploaded_file is not None:
             else 0
         )
 
-        col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
-        col_m1.metric("Total Funsionáriu", f"{total_funs}")
-        col_m2.metric(
-            "Muito Bom", f"{counts_real.get('Muito Bom', 0)}", f"{mb_pct:.1f}%"
-        )
-        col_m3.metric("Bom", f"{counts_real.get('Bom', 0)}", f"{b_pct:.1f}%")
-        col_m4.metric(
-            "Suficiente",
-            f"{counts_real.get('Suficiente', 0)}",
-            f"{s_pct:.1f}%",
-        )
-        col_m5.metric(
-            "Insuficiente",
-            f"{counts_real.get('Insuficiente', 0)}",
-            f"{i_pct:.1f}%",
-        )
-
-        st.markdown("---")
-
-        # Filtru Interativu (Hili Kategoria... atu subar tabela molok hili)
         st.markdown(
-            "##### 🔍 Hili Kategoria atu Haktuir Dadus iha Tabela Kraik:"
+            "##### 💡 Klik iha kardaun sira iha kraik atu hatudu ka subar"
+            " tabela dadus:"
         )
-        filter_option = st.radio(
-            "Filtru Kategoria Dezempenu:",
-            [
-                "Hili Kategoria...",
-                "Tomak (Hotu-hotu)",
-                "Muito Bom",
-                "Bom",
-                "Suficiente",
-                "Insuficiente",
-            ],
-            horizontal=True,
-            label_visibility="collapsed",
-        )
+        col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
 
-        # TABELA MOSU DE'IT KUANDU USÚARIU HILI KATEGORIA (LA'ÓS "Hili Kategoria...")
-        if filter_option != "Hili Kategoria...":
-          if filter_option == "Tomak (Hotu-hotu)":
+        with col_m1:
+          if st.button(f"📊 Total\n\n{total_funs}"):
+            st.session_state["selected_category"] = (
+                "Tomak"
+                if st.session_state["selected_category"] != "Tomak"
+                else None
+            )
+
+        with col_m2:
+          if st.button(
+              f"⭐ Muito Bom\n\n{counts_real.get('Muito Bom', 0)}\n({mb_pct:.1f}%)"
+          ):
+            st.session_state["selected_category"] = (
+                "Muito Bom"
+                if st.session_state["selected_category"] != "Muito Bom"
+                else None
+            )
+
+        with col_m3:
+          if st.button(
+              f"✨ Bom\n\n{counts_real.get('Bom', 0)}\n({b_pct:.1f}%)"
+          ):
+            st.session_state["selected_category"] = (
+                "Bom"
+                if st.session_state["selected_category"] != "Bom"
+                else None
+            )
+
+        with col_m4:
+          if st.button(
+              f"📌 Suficiente\n\n{counts_real.get('Suficiente', 0)}\n({s_pct:.1f}%)"
+          ):
+            st.session_state["selected_category"] = (
+                "Suficiente"
+                if st.session_state["selected_category"] != "Suficiente"
+                else None
+            )
+
+        with col_m5:
+          if st.button(
+              f"⚠️ Insuficiente\n\n{counts_real.get('Insuficiente', 0)}\n({i_pct:.1f}%)"
+          ):
+            st.session_state["selected_category"] = (
+                "Insuficiente"
+                if st.session_state["selected_category"] != "Insuficiente"
+                else None
+            )
+
+        # TABELA MOSU DE'IT SE USUÁRIU KLIK BUTTON KATEGORIA
+        selected_cat = st.session_state["selected_category"]
+        if selected_cat is not None:
+          st.markdown("---")
+          if selected_cat == "Tomak":
             df_filtered = df
             st.markdown(f"📋 **Lista Funsionáriu Tomak** ({len(df_filtered)})")
           else:
-            df_filtered = df[df[target_col] == filter_option]
+            df_filtered = df[df[target_col] == selected_cat]
             st.markdown(
-                f"📋 **Lista Funsionáriu ba Kategoria: `{filter_option}`**"
+                f"📋 **Lista Funsionáriu ba Kategoria: `{selected_cat}`**"
                 f" ({len(df_filtered)})"
             )
 
@@ -436,7 +458,12 @@ if uploaded_file is not None:
               ],
               use_container_width=True,
           )
-          st.markdown("---")
+
+          if st.button("❌ Subar Tabela"):
+            st.session_state["selected_category"] = None
+            st.rerun()
+
+        st.markdown("---")
 
         col_g1, col_g2 = st.columns(2)
 
