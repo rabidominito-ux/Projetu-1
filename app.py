@@ -59,7 +59,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 2. Konfigurasaun Database SQLite local ho Auto-Migration
+# 2. Konfigurasaun Database SQLite local ho UNIQUE ba ID SIGAP
 DB_NAME = "cfp_database.db"
 
 
@@ -67,13 +67,13 @@ def init_db():
   try:
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    # Hasai tiha UNIQUE husi id_sigap atu bele kontrola liuhusi kombinasaun Naran + SIGAP + GRP
+    # Hateten katak id_sigap tenke UNIQUE hodi labele iha id ne'ebé dobru
     cursor.execute("""
             CREATE TABLE IF NOT EXISTS extra_reports (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 controlo_ativo_identificacao TEXT,
                 nome_pessoal TEXT,
-                id_sigap TEXT,
+                id_sigap TEXT UNIQUE,
                 sexo TEXT,
                 instituicao TEXT,
                 local_trabalho TEXT,
@@ -92,15 +92,6 @@ def init_db():
                 Rezultadu_Avaliasaun TEXT
             )
         """)
-
-    # Asegura katak koluna controlo_ativo_identificacao eziste iha database antigo
-    cursor.execute("PRAGMA table_info(extra_reports)")
-    columns = [col[1] for col in cursor.fetchall()]
-    if "controlo_ativo_identificacao" not in columns:
-      cursor.execute(
-          "ALTER TABLE extra_reports ADD COLUMN controlo_ativo_identificacao TEXT"
-      )
-
     conn.commit()
     conn.close()
   except Exception as e:
@@ -165,6 +156,9 @@ def save_extra_to_db(report_dict):
     conn.commit()
     conn.close()
     return True
+  except sqlite3.IntegrityError:
+    # Se ID SIGAP duplikadu iha database, SQL sei tira IntegrityError ne'e
+    return False
   except Exception as e:
     return False
 
@@ -309,6 +303,7 @@ if uploaded_file is not None:
       if len(st.session_state["extra_reports"]) > 0:
         df_extra = pd.DataFrame(st.session_state["extra_reports"])
         df = pd.concat([df_base, df_extra], ignore_index=True)
+        # Tenke drop duplicates bazeia ba id_sigap hodi evita duplikasaun iha memória
         df = df.drop_duplicates(subset=["id_sigap"], keep="last")
       else:
         df = df_base
@@ -881,23 +876,9 @@ if uploaded_file is not None:
           submit_pred = st.form_submit_button(btn_label)
 
           if submit_pred:
-            # Normaliza dadus hodi check duplikasaun
-            df["nome_norm"] = (
-                df["nome_pessoal"].astype(str).str.strip().str.lower()
-            )
-            df["sigap_norm"] = df["id_sigap"].astype(str).str.strip()
-            df["grp_norm"] = df["id_grp"].fillna("").astype(str).str.strip()
-
-            in_nome = txt_nome.strip().lower()
+            # Check ID SIGAP iha DataFrame tomak (Excel + Database)
+            existing_sigaps = df["id_sigap"].astype(str).str.strip().tolist()
             in_sigap = txt_sigap.strip()
-            in_grp = txt_grp.strip()
-
-            # Check Duplikasaun Strit: Naran Pessoal + ID SIGAP + ID GRP
-            is_exact_duplicate = df[
-                (df["nome_norm"] == in_nome)
-                & (df["sigap_norm"] == in_sigap)
-                & (df["grp_norm"] == in_grp)
-            ]
 
             if not txt_nome.strip() or not txt_sigap.strip():
               st.warning("⚠️ Favor prennde Naran Pessoal no ID SIGAP!")
@@ -905,11 +886,13 @@ if uploaded_file is not None:
               st.warning("⚠️ ID SIGAP tenke numeriku de'it!")
             elif txt_grp.strip() and not txt_grp.isdigit():
               st.warning("⚠️ ID GRP tenke numeriku de'it!")
-            elif len(is_exact_duplicate) > 0 and idx_edit is None:
+            # STRICT CHECK: Se ID SIGAP eziste ona no ita la'ós iha mode EDIT
+            elif in_sigap in existing_sigaps and idx_edit is None:
               st.error(
-                  f"❌ ATENSAUN ERRO: Funsionáriu ho Naran **'{txt_nome}'**,"
-                  f" ID SIGAP **'{txt_sigap}'**, no ID GRP **'{txt_grp}'** eziste"
-                  " ona iha sistema! Labele aumenta dadus duplikadu ne'e."
+                  f"❌ ATENSAUN ERRO: ID SIGAP **'{in_sigap}'** eziste ona iha"
+                  " sistema! Funsionáriu ne'e rejistradu ona. Labele utiliza"
+                  " tan ID SIGAP ne'e atu nune'e labele mosu problema akurasi"
+                  " diferente."
               )
             else:
               input_data = np.array([[
@@ -953,14 +936,17 @@ if uploaded_file is not None:
                   st.success("✅ Relatóriu atualiza ho suksesu iha database!")
                   st.rerun()
               else:
-                if save_extra_to_db(new_report):
+                success_db = save_extra_to_db(new_report)
+                if success_db:
                   st.session_state["edit_index"] = None
-                  st.success("✅ Relatóriu foun rai ho suksesu iha database!")
+                  st.success(
+                      "✅ Relatóriu foun rai ho suksesu iha database!"
+                  )
                   st.rerun()
                 else:
                   st.error(
-                      "⚠️ Falha atu rai dadus iha database. Favor check"
-                      " koneksaun."
+                      "⚠️ Falha: ID SIGAP ne'e iha ona iha database (UNIQUE"
+                      " Constraint). Labele duplika."
                   )
 
         if idx_edit is not None:
