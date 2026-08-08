@@ -347,8 +347,10 @@ if uploaded_file is not None:
 
       with tab1:
         st.subheader("📈 Dashboard Estatistika Dezempenu Funsionáriu")
+
         total_funs = len(df)
         counts_real = df[target_col].value_counts()
+
         mb_pct = (
             (counts_real.get("Muito Bom", 0) / total_funs) * 100
             if total_funs > 0
@@ -388,7 +390,54 @@ if uploaded_file is not None:
         )
 
         st.markdown("---")
+
+        # Filtru Interativu tuir Klik Metrika
+        st.markdown(
+            "##### 🔍 Hili Kategoria atu Haktuir Dadus iha Tabela Kraik:"
+        )
+        filter_option = st.radio(
+            "Filtru Kategoria Dezempenu:",
+            [
+                "Tomak (Hotu-hotu)",
+                "Muito Bom",
+                "Bom",
+                "Suficiente",
+                "Insuficiente",
+            ],
+            horizontal=True,
+            label_visibility="collapsed",
+        )
+
+        if filter_option == "Tomak (Hotu-hotu)":
+          df_filtered = df
+          st.markdown(f"📋 **Lista Funsionáriu Tomak** ({len(df_filtered)})")
+        else:
+          df_filtered = df[df[target_col] == filter_option]
+          st.markdown(
+              f"📋 **Lista Funsionáriu ba Kategoria: `{filter_option}`**"
+              f" ({len(df_filtered)})"
+          )
+
+        st.dataframe(
+            df_filtered[
+                [
+                    "controlo_ativo_identificacao",
+                    "nome_pessoal",
+                    "id_sigap",
+                    "id_grp",
+                    "sexo",
+                    "local_trabalho",
+                    "cargo",
+                    target_col,
+                ]
+            ],
+            use_container_width=True,
+        )
+
+        st.markdown("---")
+
         col_g1, col_g2 = st.columns(2)
+
         with col_g1:
           st.markdown("##### 📊 Komparasaun Kategoria (Reál vs Prediksaun)")
           fig, ax = plt.subplots(figsize=(6, 4))
@@ -397,6 +446,7 @@ if uploaded_file is not None:
           pred_counts = [
               df["Prediksaun"].value_counts().get(cat, 0) for cat in categories
           ]
+
           x = np.arange(len(categories))
           width = 0.35
           ax.bar(
@@ -480,10 +530,12 @@ if uploaded_file is not None:
         st.subheader(
             "🎯 Avaliasaun Detalladu Modelu (Confusion Matrix & Métricas)"
         )
+
         y_pred_test = model.predict(X_test)
         cm = confusion_matrix(y_test, y_pred_test)
 
         col_eval1, col_eval2 = st.columns(2)
+
         with col_eval1:
           st.markdown("##### 📉 Confusion Matrix")
           fig_cm, ax_cm = plt.subplots(figsize=(5, 4))
@@ -865,12 +917,10 @@ if uploaded_file is not None:
             in_sigap = txt_sigap.strip()
             in_grp = txt_grp.strip()
 
-            # FUNGSAUN REGEX: Blokeia letas alfabetu (A-Z)
             has_letters = lambda x: bool(re.search(r"[A-Za-z]", x))
 
             if not txt_nome.strip() or not txt_sigap.strip():
               st.warning("⚠️ Favor prennde Naran Pessoal no ID SIGAP!")
-            # KONTROLU: Se iha letra alfabetu (A-Z), sei hatudu erru
             elif has_letters(in_sigap):
               st.warning(
                   "⚠️ ID SIGAP labele uza letra alfabetu (A-Z)! Uza de'it"
@@ -1017,7 +1067,7 @@ if uploaded_file is not None:
                 )
   except Exception as e:
     st.error(
-        f"⚠️ Akontese Error ruma während prosesamentu ficheiru Excel:"
+        f"⚠️ Akontese Error ruma durante prosesamentu ficheiru Excel:"
         f" `{str(e)}`"
     )
 else:
