@@ -916,14 +916,14 @@ if uploaded_file is not None:
                 1.0,
                 5.0,
                 float(def_val.get("Asiduidade", 4.0)),
-                1.0,
+                0.5,
             )
             p_pont = st.slider(
                 "Pontualidade",
                 1.0,
                 5.0,
                 float(def_val.get("Pontualidade", 4.0)),
-                1.0,
+                0.5,
             )
           with col_b:
             p_prod = st.slider(
@@ -931,14 +931,14 @@ if uploaded_file is not None:
                 1.0,
                 5.0,
                 float(def_val.get("Produtividade", 4.0)),
-                1.0,
+                0.5,
             )
             p_kual = st.slider(
                 "Kualidade Servisu",
                 1.0,
                 5.0,
                 float(def_val.get("Kualidade_Servisu", 4.0)),
-                1.0,
+                0.5,
             )
           with col_c:
             p_koop = st.slider(
@@ -946,25 +946,29 @@ if uploaded_file is not None:
                 1.0,
                 5.0,
                 float(def_val.get("Kooperasaun", 4.0)),
-                1.0,
+                0.5,
             )
             p_inis = st.slider(
                 "Inisiativa",
                 1.0,
                 5.0,
                 float(def_val.get("Inisiativa", 4.0)),
-                1.0,
+                0.5,
             )
           with col_d:
             p_disp = st.slider(
-                "Disiplina", 1.0, 5.0, float(def_val.get("Disiplina", 4.0)), 1.0
+                "Disiplina",
+                1.0,
+                5.0,
+                float(def_val.get("Disiplina", 4.0)),
+                0.5,
             )
             p_resp = st.slider(
                 "Responsabilidade",
                 1.0,
                 5.0,
                 float(def_val.get("Responsabilidade", 4.0)),
-                1.0,
+                0.5,
             )
 
           btn_label = (
