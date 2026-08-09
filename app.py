@@ -6,7 +6,7 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 import streamlit as st
 
-from database import init_db, load_extra_from_db, save_extra_to_db, update_extra_in_db_by_index
+from database import init_db, load_extra_from_db, save_extra_to_db, update_extra_in_db_by_index, delete_extra_from_db_by_index
 from utils import load_data
 from models import treinar_modelo
 from ui_components import render_custom_css
@@ -208,7 +208,7 @@ if uploaded_file is not None:
                 st.pyplot(fig_tree)
 
             with tab3:
-                st.subheader("🔍 Prediksaun Funsionáriu Foun & Jere Dadus")
+                st.subheader("🔍 Prediksaun Funsionáriu Foun & Gestaun Dadus")
                 
                 extra_records = load_extra_from_db()
                 st.session_state["extra_reports"] = extra_records
@@ -216,20 +216,40 @@ if uploaded_file is not None:
                 st.markdown("##### 📋 Lista Dadus Funsionáriu Foun (Database SQLite)")
                 if len(extra_records) > 0:
                     df_manage = pd.DataFrame(extra_records)
-                    st.dataframe(df_manage[["nome_pessoal", "id_sigap", "local_trabalho", "cargo", "Rezultadu_Avaliasaun"]], use_container_width=True)
                     
-                    col_m1, col_m2 = st.columns(2)
+                    # Hatudu tabela ho forma organizadu no limpu
+                    st.dataframe(
+                        df_manage[["nome_pessoal", "id_sigap", "local_trabalho", "cargo", "Rezultadu_Avaliasaun"]], 
+                        use_container_width=True
+                    )
+                    
+                    # Kontrolu ba Edita no Delete
+                    col_m1, col_m2, col_m3 = st.columns(3)
                     with col_m1:
-                        selected_edit_idx = st.number_input("Hili Index atu Edita:", min_value=0, max_value=len(extra_records)-1, step=1)
-                        if st.button("✏️ Karga Dadus ne'e ba Form (Edit)"):
+                        selected_edit_idx = st.number_input("Hili Index:", min_value=0, max_value=len(extra_records)-1, step=1)
+                    with col_m2:
+                        st.write("") # spacer
+                        st.write("")
+                        if st.button("✏️ Karga ba Form (Edit)", use_container_width=True):
                             st.session_state["edit_index"] = selected_edit_idx
                             st.rerun()
-                    with col_m2:
-                        if st.session_state["edit_index"] is not None:
-                            st.info(f"⚠️ Sei edita dadus iha index: {st.session_state['edit_index']}")
-                            if st.button("❌ Kansela Edit"):
-                                st.session_state["edit_index"] = None
+                    with col_m3:
+                        st.write("") # spacer
+                        st.write("")
+                        if st.button("🗑️ Hamos Dadus (Delete)", type="primary", use_container_width=True):
+                            if delete_extra_from_db_by_index(selected_edit_idx):
+                                st.success(f"✅ Dadus index {selected_edit_idx} hamos ona ho suksesu!")
+                                if st.session_state["edit_index"] == selected_edit_idx:
+                                    st.session_state["edit_index"] = None
                                 st.rerun()
+                            else:
+                                st.error("⚠️ Erro durante hamos dadus.")
+
+                    if st.session_state["edit_index"] is not None:
+                        st.info(f"⚠️ Atualmente hela iha Módudu Edisaun ba Index: **{st.session_state['edit_index']}**")
+                        if st.button("❌ Kansela / Sai husi Módudu Edisaun"):
+                            st.session_state["edit_index"] = None
+                            st.rerun()
                 else:
                     st.info("ℹ️ Sei la iha dadus foun rejisitadu iha database lokal.")
 
@@ -238,7 +258,7 @@ if uploaded_file is not None:
                 def_val = {}
                 if idx_edit is not None and idx_edit < len(st.session_state["extra_reports"]):
                     def_val = st.session_state["extra_reports"][idx_edit]
-                    st.markdown(f"#### ✏️ Halakon / Atualiza Dadus Funsionáriu (Index: {idx_edit})")
+                    st.markdown(f"#### ✏️ Atualiza Dadus Funsionáriu (Index: {idx_edit})")
                 else:
                     st.markdown("#### ➕ Input Funsionáriu Foun ba Prediksaun")
 
@@ -246,7 +266,6 @@ if uploaded_file is not None:
                     st.markdown("##### 📝 1. Informasaun Identidade Funsionáriu")
                     municipios = ["Aileu", "Ainaro", "Baucau", "Bobonaro", "Covalima", "Díli", "Ermera", "Lautém", "Liquiçá", "Manatuto", "Manufahi", "Oe-Cusse Ambeno", "Viqueque"]
                     
-                    # Lista Funsaun / Karreira ne'ebé kompletu bazeia ba dadus CFP
                     funcoes = [
                         "Regime Geral das Carreiras, Técnico Superior Grau B, 10, PERMANENTE",
                         "Regime Geral das Carreiras, Técnico Administrativo Grau E, 1, PERMANENTE",
@@ -286,7 +305,6 @@ if uploaded_file is not None:
                         "Regime Geral das Carreiras, Técnico Superior Grau B, 9, PERMANENTE"
                     ]
 
-                    # Lista Kargo ne'ebé kumpletu
                     cargos = [
                         "Técnico Superior", 
                         "Técnico Profissional", 
