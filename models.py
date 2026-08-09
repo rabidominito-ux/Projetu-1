@@ -1,4 +1,3 @@
-import joblib
 import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
@@ -6,7 +5,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 
-# 1. Funsaun hodi treinu foun (Train Model)
 def treinar_modelo(df, nota_cols, target_col):
     le = LabelEncoder()
     df["target_encoded"] = le.fit_transform(df[target_col].astype(str))
@@ -26,12 +24,3 @@ def treinar_modelo(df, nota_cols, target_col):
     model.fit(X_train, y_train)
     
     return model, le, X_train, X_test, y_train, y_test
-
-# 2. Funsaun hodi carrega Modelu ne'ebé Rai ona (.pkl)
-def carregar_modelo_pkl(filename="modelu_cfp.pkl"):
-    try:
-        dados_salvos = joblib.load(filename)
-        return dados_salvos
-    except Exception as e:
-        print(f"Erro iha carrega model pkl: {e}")
-        return None
