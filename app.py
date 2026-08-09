@@ -213,18 +213,17 @@ if uploaded_file is not None:
                 extra_records = load_extra_from_db()
                 st.session_state["extra_reports"] = extra_records
 
-                st.markdown("##### 📋 Lista Dadus Funsionáriu Foun & Gestaun Direta")
+                st.markdown("##### 📋 Lista Dadus Funsionáriu Foun & Asaun Gestaun")
                 if len(extra_records) > 0:
-                    h1, h2, h3, h4, h5 = st.columns([2.5, 1.5, 2, 2.2, 1.2])
+                    h1, h2, h3, h4 = st.columns([3, 2, 2.5, 2.5])
                     with h1: st.markdown("**Naran / ID SIGAP**")
                     with h2: st.markdown("**Munisípiu**")
                     with h3: st.markdown("**Kargo**")
-                    with h4: st.markdown("**Rezultadu Avaliasaun**")
-                    with h5: st.markdown("**Asaun (Edit / Del)**")
+                    with h4: st.markdown("**Rezultadu Avaliasaun & Asaun**")
                     st.markdown("<hr style='margin: 0px 0px 10px 0px;'>", unsafe_allow_html=True)
 
                     for i, rec in enumerate(extra_records):
-                        c1, c2, c3, c4, c5 = st.columns([2.5, 1.5, 2, 2.2, 1.2])
+                        c1, c2, c3, c4 = st.columns([3, 2, 2.5, 2.5])
                         with c1:
                             st.write(f"👤 **{rec.get('nome_pessoal')}**\n`{rec.get('id_sigap')}`")
                         with c2:
@@ -233,14 +232,14 @@ if uploaded_file is not None:
                             st.write(f"💼 {rec.get('cargo')}")
                         with c4:
                             res_val = rec.get('Rezultadu_Avaliasaun', 'N/A')
-                            st.markdown(f"⭐ **{res_val}**")
-                        with c5:
-                            sub_c1, sub_c2 = st.columns(2)
-                            with sub_c1:
+                            sub_res, sub_edit, sub_del = st.columns([1.5, 0.7, 0.7])
+                            with sub_res:
+                                st.markdown(f"⭐ **{res_val}**")
+                            with sub_edit:
                                 if st.button("✏️", key=f"edit_btn_{i}", help="Edita dadus ne'e"):
                                     st.session_state["edit_index"] = i
                                     st.rerun()
-                            with sub_c2:
+                            with sub_del:
                                 if st.button("🗑️", key=f"del_btn_{i}", help="Hamos dadus ne'e"):
                                     if delete_extra_from_db_by_index(i):
                                         if st.session_state["edit_index"] == i:
