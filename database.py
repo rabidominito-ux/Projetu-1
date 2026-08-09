@@ -1,146 +1,102 @@
 import sqlite3
 import pandas as pd
 
-DB_NAME = "cfp_database.db"
+def init_db(db_name="cfp_database.db"):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS extra_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            controlo_ativo_identificacao TEXT,
+            nome_pessoal TEXT,
+            id_sigap TEXT UNIQUE,
+            sexo TEXT,
+            instituicao TEXT,
+            local_trabalho TEXT,
+            data_de_nascimento TEXT,
+            funcao TEXT,
+            cargo TEXT,
+            id_grp TEXT,
+            Asiduidade REAL,
+            Pontualidade REAL,
+            Produtividade REAL,
+            Kualidade_Servisu REAL,
+            Kooperasaun REAL,
+            Inisiativa REAL,
+            Disiplina REAL,
+            Responsabilidade REAL,
+            Rezultadu_Avaliasaun TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
-def init_db():
+def load_extra_from_db(db_name="cfp_database.db"):
     try:
-        conn = sqlite3.connect(DB_NAME)
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS extra_reports (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                controlo_ativo_identificacao TEXT,
-                nome_pessoal TEXT,
-                id_sigap TEXT UNIQUE,
-                sexo TEXT,
-                instituicao TEXT,
-                local_trabalho TEXT,
-                data_de_nascimento TEXT,
-                funcao TEXT,
-                cargo TEXT,
-                id_grp TEXT,
-                Asiduidade REAL,
-                Pontualidade REAL,
-                Produtividade REAL,
-                Kualidade_Servisu REAL,
-                Kooperasaun REAL,
-                Inisiativa REAL,
-                Disiplina REAL,
-                Responsabilidade REAL,
-                Rezultadu_Avaliasaun TEXT
-            )
-        """)
-        conn.commit()
+        conn = sqlite3.connect(db_name)
+        df = pd.read_sql("SELECT * FROM extra_reports", conn)
         conn.close()
-    except Exception as e:
-        print(f"⚠️ Erro iha inicializasaun database: {e}")
-
-def load_extra_from_db():
-    try:
-        conn = sqlite3.connect(DB_NAME)
-        df_db = pd.read_sql_query("SELECT * FROM extra_reports", conn)
-        conn.close()
-        if "id" in df_db.columns:
-            df_db = df_db.drop(columns=["id"])
-        return df_db.to_dict("records")
-    except Exception as e:
+        return df.to_dict(orient="records")
+    except Exception:
         return []
 
-def save_extra_to_db(report_dict):
+def save_extra_to_db(data, db_name="cfp_database.db"):
     try:
-        conn = sqlite3.connect(DB_NAME)
+        conn = sqlite3.connect(db_name)
         cursor = conn.cursor()
-        cursor.execute("""
+        cursor.execute('''
             INSERT INTO extra_reports (
-                controlo_ativo_identificacao, nome_pessoal, id_sigap, sexo, instituicao, local_trabalho, 
-                data_de_nascimento, funcao, cargo, id_grp, Asiduidade, 
-                Pontualidade, Produtividade, Kualidade_Servisu, Kooperasaun, 
-                Inisiativa, Disiplina, Responsabilidade, Rezultadu_Avaliasaun
+                controlo_ativo_identificacao, nome_pessoal, id_sigap, sexo, instituicao,
+                local_trabalho, data_de_nascimento, funcao, cargo, id_grp,
+                Asiduidade, Pontualidade, Produtividade, Kualidade_Servisu,
+                Kooperasaun, Inisiativa, Disiplina, Responsabilidade, Rezultadu_Avaliasaun
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            report_dict["controlo_ativo_identificacao"],
-            report_dict["nome_pessoal"],
-            report_dict["id_sigap"],
-            report_dict["sexo"],
-            report_dict["instituicao"],
-            report_dict["local_trabalho"],
-            report_dict["data_de_nascimento"],
-            report_dict["funcao"],
-            report_dict["cargo"],
-            report_dict["id_grp"],
-            report_dict["Asiduidade"],
-            report_dict["Pontualidade"],
-            report_dict["Produtividade"],
-            report_dict["Kualidade_Servisu"],
-            report_dict["Kooperasaun"],
-            report_dict["Inisiativa"],
-            report_dict["Disiplina"],
-            report_dict["Responsabilidade"],
-            report_dict["Rezultadu_Avaliasaun"],
+        ''', (
+            data.get("controlo_ativo_identificacao"), data.get("nome_pessoal"), data.get("id_sigap"),
+            data.get("sexo"), data.get("instituicao"), data.get("local_trabalho"),
+            data.get("data_de_nascimento"), data.get("funcao"), data.get("cargo"), data.get("id_grp"),
+            data.get("Asiduidade"), data.get("Pontualidade"), data.get("Produtividade"), data.get("Kualidade_Servisu"),
+            data.get("Kooperasaun"), data.get("Inisiativa"), data.get("Disiplina"), data.get("Responsabilidade"),
+            data.get("Rezultadu_Avaliasaun")
         ))
         conn.commit()
         conn.close()
         return True
     except sqlite3.IntegrityError:
         return False
-    except Exception as e:
-        return False
 
-def update_extra_in_db_by_index(index_val, report_dict):
-    try:
-        conn = sqlite3.connect(DB_NAME)
+def update_extra_in_db_by_index(index, data, db_name="cfp_database.db"):
+    records = load_extra_from_db(db_name)
+    if 0 <= index < len(records):
+        target_id_sigap = records[index].get("id_sigap")
+        conn = sqlite3.connect(db_name)
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM extra_reports")
-        ids = [row[0] for row in cursor.fetchall()]
-        if index_val < len(ids):
-            row_id = ids[index_val]
-            cursor.execute("""
-                UPDATE extra_reports SET 
-                    controlo_ativo_identificacao=?, nome_pessoal=?, id_sigap=?, sexo=?, instituicao=?, local_trabalho=?, 
-                    data_de_nascimento=?, funcao=?, cargo=?, id_grp=?, Asiduidade=?, 
-                    Pontualidade=?, Produtividade=?, Kualidade_Servisu=?, Kooperasaun=?, 
-                    Inisiativa=?, Disiplina=?, Responsabilidade=?, Rezultadu_Avaliasaun=?
-                WHERE id=?
-            """, (
-                report_dict["controlo_ativo_identificacao"],
-                report_dict["nome_pessoal"],
-                report_dict["id_sigap"],
-                report_dict["sexo"],
-                report_dict["instituicao"],
-                report_dict["local_trabalho"],
-                report_dict["data_de_nascimento"],
-                report_dict["funcao"],
-                report_dict["cargo"],
-                report_dict["id_grp"],
-                report_dict["Asiduidade"],
-                report_dict["Pontualidade"],
-                report_dict["Produtividade"],
-                report_dict["Kualidade_Servisu"],
-                report_dict["Kooperasaun"],
-                report_dict["Inisiativa"],
-                report_dict["Disiplina"],
-                report_dict["Responsabilidade"],
-                report_dict["Rezultadu_Avaliasaun"],
-                row_id,
-            ))
-            conn.commit()
+        cursor.execute('''
+            UPDATE extra_reports SET
+                controlo_ativo_identificacao=?, nome_pessoal=?, id_sigap=?, sexo=?, instituicao=?,
+                local_trabalho=?, data_de_nascimento=?, funcao=?, cargo=?, id_grp=?,
+                Asiduidade=?, Pontualidade=?, Produtividade=?, Kualidade_Servisu=?,
+                Kooperasaun=?, Inisiativa=?, Disiplina=?, Responsabilidade=?, Rezultadu_Avaliasaun=?
+            WHERE id_sigap=?
+        ''', (
+            data.get("controlo_ativo_identificacao"), data.get("nome_pessoal"), data.get("id_sigap"),
+            data.get("sexo"), data.get("instituicao"), data.get("local_trabalho"),
+            data.get("data_de_nascimento"), data.get("funcao"), data.get("cargo"), data.get("id_grp"),
+            data.get("Asiduidade"), data.get("Pontualidade"), data.get("Produtividade"), data.get("Kualidade_Servisu"),
+            data.get("Kooperasaun"), data.get("Inisiativa"), data.get("Disiplina"), data.get("Responsabilidade"),
+            data.get("Rezultadu_Avaliasaun"), target_id_sigap
+        ))
+        conn.commit()
+        conn.close()
+
+def delete_extra_from_db_by_index(index, db_name="cfp_database.db"):
+    records = load_extra_from_db(db_name)
+    if 0 <= index < len(records):
+        target_id_sigap = records[index].get("id_sigap")
+        conn = sqlite3.connect(db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM extra_reports WHERE id_sigap = ?", (target_id_sigap,))
+        conn.commit()
         conn.close()
         return True
-    except Exception as e:
-        return False
-
-def delete_extra_from_db(index_val):
-    try:
-        conn = sqlite3.connect(DB_NAME)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id FROM extra_reports")
-        ids = [row[0] for row in cursor.fetchall()]
-        if index_val < len(ids):
-            row_id = ids[index_val]
-            cursor.execute("DELETE FROM extra_reports WHERE id=?", (row_id,))
-            conn.commit()
-        conn.close()
-        return True
-    except Exception as e:
-        return False
+    return False
