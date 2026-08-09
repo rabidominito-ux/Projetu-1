@@ -8,7 +8,7 @@ import streamlit as st
 
 from database import init_db, load_extra_from_db, save_extra_to_db, update_extra_in_db_by_index
 from utils import load_data
-from models import treinar_modelo, carregar_modelo_pkl
+from models import treinar_modelo
 from ui_components import render_custom_css
 
 st.set_page_config(
@@ -35,14 +35,6 @@ if "selected_category" not in st.session_state:
 
 st.sidebar.markdown("### 📁 Gestaun Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
-
-# === AUMENTA OPÇÃO HILI MODELU AI IHA SIDEBAR ===
-st.sidebar.markdown("---")
-st.sidebar.markdown("### ⚙️ Metodu Modelu AI")
-metodu_ai = st.sidebar.radio(
-    "Hili Modelu:",
-    ("Treinu Foun (models.py)", "Uza Modelu Rai Ona (modelu_cfp.pkl)")
-)
 
 if uploaded_file is not None:
     try:
@@ -92,34 +84,7 @@ if uploaded_file is not None:
                 mime="text/csv",
             )
 
-            # === LOJIKA BZEIA BA ESCOLHA MODELU AI ===
-            if metodu_ai == "Treinu Foun (models.py)":
-                model, le, X_train, X_test, y_train, y_test = treinar_modelo(df, nota_cols, target_col)
-                st.sidebar.success("✅ Uza hela Modelu Treinu Foun.")
-            else:
-                dados_pkl = carregar_modelo_pkl("modelu_cfp.pkl")
-                if dados_pkl is not None:
-                    # Se fail .pkl save model no le hamutuk iha tuple/dictionary, ka model de'it
-                    model = dados_pkl.get("model") if isinstance(dados_pkl, dict) else dados_pkl
-                    le = dados_pkl.get("le") if isinstance(dados_pkl, dict) else None
-                    
-                    # Se le mamuk, ita kria LabelEncoder foun hosi dadus df
-                    if le is None:
-                        from sklearn.preprocessing import LabelEncoder
-                        le = LabelEncoder()
-                        le.fit(df[target_col].astype(str))
-
-                    from sklearn.model_selection import train_test_split
-                    from sklearn.preprocessing import LabelEncoder
-                    
-                    df["target_encoded"] = le.fit_transform(df[target_col].astype(str))
-                    y = df["target_encoded"]
-                    X = df[nota_cols].copy()
-                    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-                    st.sidebar.success("✅ Uza hela Modelu .pkl (Pre-trained).")
-                else:
-                    st.sidebar.error("⚠️ La hetan fail `modelu_cfp.pkl`! Kait uza fali treinu foun.")
-                    model, le, X_train, X_test, y_train, y_test = treinar_modelo(df, nota_cols, target_col)
+            model, le, X_train, X_test, y_train, y_test = treinar_modelo(df, nota_cols, target_col)
 
             df["Prediksaun"] = le.inverse_transform(model.predict(df[nota_cols]))
             acc = accuracy_score(y_test, model.predict(X_test))
