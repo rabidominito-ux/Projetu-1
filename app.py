@@ -209,16 +209,96 @@ if uploaded_file is not None:
 
             with tab3:
                 st.subheader("🔍 Prediksaun Funsionáriu Foun & Jere Dadus")
+                
+                extra_records = load_extra_from_db()
+                st.session_state["extra_reports"] = extra_records
+
+                st.markdown("##### 📋 Lista Dadus Funsionáriu Foun (Database SQLite)")
+                if len(extra_records) > 0:
+                    df_manage = pd.DataFrame(extra_records)
+                    st.dataframe(df_manage[["nome_pessoal", "id_sigap", "local_trabalho", "cargo", "Rezultadu_Avaliasaun"]], use_container_width=True)
+                    
+                    col_m1, col_m2 = st.columns(2)
+                    with col_m1:
+                        selected_edit_idx = st.number_input("Hili Index atu Edita:", min_value=0, max_value=len(extra_records)-1, step=1)
+                        if st.button("✏️ Karga Dadus ne'e ba Form (Edit)"):
+                            st.session_state["edit_index"] = selected_edit_idx
+                            st.rerun()
+                    with col_m2:
+                        if st.session_state["edit_index"] is not None:
+                            st.info(f"⚠️ Sei edita dadus iha index: {st.session_state['edit_index']}")
+                            if st.button("❌ Kansela Edit"):
+                                st.session_state["edit_index"] = None
+                                st.rerun()
+                else:
+                    st.info("ℹ️ Sei la iha dadus foun rejisitadu iha database lokal.")
+
+                st.markdown("---")
                 idx_edit = st.session_state["edit_index"]
                 def_val = {}
                 if idx_edit is not None and idx_edit < len(st.session_state["extra_reports"]):
                     def_val = st.session_state["extra_reports"][idx_edit]
+                    st.markdown(f"#### ✏️ Halakon / Atualiza Dadus Funsionáriu (Index: {idx_edit})")
+                else:
+                    st.markdown("#### ➕ Input Funsionáriu Foun ba Prediksaun")
 
                 with st.form("funsionariu_form"):
                     st.markdown("##### 📝 1. Informasaun Identidade Funsionáriu")
                     municipios = ["Aileu", "Ainaro", "Baucau", "Bobonaro", "Covalima", "Díli", "Ermera", "Lautém", "Liquiçá", "Manatuto", "Manufahi", "Oe-Cusse Ambeno", "Viqueque"]
-                    funcoes = ["Regime Geral das Carreiras, Técnico Superior Grau B, 10, PERMANENTE", "Regime Geral das Carreiras, Técnico Administrativo Grau E, 1, PERMANENTE"]
-                    cargos = ["Técnico Superior", "Técnico Profissional", "Assistente Administrativo", "Oficial Administrativo", "Assistente Técnico"]
+                    
+                    # Lista Funsaun / Karreira ne'ebé kompletu bazeia ba dadus CFP
+                    funcoes = [
+                        "Regime Geral das Carreiras, Técnico Superior Grau B, 10, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Administrativo Grau E, 1, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Administrativo Grau E, 4, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Profissional Grau C, 1, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Superior Grau A, 4, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Profissional Grau C, 5, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Administrativo Grau E, 3, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Administrativo Grau E, 6, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Administrativo Grau E, 5, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Administrativo Grau E, 1, NOMEAÇÃO PROBATÓRIA",
+                        "Regime Geral das Carreiras, Assistente Grau F, 5, PERMANENTE",
+                        "Regime Geral das Carreiras, Assistente Grau F, 3, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Superior Grau B, 1, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Profissional Grau D, 1, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Superior Grau A, 3, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Profissional Grau D, 2, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Profissional Grau D, 1, NOMEAÇÃO PROBATÓRIA",
+                        "Regime Geral das Carreiras, Técnico Profissional Grau C, 1, NOMEAÇÃO PROBATÓRIA",
+                        "Regime Geral das Carreiras, Técnico Superior Grau B, 2, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Superior Grau A, 8, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Profissional Grau D, 7, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Superior Grau A, 2, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Superior Grau A, 1, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Administrativo Grau E, 2, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Profissional Grau D, 3, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Profissional Grau C, 3, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Profissional Grau D, 4, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Profissional Grau C, 4, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Profissional Grau C, 2, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Superior Grau B, 4, PERMANENTE",
+                        "Regime Geral das Carreiras, Assistente Grau F, 2, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Profissional Grau D, 5, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Superior Grau B, 5, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Superior Grau B, 7, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Superior Grau B, 3, PERMANENTE",
+                        "Regime Geral das Carreiras, Técnico Superior Grau B, 9, PERMANENTE"
+                    ]
+
+                    # Lista Kargo ne'ebé kumpletu
+                    cargos = [
+                        "Técnico Superior", 
+                        "Técnico Profissional", 
+                        "Assistente Administrativo", 
+                        "Oficial Administrativo", 
+                        "Assistente Técnico", 
+                        "Técnico Informática", 
+                        "Analista de Dados", 
+                        "Chefe de Unidade", 
+                        "Chefe de Departamento", 
+                        "Diretor Nacional"
+                    ]
 
                     col_i1, col_i2, col_i3 = st.columns(3)
                     with col_i1:
@@ -227,14 +307,24 @@ if uploaded_file is not None:
                         txt_ativo = st.selectbox("Controlo Ativo Identifikasaun", ativo_opts, index=ativo_opts.index(cur_ativo) if cur_ativo in ativo_opts else 0)
                         txt_nome = st.text_input("Naran Pessoal*", def_val.get("nome_pessoal", ""))
                         txt_sigap = st.text_input("ID SIGAP*", def_val.get("id_sigap", ""))
-                        txt_sexo = st.selectbox("Sexo", ["M", "F"], index=0 if def_val.get("sexo", "M") == "M" else 1)
+                        cur_sexo = def_val.get("sexo", "M")
+                        txt_sexo = st.selectbox("Sexo", ["M", "F"], index=0 if cur_sexo == "M" else 1)
                     with col_i2:
                         txt_inst = st.text_input("Instituisaun", def_val.get("instituicao", "CFP"))
-                        txt_local = st.selectbox("Local Trabalhu", municipios)
-                        txt_nascimento = st.date_input("Data de Nascimento")
+                        cur_local = def_val.get("local_trabalho", "Díli")
+                        txt_local = st.selectbox("Local Trabalhu", municipios, index=municipios.index(cur_local) if cur_local in municipios else 0)
+                        
+                        try:
+                            default_date = pd.to_datetime(def_val.get("data_de_nascimento", "1995-01-01")).date()
+                        except:
+                            default_date = pd.to_datetime("1995-01-01").date()
+                        txt_nascimento = st.date_input("Data de Nascimento", value=default_date)
                     with col_i3:
-                        txt_funcao = st.selectbox("Funsaun", funcoes)
-                        txt_cargo = st.selectbox("Kargo", cargos)
+                        cur_func = def_val.get("funcao", funcoes[0])
+                        txt_funcao = st.selectbox("Funsaun", funcoes, index=funcoes.index(cur_func) if cur_func in funcoes else 0)
+                        
+                        cur_cargo = def_val.get("cargo", cargos[0])
+                        txt_cargo = st.selectbox("Kargo", cargos, index=cargos.index(cur_cargo) if cur_cargo in cargos else 0)
                         txt_grp = st.text_input("ID GRP", def_val.get("id_grp", ""))
 
                     st.markdown("##### 📊 2. Indikadór Avaliasaun Funsionáriu")
@@ -255,30 +345,33 @@ if uploaded_file is not None:
                     submit_pred = st.form_submit_button("💾 Salva / Prediksaun")
 
                     if submit_pred:
-                        input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
-                        pred_encoded = model.predict(input_data)
-                        pred_label = le.inverse_transform(pred_encoded)[0]
-
-                        new_report = {
-                            "controlo_ativo_identificacao": txt_ativo, "nome_pessoal": txt_nome, "id_sigap": txt_sigap,
-                            "sexo": txt_sexo, "instituicao": txt_inst, "local_trabalho": txt_local,
-                            "data_de_nascimento": str(txt_nascimento), "funcao": txt_funcao, "cargo": txt_cargo,
-                            "id_grp": txt_grp, "Asiduidade": p_asid, "Pontualidade": p_pont, "Produtividade": p_prod,
-                            "Kualidade_Servisu": p_kual, "Kooperasaun": p_koop, "Inisiativa": p_inis,
-                            "Disiplina": p_disp, "Responsabilidade": p_resp, "Rezultadu_Avaliasaun": pred_label
-                        }
-
-                        if idx_edit is not None:
-                            update_extra_in_db_by_index(idx_edit, new_report)
-                            st.session_state["edit_index"] = None
-                            st.success("✅ Atualizadu!")
-                            st.rerun()
+                        if not txt_nome.strip() or not txt_sigap.strip():
+                            st.error("⚠️ Favór preenxe Naran Pessoal no ID SIGAP ho loos!")
                         else:
-                            if save_extra_to_db(new_report):
-                                st.success("✅ Rai ona!")
+                            input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
+                            pred_encoded = model.predict(input_data)
+                            pred_label = le.inverse_transform(pred_encoded)[0]
+
+                            new_report = {
+                                "controlo_ativo_identificacao": txt_ativo, "nome_pessoal": txt_nome, "id_sigap": txt_sigap,
+                                "sexo": txt_sexo, "instituicao": txt_inst, "local_trabalho": txt_local,
+                                "data_de_nascimento": str(txt_nascimento), "funcao": txt_funcao, "cargo": txt_cargo,
+                                "id_grp": txt_grp, "Asiduidade": p_asid, "Pontualidade": p_pont, "Produtividade": p_prod,
+                                "Kualidade_Servisu": p_kual, "Kooperasaun": p_koop, "Inisiativa": p_inis,
+                                "Disiplina": p_disp, "Responsabilidade": p_resp, "Rezultadu_Avaliasaun": pred_label
+                            }
+
+                            if idx_edit is not None:
+                                update_extra_in_db_by_index(idx_edit, new_report)
+                                st.session_state["edit_index"] = None
+                                st.success("✅ Atualizadu ho suksesu!")
                                 st.rerun()
                             else:
-                                st.error("⚠️ Erro: ID SIGAP duplicadu.")
+                                if save_extra_to_db(new_report):
+                                    st.success(f"✅ Rai ona! Prediksaun Dezempenu: **{pred_label}**")
+                                    st.rerun()
+                                else:
+                                    st.error("⚠️ Erro: ID SIGAP ne'e iha ona (Duplikadu). Favór uza ID seluk.")
 
     except Exception as e:
         st.error(f"⚠️ Erro iha prosesamentu fail: {e}")
