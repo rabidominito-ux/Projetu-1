@@ -107,19 +107,19 @@ if uploaded_file is not None:
 
                 col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
                 with col_m1:
-                    if st.button(f"📊 Total Funsionáriu\n\n{total_funs}"):
+                    if st.button(f"📊 Total Funsionáriu\n\n{total_funs}", key="btn_m1"):
                         st.session_state["selected_category"] = "Tomak" if st.session_state["selected_category"] != "Tomak" else None
                 with col_m2:
-                    if st.button(f"⭐ Muito Bom\n\n{counts_real.get('Muito Bom', 0)}\n({mb_pct:.1f}%)"):
+                    if st.button(f"⭐ Muito Bom\n\n{counts_real.get('Muito Bom', 0)}\n({mb_pct:.1f}%)", key="btn_m2"):
                         st.session_state["selected_category"] = "Muito Bom" if st.session_state["selected_category"] != "Muito Bom" else None
                 with col_m3:
-                    if st.button(f"✨ Bom\n\n{counts_real.get('Bom', 0)}\n({b_pct:.1f}%)"):
+                    if st.button(f"✨ Bom\n\n{counts_real.get('Bom', 0)}\n({b_pct:.1f}%)", key="btn_m3"):
                         st.session_state["selected_category"] = "Bom" if st.session_state["selected_category"] != "Bom" else None
                 with col_m4:
-                    if st.button(f"📌 Suficiente\n\n{counts_real.get('Suficiente', 0)}\n({s_pct:.1f}%)"):
+                    if st.button(f"📌 Suficiente\n\n{counts_real.get('Suficiente', 0)}\n({s_pct:.1f}%)", key="btn_m4"):
                         st.session_state["selected_category"] = "Suficiente" if st.session_state["selected_category"] != "Suficiente" else None
                 with col_m5:
-                    if st.button(f"⚠️ Insuficiente\n\n{counts_real.get('Insuficiente', 0)}\n({i_pct:.1f}%)"):
+                    if st.button(f"⚠️ Insuficiente\n\n{counts_real.get('Insuficiente', 0)}\n({i_pct:.1f}%)", key="btn_m5"):
                         st.session_state["selected_category"] = "Insuficiente" if st.session_state["selected_category"] != "Insuficiente" else None
 
                 selected_cat = st.session_state["selected_category"]
@@ -141,8 +141,8 @@ if uploaded_file is not None:
 
                     st.dataframe(df_filtered[["controlo_ativo_identificacao", "nome_pessoal", "id_sigap", "id_grp", "sexo", "local_trabalho", "cargo", target_col]], use_container_width=True)
                     csv_filtered = df_filtered.to_csv(index=False).encode("utf-8")
-                    st.download_button(label="📥 Download Dadus Filtra Ne'e (CSV)", data=csv_filtered, file_name=f"relatorio_cfp_{selected_cat}.csv", mime="text/csv")
-                    if st.button("❌ Subar Tabela"):
+                    st.download_button(label="📥 Download Dadus Filtra Ne'e (CSV)", data=csv_filtered, file_name=f"relatorio_cfp_{selected_cat}.csv", mime="text/csv", key="dl_filtered_csv")
+                    if st.button("❌ Subar Tabela", key="hide_table_btn"):
                         st.session_state["selected_category"] = None
                         st.rerun()
 
@@ -156,7 +156,7 @@ if uploaded_file is not None:
                     pred_counts = [df["Prediksaun"].value_counts().get(cat, 0) for cat in categories]
                     x = np.arange(len(categories))
                     width = 0.35
-                    ax.bar(x - width/2, real_counts, width, label="Dadus Reál", color="#3B82F6", alpha=0.9)
+                    ax.bar(x - width/2, real_counts, width, label="Dadus Reál", color="#2563EB", alpha=0.9)
                     ax.bar(x + width/2, pred_counts, width, label="Prediksaun Tree", color="#10B981", alpha=0.9)
                     ax.set_ylabel("Total Funsionáriu")
                     ax.set_xticks(x)
@@ -169,7 +169,7 @@ if uploaded_file is not None:
                     st.markdown("##### 🍩 Proporsaun Kategoria Dezempenu")
                     fig2, ax2 = plt.subplots(figsize=(6, 4))
                     sizes = [counts_real.get(cat, 0) for cat in categories]
-                    colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444"]
+                    colors = ["#2563EB", "#10B981", "#F59E0B", "#EF4444"]
                     ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
                     st.pyplot(fig2)
 
@@ -200,7 +200,7 @@ if uploaded_file is not None:
 
                 st.markdown("---")
                 st.subheader("🌳 Vizualizasaun Árbore Desizaun")
-                max_depth_vis = st.slider("Hili Profundidade Árbore (Max Depth)", 1, 5, 3)
+                max_depth_vis = st.slider("Hili Profundidade Árbore (Max Depth)", 1, 5, 3, key="tree_depth_slider")
                 vis_model = DecisionTreeClassifier(criterion="entropy", max_depth=max_depth_vis, random_state=42)
                 vis_model.fit(X_train, y_train)
                 fig_tree, ax_tree = plt.subplots(figsize=(16, 9), dpi=100)
@@ -249,7 +249,7 @@ if uploaded_file is not None:
 
                     if st.session_state["edit_index"] is not None:
                         st.info(f"⚠️ Atualmente hela iha Módudu Edisaun ba Index: **{st.session_state['edit_index']}**")
-                        if st.button("❌ Kansela / Sai husi Módudu Edisaun"):
+                        if st.button("❌ Kansela / Sai husi Módudu Edisaun", key="cancel_edit_mode"):
                             st.session_state["edit_index"] = None
                             st.rerun()
                 else:
