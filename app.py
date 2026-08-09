@@ -217,24 +217,22 @@ if uploaded_file is not None:
                 if len(extra_records) > 0:
                     df_manage = pd.DataFrame(extra_records)
                     
-                    # Hatudu tabela ho forma organizadu no limpu
                     st.dataframe(
                         df_manage[["nome_pessoal", "id_sigap", "local_trabalho", "cargo", "Rezultadu_Avaliasaun"]], 
                         use_container_width=True
                     )
                     
-                    # Kontrolu ba Edita no Delete
                     col_m1, col_m2, col_m3 = st.columns(3)
                     with col_m1:
                         selected_edit_idx = st.number_input("Hili Index:", min_value=0, max_value=len(extra_records)-1, step=1)
                     with col_m2:
-                        st.write("") # spacer
+                        st.write("")
                         st.write("")
                         if st.button("✏️ Karga ba Form (Edit)", use_container_width=True):
                             st.session_state["edit_index"] = selected_edit_idx
                             st.rerun()
                     with col_m3:
-                        st.write("") # spacer
+                        st.write("")
                         st.write("")
                         if st.button("🗑️ Hamos Dadus (Delete)", type="primary", use_container_width=True):
                             if delete_extra_from_db_by_index(selected_edit_idx):
