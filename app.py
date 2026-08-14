@@ -1,7 +1,9 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+from PIL import Image # Presiza library ne'e atu lori imajen
 from io import BytesIO
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -9,7 +11,6 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 import seaborn as sns
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.tree import DecisionTreeClassifier, plot_tree
-import streamlit as st
 
 from database import (
     delete_extra_from_db_by_index,
@@ -94,6 +95,14 @@ if not st.session_state["authenticated"]:
     """, unsafe_allow_html=True)
 
     with st.container():
+        # --- TAU LOGO IHA SENTRU ---
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col2:
+            try:
+                st.image("logo.jpeg", width=120)
+            except:
+                pass # Se imajen seidauk iha, nia la halo error
+
         st.markdown("""
             <div class="login-header-title">
                 SISTEMA KLASIFIKASAUN ATU DETERMINA FUNKSIONÁRIU NEEBÉ MERESE ATU KOMPETE BA PROMOSAUN GRAU
