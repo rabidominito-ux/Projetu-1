@@ -30,7 +30,7 @@ st.set_page_config(
 render_custom_css()
 
 # ==========================================
-# SISTEMA LOGIN / AUTENTIKASAUN (Dezain Custom & Kompaktu)
+# SISTEMA LOGIN / AUTENTIKASAUN (Kompaktu no Sentrál)
 # ==========================================
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
@@ -41,29 +41,23 @@ if not st.session_state["authenticated"]:
         .stApp {
             background-color: #2563EB;
         }
-        /* Hamos espasu mutin leten no kraik hodi labele han fatin */
+        /* Hamenus espasu mutin leten no kraik hodi labele han fatin */
         .block-container {
             padding-top: 2rem !important;
             padding-bottom: 2rem !important;
-            max-width: 500px !important;
+            max-width: 480px !important;
             margin: 0 auto !important;
-        }
-        .login-box-wrapper {
-            background-color: #2563EB;
-            border-radius: 12px;
-            padding: 10px;
-            margin: 0 auto;
         }
         .login-header-title {
             background-color: #6D28D9;
             color: white;
-            padding: 14px 10px;
+            padding: 14px 12px;
             border-radius: 8px;
             font-weight: bold;
             font-size: 12px;
             text-align: center;
             letter-spacing: 0.5px;
-            line-height: 1.3;
+            line-height: 1.4;
             margin-bottom: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
@@ -99,7 +93,7 @@ if not st.session_state["authenticated"]:
     with st.container():
         st.markdown("""
             <div class="login-header-title">
-                SISTEMA KLASIFIKASAUN BA AVALIASAUN DESEMPENHU FUNSIONARIU IHA KOMISAUN FUNSAUN PUBLIKA  UTILIZA  ALGORITMA DECISION TREE
+                SISTEMA KLASIFIKASAUN ATU DETERMINA FUNKSIONÁRIU NEEBÉ MERESE ATU KOMPETE BA PROMOSAUN GRAU
             </div>
             <div class="login-instruction">
                 FAVOR LOGIN!
