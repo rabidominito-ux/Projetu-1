@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from PIL import Image # Presiza library ne'e atu lori imajen
+from PIL import Image
 from io import BytesIO
 import matplotlib.pyplot as plt
 from reportlab.lib import colors
@@ -101,20 +101,20 @@ if not st.session_state["authenticated"]:
             try:
                 st.image("logo.jpeg", width=120)
             except:
-                pass # Se imajen seidauk iha, nia la halo error
+                pass 
 
         st.markdown("""
             <div class="login-header-title">
                 SISTEMA KLASIFIKASAUN BA AVALIASAUN DESEMPENHU FUNSIONARIU IHA KOMISAUN FUNSAUN PUBLIKA  UTILIZA  ALGORITMA DECISION TREE
             </div>
             <div class="login-instruction">
-                PLEASE LOG IN
+                PLEASE LOG IN!
             </div>
         """, unsafe_allow_html=True)
         
         with st.form("login_form"):
-            username = st.text_input("Username:", placeholder="Enter your username.")
-            password = st.text_input("Password:", type="password", placeholder="Enter your password!")
+            username = st.text_input("Username:", placeholder="Enter your username")
+            password = st.text_input("Password:", type="password", placeholder="Enter your Password")
             st.markdown("<br>", unsafe_allow_html=True)
             submit_login = st.form_submit_button("LOGIN")
             
