@@ -29,6 +29,10 @@ st.set_page_config(
 
 render_custom_css()
 
+# Funsaun atu lee ficheiru Excel
+def load_data(file):
+    return pd.read_excel(file)
+
 # ==========================================
 # SISTEMA LOGIN / AUTENTIKASAUN (Kompaktu no Sentrál)
 # ==========================================
@@ -41,7 +45,6 @@ if not st.session_state["authenticated"]:
         .stApp {
             background-color: #2563EB;
         }
-        /* Hamenus espasu mutin leten no kraik hodi labele han fatin */
         .block-container {
             padding-top: 2rem !important;
             padding-bottom: 2rem !important;
