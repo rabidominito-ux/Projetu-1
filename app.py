@@ -75,18 +75,37 @@ if uploaded_file is not None:
             else:
                 df = df_base
 
+            # ==========================================
+            # FILTRU GLOBÁL IHA SIDEBAR
+            # ==========================================
             st.sidebar.markdown("---")
-            csv_full = df.to_csv(index=False).encode("utf-8")
+            st.sidebar.markdown("### 🔍 Filtru Globál Dadus")
+            
+            mun_list = ["Tomak (Hotu-hotu)"] + sorted(list(df["local_trabalho"].dropna().unique()))
+            selected_mun = st.sidebar.selectbox("Filtru Munisípiu / Local Trabalhu:", mun_list)
+
+            cargo_list = ["Tomak (Hotu-hotu)"] + sorted(list(df["cargo"].dropna().unique()))
+            selected_cargo = st.sidebar.selectbox("Filtru Kargo:", cargo_list)
+
+            # Aplika filtru ba dataset principal
+            df_filtered = df.copy()
+            if selected_mun != "Tomak (Hotu-hotu)":
+                df_filtered = df_filtered[df_filtered["local_trabalho"] == selected_mun]
+            if selected_cargo != "Tomak (Hotu-hotu)":
+                df_filtered = df_filtered[df_filtered["cargo"] == selected_cargo]
+
+            st.sidebar.markdown("---")
+            csv_full = df_filtered.to_csv(index=False).encode("utf-8")
             st.sidebar.download_button(
                 label="⬇️ Download Backup (CSV)",
                 data=csv_full,
-                file_name="dataset_cfp_kompletu.csv",
+                file_name="dataset_cfp_filtrado.csv",
                 mime="text/csv",
             )
 
             model, le, X_train, X_test, y_train, y_test = treinar_modelo(df, nota_cols, target_col)
 
-            df["Prediksaun"] = le.inverse_transform(model.predict(df[nota_cols]))
+            df_filtered["Prediksaun"] = le.inverse_transform(model.predict(df_filtered[nota_cols]))
             acc = accuracy_score(y_test, model.predict(X_test))
 
             tab1, tab2, tab3 = st.tabs([
@@ -97,8 +116,8 @@ if uploaded_file is not None:
 
             with tab1:
                 st.markdown("### 📈 Sumáriu Dezempenu Funsionáriu")
-                total_funs = len(df)
-                counts_real = df[target_col].value_counts()
+                total_funs = len(df_filtered)
+                counts_real = df_filtered[target_col].value_counts()
 
                 mb_pct = (counts_real.get("Muito Bom", 0) / total_funs) * 100 if total_funs > 0 else 0
                 b_pct = (counts_real.get("Bom", 0) / total_funs) * 100 if total_funs > 0 else 0
@@ -125,22 +144,15 @@ if uploaded_file is not None:
                 selected_cat = st.session_state["selected_category"]
                 if selected_cat is not None:
                     st.markdown("---")
-                    col_f1, col_f2 = st.columns(2)
-                    with col_f1:
-                        if selected_cat == "Tomak":
-                            df_filtered = df
-                            st.markdown(f"### 📋 Lista Funsionáriu Tomak ({len(df_filtered)})")
-                        else:
-                            df_filtered = df[df[target_col] == selected_cat]
-                            st.markdown(f"### 📋 Lista Funsionáriu ba Kategoria: `{selected_cat}` ({len(df_filtered)})")
-                    with col_f2:
-                        mun_list = ["Tomak (Hotu-hotu)"] + list(df["local_trabalho"].dropna().unique())
-                        selected_mun = st.selectbox("Filtru tuir Munisípiu:", mun_list)
-                        if selected_mun != "Tomak (Hotu-hotu)":
-                            df_filtered = df_filtered[df_filtered["local_trabalho"] == selected_mun]
+                    if selected_cat == "Tomak":
+                        df_table = df_filtered
+                        st.markdown(f"### 📋 Lista Funsionáriu Tomak ({len(df_table)})")
+                    else:
+                        df_table = df_filtered[df_filtered[target_col] == selected_cat]
+                        st.markdown(f"### 📋 Lista Funsionáriu ba Kategoria: `{selected_cat}` ({len(df_table)})")
 
-                    st.dataframe(df_filtered[["controlo_ativo_identificacao", "nome_pessoal", "id_sigap", "id_grp", "sexo", "local_trabalho", "cargo", target_col]], use_container_width=True)
-                    csv_filtered = df_filtered.to_csv(index=False).encode("utf-8")
+                    st.dataframe(df_table[["controlo_ativo_identificacao", "nome_pessoal", "id_sigap", "id_grp", "sexo", "local_trabalho", "cargo", target_col]], use_container_width=True)
+                    csv_filtered = df_table.to_csv(index=False).encode("utf-8")
                     st.download_button(label="📥 Download Dadus Filtra Ne'e (CSV)", data=csv_filtered, file_name=f"relatorio_cfp_{selected_cat}.csv", mime="text/csv", key="dl_filtered_csv")
                     if st.button("❌ Subar Tabela", key="hide_table_btn"):
                         st.session_state["selected_category"] = None
@@ -153,11 +165,17 @@ if uploaded_file is not None:
                     fig, ax = plt.subplots(figsize=(6, 4))
                     categories = ["Muito Bom", "Bom", "Suficiente", "Insuficiente"]
                     real_counts = [counts_real.get(cat, 0) for cat in categories]
-                    pred_counts = [df["Prediksaun"].value_counts().get(cat, 0) for cat in categories]
+                    pred_counts = [df_filtered["Prediksaun"].value_counts().get(cat, 0) for cat in categories]
                     x = np.arange(len(categories))
                     width = 0.35
-                    ax.bar(x - width/2, real_counts, width, label="Dadus Reál", color="#2563EB", alpha=0.9)
-                    ax.bar(x + width/2, pred_counts, width, label="Prediksaun Tree", color="#10B981", alpha=0.9)
+                    
+                    rects1 = ax.bar(x - width/2, real_counts, width, label="Dadus Reál", color="#2563EB", alpha=0.9)
+                    rects2 = ax.bar(x + width/2, pred_counts, width, label="Prediksaun Tree", color="#10B981", alpha=0.9)
+                    
+                    # Aumenta numeru leten barra (Data Labels)
+                    ax.bar_label(rects1, padding=3, fontsize=8)
+                    ax.bar_label(rects2, padding=3, fontsize=8)
+
                     ax.set_ylabel("Total Funsionáriu")
                     ax.set_xticks(x)
                     ax.set_xticklabels(categories)
@@ -170,12 +188,28 @@ if uploaded_file is not None:
                     fig2, ax2 = plt.subplots(figsize=(6, 4))
                     sizes = [counts_real.get(cat, 0) for cat in categories]
                     colors = ["#2563EB", "#10B981", "#F59E0B", "#EF4444"]
-                    ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
+                    if sum(sizes) > 0:
+                        ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
+                    else:
+                        ax2.text(0, 0, "Dadus la iha", ha="center", va="center")
                     st.pyplot(fig2)
+
+                # Gráfiku Média Indikadór Avaliasaun Funsionáriu
+                st.markdown("---")
+                st.markdown("##### 📉 Média Pontu Indikadór Avaliasaun Funsionáriu (Asiduidade, Produtividade, etc.)")
+                fig_ind, ax_ind = plt.subplots(figsize=(10, 4))
+                mean_scores = df_filtered[nota_cols].mean()
+                sns.barplot(x=mean_scores.index, y=mean_scores.values, palette="Blues_d", ax=ax_ind)
+                ax_ind.set_ylim(1, 5)
+                ax_ind.set_ylabel("Média Pontu (1 - 5)")
+                ax_ind.set_xticklabels(nota_cols, rotation=15)
+                ax_ind.bar_label(ax_ind.containers[0], fmt="%.2f", padding=3)
+                sns.despine()
+                st.pyplot(fig_ind)
 
             with tab2:
                 st.subheader("📋 Amostra Dadus (Preview)")
-                st.dataframe(df.head(10), use_container_width=True)
+                st.dataframe(df_filtered.head(10), use_container_width=True)
                 st.markdown("---")
                 st.subheader("🚀 Performance Modelu Decision Tree")
                 st.success(f"✅ Akurasi Modelu (Accuracy): **{acc * 100:.2f}%**")
