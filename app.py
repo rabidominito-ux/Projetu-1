@@ -99,7 +99,7 @@ if not st.session_state["authenticated"]:
     with col2:
         st.markdown("""
             <div class="login-header-title">
-                SISTEMA KLASIFIKASAUN ATU DETERMINA FUNKSIONÁRIU NEEBÉ MERESE ATU KOMPETE BA PROMOSAUN GRAU
+                SISTEMA KLASIFIKASAUN BA AVALIASAUN DESEMPENHU FUNSIONARIU IHA KOMISAUN FUNSAUN PUBLIKA  UTILIZA  ALGORITMA DECISION TREE
             </div>
             <div class="login-instruction">
                 FAVOR LOGIN!
@@ -107,8 +107,8 @@ if not st.session_state["authenticated"]:
         """, unsafe_allow_html=True)
         
         with st.form("login_form"):
-            username = st.text_input("Username:", placeholder="Hatama ita boot nia username")
-            password = st.text_input("Password:", type="password", placeholder="Hatama ita boot nia password!")
+            username = st.text_input("Username:", placeholder="Username")
+            password = st.text_input("Password:", type="password", placeholder="Password!")
             st.markdown("<br>", unsafe_allow_html=True)
             submit_login = st.form_submit_button("LOGIN")
             
