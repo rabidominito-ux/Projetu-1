@@ -26,6 +26,42 @@ st.set_page_config(
 
 render_custom_css()
 
+# ==========================================
+# SISTEMA LOGIN / AUTENTIKASAUN (Secure ho Streamlit Secrets)
+# ==========================================
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+if not st.session_state["authenticated"]:
+    st.markdown("### 🔐 Login - Sistema Dezempenu CFP")
+    st.markdown("Favor hatama username no password hodi asesu ba sistema.")
+    
+    with st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submit_login = st.form_submit_button("Login")
+        
+        if submit_login:
+            try:
+                if username == st.secrets["username"] and password == st.secrets["password"]:
+                    st.session_state["authenticated"] = True
+                    st.success("Login susesu! Kontinua hela...")
+                    st.rerun()
+                else:
+                    st.error("⚠️ Username ka Password sala! Favor koko fali.")
+            except Exception as e:
+                st.error("⚠️ Konfigurasaun Secrets seidauk iha Streamlit Cloud ka lokál. Favor verifika.")
+    
+    st.stop()
+
+# ==========================================
+# APLIKASAUN PRINCIPAL (Pós-Login)
+# ==========================================
+st.sidebar.markdown("### 👤 Konta Asesu")
+if st.sidebar.button("🚪 Logout"):
+    st.session_state["authenticated"] = False
+    st.rerun()
+
 st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Aplikasaun Inteligénsia Artifisiál uza algoritmu Decision Tree hodi analiza no klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
 
@@ -40,7 +76,7 @@ if "edit_index" not in st.session_state:
 if "selected_category" not in st.session_state:
     st.session_state["selected_category"] = None
 
-# Funsaun atu kriar PDF relatóriu ofisiál (Implementasaun Numeru 1)
+# Funsaun atu kriar PDF relatóriu ofisiál
 def generate_pdf_report(df_data, title_report):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
@@ -53,7 +89,7 @@ def generate_pdf_report(df_data, title_report):
         fontSize=14,
         textColor=colors.HexColor('#1E3A8A'),
         spaceAfter=15,
-        alignment=1 # Center
+        alignment=1
     )
     
     subtitle_style = ParagraphStyle(
@@ -70,7 +106,6 @@ def generate_pdf_report(df_data, title_report):
     elements.append(Paragraph(title_report, subtitle_style))
     elements.append(Spacer(1, 10))
 
-    # Tabela Dadus
     table_data = [["Naran Pessoal", "ID SIGAP", "Munisípiu", "Kargo", "Avaliasaun"]]
     for _, row in df_data.iterrows():
         table_data.append([
@@ -142,9 +177,6 @@ if uploaded_file is not None:
             else:
                 df = df_base
 
-            # ==========================================
-            # FILTRU GLOBÁL (Kargo)
-            # ==========================================
             st.sidebar.markdown("---")
             st.sidebar.markdown("### 🔍 Filtru Globál Dadus")
             
@@ -214,7 +246,6 @@ if uploaded_file is not None:
 
                     st.dataframe(df_table[["controlo_ativo_identificacao", "nome_pessoal", "id_sigap", "id_grp", "sexo", "local_trabalho", "cargo", target_col]], use_container_width=True)
                     
-                    # Botões Download: CSV no PDF Ofisiál (Implementasaun Numeru 1)
                     dl_col1, dl_col2 = st.columns(2)
                     with dl_col1:
                         csv_filtered = df_table.to_csv(index=False).encode("utf-8")
@@ -257,7 +288,6 @@ if uploaded_file is not None:
                         ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
                     st.pyplot(fig2)
 
-                # Gráfiku Avansadu: Desentralizasaun tuir Local Trabalhu / Munisípiu (Implementasaun Numeru 2)
                 st.markdown("---")
                 st.markdown("##### 🗺️ Avansadu: Distribuisaun Funsionáriu tuir Local Trabalhu (Munisípiu)")
                 fig_loc, ax_loc = plt.subplots(figsize=(10, 4))
