@@ -81,16 +81,12 @@ if uploaded_file is not None:
             st.sidebar.markdown("---")
             st.sidebar.markdown("### 🔍 Filtru Globál Dadus")
             
-            mun_list = ["Tomak (Hotu-hotu)"] + sorted(list(df["local_trabalho"].dropna().unique()))
-            selected_mun = st.sidebar.selectbox("Filtru Munisípiu / Local Trabalhu:", mun_list)
-
             cargo_list = ["Tomak (Hotu-hotu)"] + sorted(list(df["cargo"].dropna().unique()))
             selected_cargo = st.sidebar.selectbox("Filtru Kargo:", cargo_list)
 
             # Aplika filtru ba dataset principal
             df_filtered = df.copy()
-            if selected_mun != "Tomak (Hotu-hotu)":
-                df_filtered = df_filtered[df_filtered["local_trabalho"] == selected_mun]
+            
             if selected_cargo != "Tomak (Hotu-hotu)":
                 df_filtered = df_filtered[df_filtered["cargo"] == selected_cargo]
 
