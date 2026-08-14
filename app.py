@@ -1,9 +1,7 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-from PIL import Image
 from io import BytesIO
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -11,6 +9,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 import seaborn as sns
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.tree import DecisionTreeClassifier, plot_tree
+import streamlit as st
 
 from database import (
     delete_extra_from_db_by_index,
@@ -95,26 +94,18 @@ if not st.session_state["authenticated"]:
     """, unsafe_allow_html=True)
 
     with st.container():
-        # --- TAU LOGO IHA SENTRU ---
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col2:
-            try:
-                st.image("logo.jpeg", width=120)
-            except:
-                pass 
-
         st.markdown("""
             <div class="login-header-title">
-                SISTEMA KLASIFIKASAUN BA AVALIASAUN DESEMPENHU FUNSIONARIU IHA KOMISAUN FUNSAUN PUBLIKA  UTILIZA  ALGORITMA DECISION TREE
+                SISTEMA KLASIFIKASAUN ATU DETERMINA FUNKSIONÁRIU NEEBÉ MERESE ATU KOMPETE BA PROMOSAUN GRAU
             </div>
             <div class="login-instruction">
-                PLEASE LOG IN!
+                FAVOR LOGIN!
             </div>
         """, unsafe_allow_html=True)
         
         with st.form("login_form"):
-            username = st.text_input("Username:", placeholder="Enter your username")
-            password = st.text_input("Password:", type="password", placeholder="Enter your Password")
+            username = st.text_input("Username:", placeholder="Hatama ita boot nia username")
+            password = st.text_input("Password:", type="password", placeholder="Hatama ita boot nia password!")
             st.markdown("<br>", unsafe_allow_html=True)
             submit_login = st.form_submit_button("LOGIN")
             
