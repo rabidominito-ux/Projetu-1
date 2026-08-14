@@ -1,20 +1,23 @@
+from io import BytesIO
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 import seaborn as sns
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 import streamlit as st
-from io import BytesIO
 
-# Import reportlab ba PDF generation
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
-
-from database import init_db, load_extra_from_db, save_extra_to_db, update_extra_in_db_by_index, delete_extra_from_db_by_index
-from utils import load_data
+from database import (
+    delete_extra_from_db_by_index,
+    init_db,
+    load_extra_from_db,
+    save_extra_to_db,
+    update_extra_in_db_by_index,
+)
 from models import treinar_modelo
 from ui_components import render_custom_css
 
@@ -27,31 +30,99 @@ st.set_page_config(
 render_custom_css()
 
 # ==========================================
-# SISTEMA LOGIN / AUTENTIKASAUN (Secure ho Streamlit Secrets)
+# SISTEMA LOGIN / AUTENTIKASAUN (Dezain Custom)
 # ==========================================
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
 if not st.session_state["authenticated"]:
-    st.markdown("### 🔐 Login - Sistema Dezempenu CFP")
-    st.markdown("Favor hatama username no password hodi asesu ba sistema.")
-    
-    with st.form("login_form"):
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        submit_login = st.form_submit_button("Login")
+    st.markdown("""
+        <style>
+        .stApp {
+            background-color: #2563EB;
+        }
+        .block-container {
+            padding-top: 3rem;
+            padding-bottom: 3rem;
+        }
+        .login-box-wrapper {
+            background-color: #2563EB;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            max-width: 450px;
+            margin: 0 auto;
+        }
+        .login-header-title {
+            background-color: #6D28D9;
+            color: white;
+            padding: 18px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 13px;
+            text-align: center;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .login-instruction {
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+        }
+        div.stButton > button {
+            background-color: #6D28D9 !important;
+            color: white !important;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            padding: 10px;
+            border: none;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        div.stButton > button:hover {
+            background-color: #5B21B6 !important;
+        }
+        label {
+            color: white !important;
+            font-weight: bold !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1, 1.3, 1])
+    with col2:
+        st.markdown("""
+            <div class="login-header-title">
+                SISTEMA KLASIFIKASAUN ATU DETERMINA FUNKSIONÁRIU NEEBÉ MERESE ATU KOMPETE BA PROMOSAUN GRAU
+            </div>
+            <div class="login-instruction">
+                FAVOR LOGIN!
+            </div>
+        """, unsafe_allow_html=True)
         
-        if submit_login:
-            try:
-                if username == st.secrets["username"] and password == st.secrets["password"]:
-                    st.session_state["authenticated"] = True
-                    st.success("Login susesu! Kontinua hela...")
-                    st.rerun()
-                else:
-                    st.error("⚠️ Username ka Password sala! Favor koko fali.")
-            except Exception as e:
-                st.error("⚠️ Konfigurasaun Secrets seidauk iha Streamlit Cloud ka lokál. Favor verifika.")
-    
+        with st.form("login_form"):
+            username = st.text_input("Username:", placeholder="Hatama ita boot nia username")
+            password = st.text_input("Password:", type="password", placeholder="Hatama ita boot nia password!")
+            st.markdown("<br>", unsafe_allow_html=True)
+            submit_login = st.form_submit_button("LOGIN")
+            
+            if submit_login:
+                try:
+                    if username == st.secrets["username"] and password == st.secrets["password"]:
+                        st.session_state["authenticated"] = True
+                        st.success("Login susesu! Kontinua hela...")
+                        st.rerun()
+                    else:
+                        st.error("⚠️ Username ka Password sala! Favor koko fali.")
+                except Exception:
+                    st.error("⚠️ Konfigurasaun Secrets seidauk iha Streamlit Cloud ka lokál.")
+                    
     st.stop()
 
 # ==========================================
@@ -76,7 +147,6 @@ if "edit_index" not in st.session_state:
 if "selected_category" not in st.session_state:
     st.session_state["selected_category"] = None
 
-# Funsaun atu kriar PDF relatóriu ofisiál
 def generate_pdf_report(df_data, title_report):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
@@ -84,21 +154,10 @@ def generate_pdf_report(df_data, title_report):
     
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
-        'TitleStyle',
-        parent=styles['Heading1'],
-        fontSize=14,
-        textColor=colors.HexColor('#1E3A8A'),
-        spaceAfter=15,
-        alignment=1
+        'TitleStyle', parent=styles['Heading1'], fontSize=14, textColor=colors.HexColor('#1E3A8A'), spaceAfter=15, alignment=1
     )
-    
     subtitle_style = ParagraphStyle(
-        'SubTitleStyle',
-        parent=styles['Normal'],
-        fontSize=10,
-        textColor=colors.HexColor('#4B5563'),
-        spaceAfter=15,
-        alignment=1
+        'SubTitleStyle', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#4B5563'), spaceAfter=15, alignment=1
     )
 
     elements.append(Paragraph("REPUBLICA DEMOCRATICA DE TIMOR-LESTE", title_style))
@@ -141,7 +200,6 @@ uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=[
 if uploaded_file is not None:
     try:
         df_raw = load_data(uploaded_file)
-
         rename_map = {
             "Column1": "controlo_ativo_identificacao", "Column2": "nome_pessoal", "Column3": "id_sigap",
             "Column4": "id_grp", "Column5": "sexo", "Column6": "data_de_nascimento", "Column7": "instituicao",
@@ -151,7 +209,6 @@ if uploaded_file is not None:
             "Column19": "Disiplina", "Column20": "Responsabilidade", "Column21": "Media",
             "Column22": "Rezultadu_Avaliasaun", "Column23": "temp2",
         }
-
         df_raw.rename(columns={k: v for k, v in rename_map.items() if k in df_raw.columns}, inplace=True)
 
         nota_cols = [
@@ -179,7 +236,6 @@ if uploaded_file is not None:
 
             st.sidebar.markdown("---")
             st.sidebar.markdown("### 🔍 Filtru Globál Dadus")
-            
             cargo_list = ["Tomak (Hotu-hotu)"] + sorted(list(df["cargo"].dropna().unique()))
             selected_cargo = st.sidebar.selectbox("Filtru Kargo:", cargo_list)
 
@@ -190,21 +246,15 @@ if uploaded_file is not None:
             st.sidebar.markdown("---")
             csv_full = df_filtered.to_csv(index=False).encode("utf-8")
             st.sidebar.download_button(
-                label="⬇️ Download Backup (CSV)",
-                data=csv_full,
-                file_name="dataset_cfp_filtrado.csv",
-                mime="text/csv",
+                label="⬇️ Download Backup (CSV)", data=csv_full, file_name="dataset_cfp_filtrado.csv", mime="text/csv"
             )
 
             model, le, X_train, X_test, y_train, y_test = treinar_modelo(df, nota_cols, target_col)
-
             df_filtered["Prediksaun"] = le.inverse_transform(model.predict(df_filtered[nota_cols]))
             acc = accuracy_score(y_test, model.predict(X_test))
 
             tab1, tab2, tab3 = st.tabs([
-                "📊 Dashboard Analítiku",
-                "⚙️ Modelu & Performance",
-                "🔮 Prediksaun & Jere Dadus",
+                "📊 Dashboard Analítiku", "⚙️ Modelu & Performance", "🔮 Prediksaun & Jere Dadus"
             ])
 
             with tab1:
@@ -287,38 +337,6 @@ if uploaded_file is not None:
                     if sum(sizes) > 0:
                         ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors_list, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
                     st.pyplot(fig2)
-
-                st.markdown("---")
-                st.markdown("##### 🗺️ Avansadu: Distribuisaun Funsionáriu tuir Local Trabalhu (Munisípiu)")
-                fig_loc, ax_loc = plt.subplots(figsize=(10, 4))
-                loc_counts = df_filtered["local_trabalho"].value_counts()
-                sns.barplot(x=loc_counts.index, y=loc_counts.values, palette="viridis", ax=ax_loc)
-                ax_loc.set_ylabel("Total Funsionáriu")
-                ax_loc.set_xticklabels(loc_counts.index, rotation=25, fontsize=9)
-                ax_loc.bar_label(ax_loc.containers[0], padding=3, fontsize=8)
-                sns.despine()
-                st.pyplot(fig_loc)
-
-                st.markdown("---")
-                col_sub1, col_sub2 = st.columns(2)
-                with col_sub1:
-                    st.markdown("##### 👥 Distribuisaun Funsionáriu tuir Sexu")
-                    fig_sex, ax_sex = plt.subplots(figsize=(6, 3.5))
-                    sex_counts = df_filtered["sexo"].value_counts()
-                    ax_sex.pie(sex_counts.values, labels=sex_counts.index, autopct="%1.1f%%", startangle=90, colors=["#3B82F6", "#EC4899"])
-                    st.pyplot(fig_sex)
-
-                with col_sub2:
-                    st.markdown("##### 📉 Média Pontu Indikadór Avaliasaun Funsionáriu")
-                    fig_ind, ax_ind = plt.subplots(figsize=(6, 3.5))
-                    mean_scores = df_filtered[nota_cols].mean()
-                    sns.barplot(x=mean_scores.index, y=mean_scores.values, palette="Blues_d", ax=ax_ind)
-                    ax_ind.set_ylim(1, 5)
-                    ax_ind.set_ylabel("Média (1-5)")
-                    ax_ind.set_xticklabels(nota_cols, rotation=25, fontsize=8)
-                    ax_ind.bar_label(ax_ind.containers[0], fmt="%.2f", padding=2, fontsize=8)
-                    sns.despine()
-                    st.pyplot(fig_ind)
 
             with tab2:
                 st.subheader("📋 Amostra Dadus (Preview)")
