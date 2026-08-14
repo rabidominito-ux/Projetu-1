@@ -34,7 +34,7 @@ def load_data(file):
     return pd.read_excel(file)
 
 # ==========================================
-# SISTEMA LOGIN / AUTENTIKASAUN (Kompaktu no Sentrál)
+# SISTEMA LOGIN / AUTENTIKASAUN
 # ==========================================
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
@@ -96,10 +96,10 @@ if not st.session_state["authenticated"]:
     with st.container():
         st.markdown("""
             <div class="login-header-title">
-                SISTEMA KLASIFIKASAUN ATU DETERMINA FUNKSIONÁRIU NEEBÉ MERESE ATU KOMPETE BA PROMOSAUN GRAU
+                SISTEMA KLASIFIKASAUN BA AVALIASAUN DESEMPENHU FUNSIONARIU IHA KOMISAUN FUNSAUN PUBLIKA  UTILIZA  ALGORITMA DECISION TREE
             </div>
             <div class="login-instruction">
-                FAVOR LOGIN!
+                PLEASE LOG IN!
             </div>
         """, unsafe_allow_html=True)
         
@@ -144,6 +144,7 @@ if "edit_index" not in st.session_state:
 if "selected_category" not in st.session_state:
     st.session_state["selected_category"] = None
 
+# 1. FUNSAUN GENERATOR RELATÓRIU PDF OFISIÁL BA XEFES / DIREKTÓR
 def generate_pdf_report(df_data, title_report):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
@@ -151,16 +152,16 @@ def generate_pdf_report(df_data, title_report):
     
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
-        'TitleStyle', parent=styles['Heading1'], fontSize=14, textColor=colors.HexColor('#1E3A8A'), spaceAfter=15, alignment=1
+        'TitleStyle', parent=styles['Heading1'], fontSize=12, textColor=colors.HexColor('#1E3A8A'), spaceAfter=4, alignment=1, fontName='Helvetica-Bold'
     )
     subtitle_style = ParagraphStyle(
-        'SubTitleStyle', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#4B5563'), spaceAfter=15, alignment=1
+        'SubTitleStyle', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#4B5563'), spaceAfter=15, alignment=1, fontName='Helvetica'
     )
 
-    elements.append(Paragraph("REPUBLICA DEMOCRATICA DE TIMOR-LESTE", title_style))
+    elements.append(Paragraph("REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE", title_style))
     elements.append(Paragraph("COMISSÃO DA FUNÇÃO PÚBLICA (CFP)", title_style))
     elements.append(Paragraph(title_report, subtitle_style))
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 5))
 
     table_data = [["Naran Pessoal", "ID SIGAP", "Munisípiu", "Kargo", "Avaliasaun"]]
     for _, row in df_data.iterrows():
@@ -334,6 +335,27 @@ if uploaded_file is not None:
                     if sum(sizes) > 0:
                         ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors_list, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
                     st.pyplot(fig2)
+
+                # 2. GRÁFIKU ANALÍTIKU AVANSADU (Desentralizasaun tuir Local de Trabalhu)
+                st.markdown("---")
+                st.markdown("##### 🗺️ Gráfiku Avansadu: Desentralizasaun Dezempenu tuir Local de Trabalhu (Munisípiu)")
+                if "local_trabalho" in df_filtered.columns:
+                    fig_loc, ax_loc = plt.subplots(figsize=(10, 4.5))
+                    df_loc_counts = pd.crosstab(df_filtered["local_trabalho"], df_filtered[target_col])
+                    # Reindexia hodi asegura kategoria tuir orden ne'ebé loos se iha
+                    existing_cats = [c for c in categories if c in df_loc_counts.columns]
+                    df_loc_counts = df_loc_counts.reindex(columns=existing_cats, fill_value=0)
+                    
+                    df_loc_counts.plot(kind="bar", stacked=True, ax=ax_loc, colormap="viridis", edgecolor="none")
+                    ax_loc.set_title("Distribuisaun Avaliasaun Dezempenu tuir Munisípiu / Local de Trabalhu", fontsize=11, fontweight="bold")
+                    ax_loc.set_xlabel("Local de Trabalhu", fontsize=9)
+                    ax_loc.set_ylabel("Total Funsionáriu", fontsize=9)
+                    plt.xticks(rotation=45, ha="right")
+                    ax_loc.legend(title="Kategoria", bbox_to_anchor=(1.02, 1), loc="upper left")
+                    sns.despine()
+                    st.pyplot(fig_loc)
+                else:
+                    st.info("Koluna 'local_trabalho' la dispoñível iha dataset atu halo grafiku ne'e.")
 
             with tab2:
                 st.subheader("📋 Amostra Dadus (Preview)")
