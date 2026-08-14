@@ -5,6 +5,13 @@ import seaborn as sns
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 import streamlit as st
+from io import BytesIO
+
+# Import reportlab ba PDF generation
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
 
 from database import init_db, load_extra_from_db, save_extra_to_db, update_extra_in_db_by_index, delete_extra_from_db_by_index
 from utils import load_data
@@ -32,6 +39,66 @@ if "edit_index" not in st.session_state:
 
 if "selected_category" not in st.session_state:
     st.session_state["selected_category"] = None
+
+# Funsaun atu kriar PDF relatóriu ofisiál (Implementasaun Numeru 1)
+def generate_pdf_report(df_data, title_report):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    elements = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'TitleStyle',
+        parent=styles['Heading1'],
+        fontSize=14,
+        textColor=colors.HexColor('#1E3A8A'),
+        spaceAfter=15,
+        alignment=1 # Center
+    )
+    
+    subtitle_style = ParagraphStyle(
+        'SubTitleStyle',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.HexColor('#4B5563'),
+        spaceAfter=15,
+        alignment=1
+    )
+
+    elements.append(Paragraph("REPUBLICA DEMOCRATICA DE TIMOR-LESTE", title_style))
+    elements.append(Paragraph("COMISSÃO DA FUNÇÃO PÚBLICA (CFP)", title_style))
+    elements.append(Paragraph(title_report, subtitle_style))
+    elements.append(Spacer(1, 10))
+
+    # Tabela Dadus
+    table_data = [["Naran Pessoal", "ID SIGAP", "Munisípiu", "Kargo", "Avaliasaun"]]
+    for _, row in df_data.iterrows():
+        table_data.append([
+            str(row.get("nome_pessoal", "")),
+            str(row.get("id_sigap", "")),
+            str(row.get("local_trabalho", "")),
+            str(row.get("cargo", "")),
+            str(row.get("Rezultadu_Avaliasaun", ""))
+        ])
+
+    t = Table(table_data, colWidths=[150, 70, 90, 110, 80])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563EB')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F3F4F6')),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB')),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+    ]))
+    
+    elements.append(t)
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
 
 st.sidebar.markdown("### 📁 Gestaun Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
@@ -146,8 +213,16 @@ if uploaded_file is not None:
                         st.markdown(f"### 📋 Lista Funsionáriu ba Kategoria: `{selected_cat}` ({len(df_table)})")
 
                     st.dataframe(df_table[["controlo_ativo_identificacao", "nome_pessoal", "id_sigap", "id_grp", "sexo", "local_trabalho", "cargo", target_col]], use_container_width=True)
-                    csv_filtered = df_table.to_csv(index=False).encode("utf-8")
-                    st.download_button(label="📥 Download Dadus Filtra Ne'e (CSV)", data=csv_filtered, file_name=f"relatorio_cfp_{selected_cat}.csv", mime="text/csv", key="dl_filtered_csv")
+                    
+                    # Botões Download: CSV no PDF Ofisiál (Implementasaun Numeru 1)
+                    dl_col1, dl_col2 = st.columns(2)
+                    with dl_col1:
+                        csv_filtered = df_table.to_csv(index=False).encode("utf-8")
+                        st.download_button(label="📥 Download CSV", data=csv_filtered, file_name=f"relatorio_cfp_{selected_cat}.csv", mime="text/csv", key="dl_filtered_csv")
+                    with dl_col2:
+                        pdf_buffer = generate_pdf_report(df_table, f"Relatóriu Dezempenu Funsionáriu - {selected_cat}")
+                        st.download_button(label="📄 Download Relatóriu PDF Ofisiál", data=pdf_buffer, file_name=f"relatorio_cfp_{selected_cat}.pdf", mime="application/pdf", key="dl_filtered_pdf")
+
                     if st.button("❌ Subar Tabela", key="hide_table_btn"):
                         st.session_state["selected_category"] = None
                         st.rerun()
@@ -181,6 +256,18 @@ if uploaded_file is not None:
                     if sum(sizes) > 0:
                         ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
                     st.pyplot(fig2)
+
+                # Gráfiku Avansadu: Desentralizasaun tuir Local Trabalhu / Munisípiu (Implementasaun Numeru 2)
+                st.markdown("---")
+                st.markdown("##### 🗺️ Avansadu: Distribuisaun Funsionáriu tuir Local Trabalhu (Munisípiu)")
+                fig_loc, ax_loc = plt.subplots(figsize=(10, 4))
+                loc_counts = df_filtered["local_trabalho"].value_counts()
+                sns.barplot(x=loc_counts.index, y=loc_counts.values, palette="viridis", ax=ax_loc)
+                ax_loc.set_ylabel("Total Funsionáriu")
+                ax_loc.set_xticklabels(loc_counts.index, rotation=25, fontsize=9)
+                ax_loc.bar_label(ax_loc.containers[0], padding=3, fontsize=8)
+                sns.despine()
+                st.pyplot(fig_loc)
 
                 st.markdown("---")
                 col_sub1, col_sub2 = st.columns(2)
@@ -398,7 +485,6 @@ if uploaded_file is not None:
                     submit_pred = st.form_submit_button("💾 Salva / Prediksaun")
 
                     if submit_pred:
-                        # Validasaun: ID SIGAP labele iha letra (uza de'it numeriku no simbolu)
                         if not txt_nome.strip() or not txt_sigap.strip():
                             st.error("⚠️ Favór preenxe Naran Pessoal no ID SIGAP ho loos!")
                         elif any(c.isalpha() for c in txt_sigap):
