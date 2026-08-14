@@ -30,7 +30,7 @@ st.set_page_config(
 render_custom_css()
 
 # ==========================================
-# SISTEMA LOGIN / AUTENTIKASAUN (Dezain Custom)
+# SISTEMA LOGIN / AUTENTIKASAUN (Dezain Custom & Kompaktu)
 # ==========================================
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
@@ -41,37 +41,38 @@ if not st.session_state["authenticated"]:
         .stApp {
             background-color: #2563EB;
         }
+        /* Hamos espasu mutin leten no kraik hodi labele han fatin */
         .block-container {
-            padding-top: 3rem;
-            padding-bottom: 3rem;
+            padding-top: 2rem !important;
+            padding-bottom: 2rem !important;
+            max-width: 500px !important;
+            margin: 0 auto !important;
         }
         .login-box-wrapper {
             background-color: #2563EB;
             border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            max-width: 450px;
+            padding: 10px;
             margin: 0 auto;
         }
         .login-header-title {
             background-color: #6D28D9;
             color: white;
-            padding: 18px 12px;
+            padding: 14px 10px;
             border-radius: 8px;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 12px;
             text-align: center;
             letter-spacing: 0.5px;
-            line-height: 1.4;
-            margin-bottom: 25px;
+            line-height: 1.3;
+            margin-bottom: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .login-instruction {
             text-align: center;
             color: white;
             font-weight: bold;
-            margin-bottom: 15px;
-            font-size: 15px;
+            margin-bottom: 10px;
+            font-size: 14px;
             letter-spacing: 0.5px;
         }
         div.stButton > button {
@@ -80,7 +81,7 @@ if not st.session_state["authenticated"]:
             width: 100%;
             border-radius: 8px;
             font-weight: bold;
-            padding: 10px;
+            padding: 8px;
             border: none;
             letter-spacing: 1px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
@@ -95,11 +96,10 @@ if not st.session_state["authenticated"]:
         </style>
     """, unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns([1, 1.3, 1])
-    with col2:
+    with st.container():
         st.markdown("""
             <div class="login-header-title">
-                SISTEMA KLASIFIKASAUN BA AVALIASAUN DESEMPENHU FUNSIONARIU IHA KOMISAUN FUNSAUN PUBLIKA  UTILIZA  ALGORITMA DECISION TREE
+                SISTEMA KLASIFIKASAUN ATU DETERMINA FUNKSIONÁRIU NEEBÉ MERESE ATU KOMPETE BA PROMOSAUN GRAU
             </div>
             <div class="login-instruction">
                 FAVOR LOGIN!
@@ -107,8 +107,8 @@ if not st.session_state["authenticated"]:
         """, unsafe_allow_html=True)
         
         with st.form("login_form"):
-            username = st.text_input("Username:", placeholder="Username")
-            password = st.text_input("Password:", type="password", placeholder="Password!")
+            username = st.text_input("Username:", placeholder="Hatama ita boot nia username")
+            password = st.text_input("Password:", type="password", placeholder="Hatama ita boot nia password!")
             st.markdown("<br>", unsafe_allow_html=True)
             submit_login = st.form_submit_button("LOGIN")
             
