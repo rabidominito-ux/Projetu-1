@@ -76,7 +76,7 @@ if uploaded_file is not None:
                 df = df_base
 
             # ==========================================
-            # FILTRU GLOBÁL IHA SIDEBAR
+            # FILTRU GLOBÁL (Kargo)
             # ==========================================
             st.sidebar.markdown("---")
             st.sidebar.markdown("### 🔍 Filtru Globál Dadus")
@@ -84,9 +84,7 @@ if uploaded_file is not None:
             cargo_list = ["Tomak (Hotu-hotu)"] + sorted(list(df["cargo"].dropna().unique()))
             selected_cargo = st.sidebar.selectbox("Filtru Kargo:", cargo_list)
 
-            # Aplika filtru ba dataset principal
             df_filtered = df.copy()
-            
             if selected_cargo != "Tomak (Hotu-hotu)":
                 df_filtered = df_filtered[df_filtered["cargo"] == selected_cargo]
 
@@ -164,14 +162,10 @@ if uploaded_file is not None:
                     pred_counts = [df_filtered["Prediksaun"].value_counts().get(cat, 0) for cat in categories]
                     x = np.arange(len(categories))
                     width = 0.35
-                    
                     rects1 = ax.bar(x - width/2, real_counts, width, label="Dadus Reál", color="#2563EB", alpha=0.9)
                     rects2 = ax.bar(x + width/2, pred_counts, width, label="Prediksaun Tree", color="#10B981", alpha=0.9)
-                    
-                    # Aumenta numeru leten barra (Data Labels)
                     ax.bar_label(rects1, padding=3, fontsize=8)
                     ax.bar_label(rects2, padding=3, fontsize=8)
-
                     ax.set_ylabel("Total Funsionáriu")
                     ax.set_xticks(x)
                     ax.set_xticklabels(categories)
@@ -186,22 +180,29 @@ if uploaded_file is not None:
                     colors = ["#2563EB", "#10B981", "#F59E0B", "#EF4444"]
                     if sum(sizes) > 0:
                         ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
-                    else:
-                        ax2.text(0, 0, "Dadus la iha", ha="center", va="center")
                     st.pyplot(fig2)
 
-                # Gráfiku Média Indikadór Avaliasaun Funsionáriu
+                # Aumenta Gráfiku Detalladu: Dezempenu tuir Sexu (Melloria #2)
                 st.markdown("---")
-                st.markdown("##### 📉 Média Pontu Indikadór Avaliasaun Funsionáriu (Asiduidade, Produtividade, etc.)")
-                fig_ind, ax_ind = plt.subplots(figsize=(10, 4))
-                mean_scores = df_filtered[nota_cols].mean()
-                sns.barplot(x=mean_scores.index, y=mean_scores.values, palette="Blues_d", ax=ax_ind)
-                ax_ind.set_ylim(1, 5)
-                ax_ind.set_ylabel("Média Pontu (1 - 5)")
-                ax_ind.set_xticklabels(nota_cols, rotation=15)
-                ax_ind.bar_label(ax_ind.containers[0], fmt="%.2f", padding=3)
-                sns.despine()
-                st.pyplot(fig_ind)
+                col_sub1, col_sub2 = st.columns(2)
+                with col_sub1:
+                    st.markdown("##### 👥 Distribuisaun Funsionáriu tuir Sexu")
+                    fig_sex, ax_sex = plt.subplots(figsize=(6, 3.5))
+                    sex_counts = df_filtered["sexo"].value_counts()
+                    ax_sex.pie(sex_counts.values, labels=sex_counts.index, autopct="%1.1f%%", startangle=90, colors=["#3B82F6", "#EC4899"])
+                    st.pyplot(fig_sex)
+
+                with col_sub2:
+                    st.markdown("##### 📉 Média Pontu Indikadór Avaliasaun Funsionáriu")
+                    fig_ind, ax_ind = plt.subplots(figsize=(6, 3.5))
+                    mean_scores = df_filtered[nota_cols].mean()
+                    sns.barplot(x=mean_scores.index, y=mean_scores.values, palette="Blues_d", ax=ax_ind)
+                    ax_ind.set_ylim(1, 5)
+                    ax_ind.set_ylabel("Média (1-5)")
+                    ax_ind.set_xticklabels(nota_cols, rotation=25, fontsize=8)
+                    ax_ind.bar_label(ax_ind.containers[0], fmt="%.2f", padding=2, fontsize=8)
+                    sns.despine()
+                    st.pyplot(fig_ind)
 
             with tab2:
                 st.subheader("📋 Amostra Dadus (Preview)")
@@ -270,11 +271,15 @@ if uploaded_file is not None:
                                     st.session_state["edit_index"] = i
                                     st.rerun()
                             with sub_del:
-                                if st.button("🗑️", key=f"del_btn_{i}", help="Hamos dadus ne'e"):
-                                    if delete_extra_from_db_by_index(i):
-                                        if st.session_state["edit_index"] == i:
-                                            st.session_state["edit_index"] = None
-                                        st.rerun()
+                                # Konfirmasaun molok hamos dadus (Melloria #1)
+                                with st.popover("🗑️", help="Hamos dadus ne'e"):
+                                    st.markdown(f"Kerteza hakarak hamos **{rec.get('nome_pessoal')}**?")
+                                    if st.button("I Inserte / Hamos Duni", key=f"confirm_del_{i}"):
+                                        if delete_extra_from_db_by_index(i):
+                                            if st.session_state["edit_index"] == i:
+                                                st.session_state["edit_index"] = None
+                                            st.success("Hamos ona!")
+                                            st.rerun()
                         st.markdown("<hr style='margin: 5px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
 
                     if st.session_state["edit_index"] is not None:
@@ -395,15 +400,18 @@ if uploaded_file is not None:
                     submit_pred = st.form_submit_button("💾 Salva / Prediksaun")
 
                     if submit_pred:
+                        # Validasaun input rigorous (Melloria #3)
                         if not txt_nome.strip() or not txt_sigap.strip():
                             st.error("⚠️ Favór preenxe Naran Pessoal no ID SIGAP ho loos!")
+                        elif not txt_sigap.strip().isalnum():
+                            st.error("⚠️ ID SIGAP tenke kompostu husi númeru ka letras de'it (labele ihaespaçu ka símbolu espesiál).")
                         else:
                             input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
                             pred_encoded = model.predict(input_data)
                             pred_label = le.inverse_transform(pred_encoded)[0]
 
                             new_report = {
-                                "controlo_ativo_identificacao": txt_ativo, "nome_pessoal": txt_nome, "id_sigap": txt_sigap,
+                                "controlo_ativo_identificacao": txt_ativo, "nome_pessoal": txt_nome, "id_sigap": txt_sigap.strip(),
                                 "sexo": txt_sexo, "instituicao": txt_inst, "local_trabalho": txt_local,
                                 "data_de_nascimento": str(txt_nascimento), "funcao": txt_funcao, "cargo": txt_cargo,
                                 "id_grp": txt_grp, "Asiduidade": p_asid, "Pontualidade": p_pont, "Produtividade": p_prod,
