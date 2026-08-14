@@ -182,7 +182,6 @@ if uploaded_file is not None:
                         ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
                     st.pyplot(fig2)
 
-                # Aumenta Gráfiku Detalladu: Dezempenu tuir Sexu (Melloria #2)
                 st.markdown("---")
                 col_sub1, col_sub2 = st.columns(2)
                 with col_sub1:
@@ -271,10 +270,9 @@ if uploaded_file is not None:
                                     st.session_state["edit_index"] = i
                                     st.rerun()
                             with sub_del:
-                                # Konfirmasaun molok hamos dadus (Melloria #1)
                                 with st.popover("🗑️", help="Hamos dadus ne'e"):
                                     st.markdown(f"Kerteza hakarak hamos **{rec.get('nome_pessoal')}**?")
-                                    if st.button("I Inserte / Hamos Duni", key=f"confirm_del_{i}"):
+                                    if st.button("I Hamos Duni", key=f"confirm_del_{i}"):
                                         if delete_extra_from_db_by_index(i):
                                             if st.session_state["edit_index"] == i:
                                                 st.session_state["edit_index"] = None
@@ -361,7 +359,7 @@ if uploaded_file is not None:
                         cur_ativo = def_val.get("controlo_ativo_identificacao", "Ativo")
                         txt_ativo = st.selectbox("Controlo Ativo Identifikasaun", ativo_opts, index=ativo_opts.index(cur_ativo) if cur_ativo in ativo_opts else 0)
                         txt_nome = st.text_input("Naran Pessoal*", def_val.get("nome_pessoal", ""))
-                        txt_sigap = st.text_input("ID SIGAP*", def_val.get("id_sigap", ""))
+                        txt_sigap = st.text_input("ID SIGAP (Numeriku no Símbolu)*", def_val.get("id_sigap", ""))
                         cur_sexo = def_val.get("sexo", "M")
                         txt_sexo = st.selectbox("Sexo", ["M", "F"], index=0 if cur_sexo == "M" else 1)
                     with col_i2:
@@ -400,11 +398,11 @@ if uploaded_file is not None:
                     submit_pred = st.form_submit_button("💾 Salva / Prediksaun")
 
                     if submit_pred:
-                        # Validasaun input rigorous (Melloria #3)
+                        # Validasaun: ID SIGAP labele iha letra (uza de'it numeriku no simbolu)
                         if not txt_nome.strip() or not txt_sigap.strip():
                             st.error("⚠️ Favór preenxe Naran Pessoal no ID SIGAP ho loos!")
-                        elif not txt_sigap.strip().isalnum():
-                            st.error("⚠️ ID SIGAP tenke kompostu husi númeru ka letras de'it (labele ihaespaçu ka símbolu espesiál).")
+                        elif any(c.isalpha() for c in txt_sigap):
+                            st.error("⚠️ ID SIGAP labele uza letra/alfabetu! Tenke uza de'it númeru no símbolu.")
                         else:
                             input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
                             pred_encoded = model.predict(input_data)
