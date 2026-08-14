@@ -96,10 +96,10 @@ if not st.session_state["authenticated"]:
     with st.container():
         st.markdown("""
             <div class="login-header-title">
-                SISTEMA KLASIFIKASAUN ATU DETERMINA FUNKSIONÁRIU NEEBÉ MERESE ATU KOMPETE BA PROMOSAUN GRAU
+                SISTEMA KLASIFIKASAUN BA AVALIASAUN DESEMPENHU FUNSIONARIU IHA KOMISAUN FUNSAUN PUBLIKA  UTILIZA  ALGORITMA DECISION TREE
             </div>
             <div class="login-instruction">
-                FAVOR LOGIN!
+                PLEASE LOG IN!
             </div>
         """, unsafe_allow_html=True)
         
