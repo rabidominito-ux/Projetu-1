@@ -283,9 +283,9 @@ if uploaded_file is not None:
                     st.markdown("##### 🍩 Proporsaun Kategoria Dezempenu")
                     fig2, ax2 = plt.subplots(figsize=(6, 4))
                     sizes = [counts_real.get(cat, 0) for cat in categories]
-                    colors = ["#2563EB", "#10B981", "#F59E0B", "#EF4444"]
+                    colors_list = ["#2563EB", "#10B981", "#F59E0B", "#EF4444"]
                     if sum(sizes) > 0:
-                        ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
+                        ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors_list, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
                     st.pyplot(fig2)
 
                 st.markdown("---")
