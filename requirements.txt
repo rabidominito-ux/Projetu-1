@@ -7,6 +7,4 @@ scikit-learn
 openpyxl
 reportlab
 bcrypt
-git add requirements.txt
-git commit -m "Add bcrypt to requirements"
-git push
+
