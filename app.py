@@ -336,13 +336,11 @@ if uploaded_file is not None:
                         ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors_list, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
                     st.pyplot(fig2)
 
-                # 2. GRÁFIKU ANALÍTIKU AVANSADU (Desentralizasaun tuir Local de Trabalhu)
                 st.markdown("---")
                 st.markdown("##### 🗺️ Gráfiku Avansadu: Desentralizasaun Dezempenu tuir Local de Trabalhu (Munisípiu)")
                 if "local_trabalho" in df_filtered.columns:
                     fig_loc, ax_loc = plt.subplots(figsize=(10, 4.5))
                     df_loc_counts = pd.crosstab(df_filtered["local_trabalho"], df_filtered[target_col])
-                    # Reindexia hodi asegura kategoria tuir orden ne'ebé loos se iha
                     existing_cats = [c for c in categories if c in df_loc_counts.columns]
                     df_loc_counts = df_loc_counts.reindex(columns=existing_cats, fill_value=0)
                     
@@ -562,27 +560,37 @@ if uploaded_file is not None:
                             pred_label = le.inverse_transform(pred_encoded)[0]
 
                             new_report = {
-                                "controlo_ativo_identificacao": txt_ativo, "nome_pessoal": txt_nome, "id_sigap": txt_sigap.strip(),
-                                "sexo": txt_sexo, "instituicao": txt_inst, "local_trabalho": txt_local,
-                                "data_de_nascimento": str(txt_nascimento), "funcao": txt_funcao, "cargo": txt_cargo,
-                                "id_grp": txt_grp, "Asiduidade": p_asid, "Pontualidade": p_pont, "Produtividade": p_prod,
-                                "Kualidade_Servisu": p_kual, "Kooperasaun": p_koop, "Inisiativa": p_inis,
-                                "Disiplina": p_disp, "Responsabilidade": p_resp, "Rezultadu_Avaliasaun": pred_label
+                                "controlo_ativo_identificacao": txt_ativo,
+                                "nome_pessoal": txt_nome,
+                                "id_sigap": txt_sigap.strip(),
+                                "id_grp": txt_grp,
+                                "sexo": txt_sexo,
+                                "instituicao": txt_inst,
+                                "local_trabalho": txt_local,
+                                "data_de_nascimento": str(txt_nascimento),
+                                "funcao": txt_funcao,
+                                "cargo": txt_cargo,
+                                "Asiduidade": p_asid,
+                                "Pontualidade": p_pont,
+                                "Produtividade": p_prod,
+                                "Kualidade_Servisu": p_kual,
+                                "Kooperasaun": p_koop,
+                                "Inisiativa": p_inis,
+                                "Disiplina": p_disp,
+                                "Responsabilidade": p_resp,
+                                "Media": float(np.mean([p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp])),
+                                "Rezultadu_Avaliasaun": pred_label
                             }
 
                             if idx_edit is not None:
                                 update_extra_in_db_by_index(idx_edit, new_report)
                                 st.session_state["edit_index"] = None
-                                st.success("✅ Atualizadu ho suksesu!")
-                                st.rerun()
+                                st.success(f"✅ Dadus ba {txt_nome} atualiza ona ho susesu! Prediksaun: {pred_label}")
                             else:
-                                if save_extra_to_db(new_report):
-                                    st.success(f"✅ Rai ona! Prediksaun Dezempenu: **{pred_label}**")
-                                    st.rerun()
-                                else:
-                                    st.error("⚠️ Erro: ID SIGAP ne'e iha ona (Duplikadu). Favór uza ID seluk.")
-
+                                save_extra_to_db(new_report)
+                                st.success(f"✅ Dadus ba {txt_nome} salva ona ho susesu! Prediksaun: {pred_label}")
+                            
+                            st.session_state["extra_reports"] = load_extra_from_db()
+                            st.rerun()
     except Exception as e:
-        st.error(f"⚠️ Erro iha prosesamentu fail: {e}")
-else:
-    st.info("👈 Favor upload uluk ficheiru Excel (`.xlsx`) iha sidebar hodi hahú sistema.")
+        st.error(f"⚠️ Erru iha leitura ficheiru Excel ka modelu: {e}")
