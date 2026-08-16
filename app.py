@@ -22,8 +22,8 @@ from models import treinar_modelo
 from ui_components import render_custom_css
 
 st.set_page_config(
-    page_title="Sistema Klasifikasaun CFP - Decision Tree",
-    page_icon="📊",
+    page_title="Sistema Klasifikasaun CFP - RDTL",
+    page_icon="🇧🇲",
     layout="wide",
 )
 
@@ -34,7 +34,7 @@ def load_data(file):
     return pd.read_excel(file)
 
 # ==========================================
-# SISTEMA LOGIN / AUTENTIKASAUN
+# SISTEMA LOGIN / AUTENTIKASAUN (ESTILU CFP RDTL)
 # ==========================================
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
@@ -43,95 +43,116 @@ if not st.session_state["authenticated"]:
     st.markdown("""
         <style>
         .stApp {
-            background-color: #2563EB;
+            background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
         }
         .block-container {
             padding-top: 2rem !important;
             padding-bottom: 2rem !important;
-            max-width: 480px !important;
+            max-width: 500px !important;
             margin: 0 auto !important;
         }
-        .login-header-title {
-            background-color: #6D28D9;
-            color: white;
-            padding: 14px 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 12px;
-            text-align: center;
-            letter-spacing: 0.5px;
-            line-height: 1.4;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        .cfp-login-card {
+            background-color: #ffffff;
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border-top: 6px solid #D97706;
         }
-        .login-instruction {
+        .cfp-header-title {
+            color: #1E3A8A;
+            font-weight: 800;
+            font-size: 15px;
             text-align: center;
-            color: white;
-            font-weight: bold;
-            margin-bottom: 10px;
-            font-size: 14px;
             letter-spacing: 0.5px;
+            line-height: 1.5;
+            margin-bottom: 5px;
+        }
+        .cfp-subtitle {
+            text-align: center;
+            color: #64748B;
+            font-size: 12px;
+            margin-bottom: 25px;
+            font-weight: 600;
         }
         div.stButton > button {
-            background-color: #6D28D9 !important;
+            background-color: #1E3A8A !important;
             color: white !important;
             width: 100%;
             border-radius: 8px;
             font-weight: bold;
-            padding: 8px;
+            padding: 10px;
             border: none;
             letter-spacing: 1px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         div.stButton > button:hover {
-            background-color: #5B21B6 !important;
+            background-color: #1D4ED8 !important;
         }
         label {
-            color: white !important;
+            color: #1E293B !important;
             font-weight: bold !important;
+        }
+        .login-footer-text {
+            text-align: center;
+            color: #94A3B8;
+            font-size: 11px;
+            margin-top: 20px;
         }
         </style>
     """, unsafe_allow_html=True)
 
     with st.container():
         st.markdown("""
-            <div class="login-header-title">
-                SISTEMA KLASIFIKASAUN BA AVALIASAUN DESEMPENHU FUNSIONARIU IHA KOMISAUN FUNSAUN PUBLIKA  UTILIZA  ALGORITMA DECISION TREE
-            </div>
-            <div class="login-instruction">
-                PLEASE LOG IN!
-            </div>
+            <div class="cfp-login-card">
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <span style="font-size: 38px;">🏛️</span>
+                </div>
+                <div class="cfp-header-title">
+                    COMISSÃO DA FUNÇÃO PÚBLICA<br>REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE
+                </div>
+                <div class="cfp-subtitle">
+                    Portal de Gestão e Classificação de Desempenho
+                </div>
         """, unsafe_allow_html=True)
         
         with st.form("login_form"):
-            username = st.text_input("Username:", placeholder="Hatama ita boot nia username")
-            password = st.text_input("Password:", type="password", placeholder="Hatama ita boot nia password!")
+            username = st.text_input("Username:", placeholder="Hatama ita-nia username")
+            password = st.text_input("Password:", type="password", placeholder="Hatama ita-nia password")
             st.markdown("<br>", unsafe_allow_html=True)
-            submit_login = st.form_submit_button("LOGIN")
+            submit_login = st.form_submit_button("ENTRADA / LOGIN")
             
             if submit_login:
                 try:
                     if username == st.secrets["username"] and password == st.secrets["password"]:
                         st.session_state["authenticated"] = True
-                        st.success("Login susesu! Kontinua hela...")
+                        st.success("Login susesu! Redirecting...")
                         st.rerun()
                     else:
                         st.error("⚠️ Username ka Password sala! Favor koko fali.")
                 except Exception:
                     st.error("⚠️ Konfigurasaun Secrets seidauk iha Streamlit Cloud ka lokál.")
+        
+        st.markdown("""
+                <div class="login-footer-text">
+                    © 2026 Comissão da Função Pública - RDTL. All rights reserved.
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
                     
     st.stop()
 
 # ==========================================
-# APLIKASAUN PRINCIPAL (Pós-Login)
+# APLIKASAUN PRINSIPAL (PÓS-LOGIN)
 # ==========================================
-st.sidebar.markdown("### 👤 Konta Asesu")
-if st.sidebar.button("🚪 Logout"):
+st.sidebar.markdown("### 🏛️ CFP-RDTL Portal")
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 👤 Kargu Asesu")
+if st.sidebar.button("🚪 Logout / Sai"):
     st.session_state["authenticated"] = False
     st.rerun()
 
 st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">Aplikasaun Inteligénsia Artifisiál uza algoritmu Decision Tree hodi analiza no klasifika dezempenu funsionáriu bazeia ba indikadór Komisaun Função Pública (CFP).</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">Aplikasaun Intelijénsia Artifisiál uza algoritmu Decision Tree bazeia ba indikadór Komisaun Função Pública RDTL.</p>', unsafe_allow_html=True)
 
 init_db()
 
@@ -144,7 +165,7 @@ if "edit_index" not in st.session_state:
 if "selected_category" not in st.session_state:
     st.session_state["selected_category"] = None
 
-# 1. FUNSAUN GENERATOR RELATÓRIU PDF OFISIÁL BA XEFES / DIREKTÓR
+# Funsaun Generál PDF Ofisiál CFP
 def generate_pdf_report(df_data, title_report):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
@@ -152,7 +173,7 @@ def generate_pdf_report(df_data, title_report):
     
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
-        'TitleStyle', parent=styles['Heading1'], fontSize=12, textColor=colors.HexColor('#1E3A8A'), spaceAfter=4, alignment=1, fontName='Helvetica-Bold'
+        'TitleStyle', parent=styles['Heading1'], fontSize=11, textColor=colors.HexColor('#1E3A8A'), spaceAfter=2, alignment=1, fontName='Helvetica-Bold'
     )
     subtitle_style = ParagraphStyle(
         'SubTitleStyle', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#4B5563'), spaceAfter=15, alignment=1, fontName='Helvetica'
@@ -175,14 +196,14 @@ def generate_pdf_report(df_data, title_report):
 
     t = Table(table_data, colWidths=[150, 70, 90, 110, 80])
     t.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563EB')),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E3A8A')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 9),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F3F4F6')),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB')),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F8FAFC')),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
         ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
         ('FONTSIZE', (0, 1), (-1, -1), 8),
     ]))
@@ -192,6 +213,7 @@ def generate_pdf_report(df_data, title_report):
     buffer.seek(0)
     return buffer
 
+st.sidebar.markdown("---")
 st.sidebar.markdown("### 📁 Gestaun Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
 
@@ -252,7 +274,7 @@ if uploaded_file is not None:
             acc = accuracy_score(y_test, model.predict(X_test))
 
             tab1, tab2, tab3 = st.tabs([
-                "📊 Dashboard Analítiku", "⚙️ Modelu & Performance", "🔮 Prediksaun & Jere Dadus"
+                "📊 Dashboard Analítiku", "⚙️ Modelu & Performance", "🔮 Prediksaun & Gestaun Dadus"
             ])
 
             with tab1:
@@ -316,8 +338,8 @@ if uploaded_file is not None:
                     pred_counts = [df_filtered["Prediksaun"].value_counts().get(cat, 0) for cat in categories]
                     x = np.arange(len(categories))
                     width = 0.35
-                    rects1 = ax.bar(x - width/2, real_counts, width, label="Dadus Reál", color="#2563EB", alpha=0.9)
-                    rects2 = ax.bar(x + width/2, pred_counts, width, label="Prediksaun Tree", color="#10B981", alpha=0.9)
+                    rects1 = ax.bar(x - width/2, real_counts, width, label="Dadus Reál", color="#1E3A8A", alpha=0.9)
+                    rects2 = ax.bar(x + width/2, pred_counts, width, label="Prediksaun Tree", color="#D97706", alpha=0.9)
                     ax.bar_label(rects1, padding=3, fontsize=8)
                     ax.bar_label(rects2, padding=3, fontsize=8)
                     ax.set_ylabel("Total Funsionáriu")
@@ -331,7 +353,7 @@ if uploaded_file is not None:
                     st.markdown("##### 🍩 Proporsaun Kategoria Dezempenu")
                     fig2, ax2 = plt.subplots(figsize=(6, 4))
                     sizes = [counts_real.get(cat, 0) for cat in categories]
-                    colors_list = ["#2563EB", "#10B981", "#F59E0B", "#EF4444"]
+                    colors_list = ["#1E3A8A", "#3B82F6", "#D97706", "#EF4444"]
                     if sum(sizes) > 0:
                         ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors_list, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
                     st.pyplot(fig2)
@@ -344,7 +366,7 @@ if uploaded_file is not None:
                     existing_cats = [c for c in categories if c in df_loc_counts.columns]
                     df_loc_counts = df_loc_counts.reindex(columns=existing_cats, fill_value=0)
                     
-                    df_loc_counts.plot(kind="bar", stacked=True, ax=ax_loc, colormap="viridis", edgecolor="none")
+                    df_loc_counts.plot(kind="bar", stacked=True, ax=ax_loc, colormap="crest", edgecolor="none")
                     ax_loc.set_title("Distribuisaun Avaliasaun Dezempenu tuir Munisípiu / Local de Trabalhu", fontsize=11, fontweight="bold")
                     ax_loc.set_xlabel("Local de Trabalhu", fontsize=9)
                     ax_loc.set_ylabel("Total Funsionáriu", fontsize=9)
