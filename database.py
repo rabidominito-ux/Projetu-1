@@ -1,9 +1,12 @@
 import sqlite3
 import pandas as pd
+import bcrypt
 
 def init_db(db_name="cfp_database.db"):
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
+    
+    # 1. Tabela ba dadus extra reports
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS extra_reports (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,6 +31,22 @@ def init_db(db_name="cfp_database.db"):
             Rezultadu_Avaliasaun TEXT
         )
     ''')
+    
+    # 2. Tabela ba Users (Autentikasaun)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            password TEXT,
+            role TEXT
+        )
+    ''')
+    
+    # Kria Default Admin se seidauk iha (Username: admin, Password: admin123)
+    cursor.execute("SELECT * FROM users WHERE username = 'admin'")
+    if not cursor.fetchone():
+        hashed_pw = bcrypt.hashpw('admin123'.encode('utf-8'), bcrypt.gensalt())
+        cursor.execute("INSERT INTO users VALUES (?, ?, ?)", ('admin', hashed_pw, 'admin'))
+
     conn.commit()
     conn.close()
 
@@ -100,3 +119,29 @@ def delete_extra_from_db_by_index(index, db_name="cfp_database.db"):
         conn.close()
         return True
     return False
+
+# ==========================================
+# FUNSAUN AUTENTIKASAUN & JESTAUN USER
+# ==========================================
+def verify_user(username, password, db_name="cfp_database.db"):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    cursor.execute("SELECT password FROM users WHERE username = ?", (username,))
+    result = cursor.fetchone()
+    conn.close()
+    if result:
+        return bcrypt.checkpw(password.encode('utf-8'), result[0])
+    return False
+
+def add_user(username, password, role='user', db_name="cfp_database.db"):
+    hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO users VALUES (?, ?, ?)", (username, hashed_pw, role))
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+    finally:
+        conn.close()
