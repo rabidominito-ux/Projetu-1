@@ -101,21 +101,9 @@ if not st.session_state["authenticated"]:
         </style>
     """, unsafe_allow_html=True)
 
-    with st.container():
-        # Tau imajen logo.jpg iha leten card login nian
-        col1, col2, col3 = st.columns([1, 1.5, 1])
-        with col2:
-            st.image("logo.jpg", width=90)
-            
-        st.markdown("""
-            <div class="cfp-login-card">
-                <div class="cfp-header-title">
-                    COMISSÃO DA FUNÇÃO PÚBLICA<br>REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE
-                </div>
-                <div class="cfp-subtitle">
-                    Portal de Gestão e Classificação de Desempenho
-                </div>
-        """, unsafe_allow_html=True)
+    <div style="text-align: center; margin-bottom: 15px;">
+    <img src="logo.jpg" alt="Logo CFP" style="width: 85px; height: auto; border-radius: 50%;">
+</div>
         
         with st.form("login_form"):
             username = st.text_input("Username:", placeholder="Hatama ita-nia username")
