@@ -579,21 +579,19 @@ if uploaded_file is not None:
                         else:
                             input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
                             pred_encoded = model.predict(input_data)
-                            pred_result = le.inverse_transform(pred_encoded)[0]
-                            
-                            media_val = float(np.mean([p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]))
-                            
-                            record_dict = {
+                            pred_label = le.inverse_transform(pred_encoded)[0]
+
+                            new_record = {
                                 "controlo_ativo_identificacao": txt_ativo,
                                 "nome_pessoal": txt_nome,
                                 "id_sigap": txt_sigap,
-                                "id_grp": txt_grp,
                                 "sexo": txt_sexo,
-                                "data_de_nascimento": str(txt_nascimento),
                                 "instituicao": txt_inst,
                                 "local_trabalho": txt_local,
+                                "data_de_nascimento": str(txt_nascimento),
                                 "funcao": txt_funcao,
                                 "cargo": txt_cargo,
+                                "id_grp": txt_grp,
                                 "Asiduidade": p_asid,
                                 "Pontualidade": p_pont,
                                 "Produtividade": p_prod,
@@ -602,22 +600,25 @@ if uploaded_file is not None:
                                 "Inisiativa": p_inis,
                                 "Disiplina": p_disp,
                                 "Responsabilidade": p_resp,
-                                "Media": media_val,
-                                "Rezultadu_Avaliasaun": pred_result
+                                "Rezultadu_Avaliasaun": pred_label
                             }
 
                             if idx_edit is not None:
-                                if update_extra_in_db_by_index(idx_edit, record_dict):
-                                    st.success(f"✅ Dadus ba {txt_nome} atualiza ona ho susesu! Rezultadu: {pred_result}")
+                                if update_extra_in_db_by_index(idx_edit, new_record):
+                                    st.success(f"✅ Atualiza dadus susesu! Prediksaun: **{pred_label}**")
                                     st.session_state["edit_index"] = None
+                                    st.session_state["extra_reports"] = load_extra_from_db()
                                     st.rerun()
                                 else:
-                                    st.error("❌ Erro hodi atualiza dadus iha database.")
+                                    st.error("⚠️ Falha atu atualiza dadus.")
                             else:
-                                if save_extra_to_db(record_dict):
-                                    st.success(f"✅ Dadus salva ona ho susesu! Prediksaun Rezultadu: **{pred_result}**")
+                                if save_extra_to_db(new_record):
+                                    st.success(f"✅ Salva dadus susesu! Prediksaun: **{pred_label}**")
+                                    st.session_state["extra_reports"] = load_extra_from_db()
                                     st.rerun()
                                 else:
-                                    st.error("❌ Erro: ID SIGAP karik iha ona ka iha problema ho database.")
+                                    st.error("⚠️ ID SIGAP ne'e bele iha ona ka iha erro ruma iha database.")
     except Exception as e:
-        st.sidebar.error(f"⚠️ Erro lee ficheiru Excel: {e}")
+        st.sidebar.error(f"⚠️ Erro iha Leitura Ficheiru Excel: {e}")
+else:
+    st.info("👋 Favór upload ficheiru Excel (.xlsx) iha sidebar honia hahú eksplora sistema klasifikasaun.")
