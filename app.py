@@ -138,7 +138,7 @@ if not st.session_state["authenticated"]:
                 </div>
             </div>
         """, unsafe_allow_html=True)
-                    
+                
     st.stop()
 
 # ==========================================
@@ -578,20 +578,21 @@ if uploaded_file is not None:
                             st.error("⚠️ ID SIGAP labele uza letra/alfabetu! Tenke uza de'it númeru no símbolu.")
                         else:
                             input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
+                            media_val = np.mean([p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp])
                             pred_encoded = model.predict(input_data)
-                            pred_label = le.inverse_transform(pred_encoded)[0]
+                            pred_result = le.inverse_transform(pred_encoded)[0]
 
-                            new_record = {
+                            record_dict = {
                                 "controlo_ativo_identificacao": txt_ativo,
                                 "nome_pessoal": txt_nome,
                                 "id_sigap": txt_sigap,
+                                "id_grp": txt_grp,
                                 "sexo": txt_sexo,
+                                "data_de_nascimento": str(txt_nascimento),
                                 "instituicao": txt_inst,
                                 "local_trabalho": txt_local,
-                                "data_de_nascimento": str(txt_nascimento),
                                 "funcao": txt_funcao,
                                 "cargo": txt_cargo,
-                                "id_grp": txt_grp,
                                 "Asiduidade": p_asid,
                                 "Pontualidade": p_pont,
                                 "Produtividade": p_prod,
@@ -600,25 +601,20 @@ if uploaded_file is not None:
                                 "Inisiativa": p_inis,
                                 "Disiplina": p_disp,
                                 "Responsabilidade": p_resp,
-                                "Rezultadu_Avaliasaun": pred_label
+                                "Media": media_val,
+                                "Rezultadu_Avaliasaun": pred_result
                             }
 
                             if idx_edit is not None:
-                                if update_extra_in_db_by_index(idx_edit, new_record):
-                                    st.success(f"✅ Atualiza dadus susesu! Prediksaun: **{pred_label}**")
+                                if update_extra_in_db_by_index(idx_edit, record_dict):
+                                    st.success(f"✅ Dadus ba {txt_nome} atualiza ona ho susesu! Rezultadu: {pred_result}")
                                     st.session_state["edit_index"] = None
-                                    st.session_state["extra_reports"] = load_extra_from_db()
                                     st.rerun()
                                 else:
-                                    st.error("⚠️ Falha atu atualiza dadus.")
+                                    st.error("⚠️ Falla atu atualiza dadus iha database.")
                             else:
-                                if save_extra_to_db(new_record):
-                                    st.success(f"✅ Salva dadus susesu! Prediksaun: **{pred_label}**")
-                                    st.session_state["extra_reports"] = load_extra_from_db()
+                                if save_extra_to_db(record_dict):
+                                    st.success(f"✅ Dadus foun salva ona ho susesu! Rezultadu Prediksaun: {pred_result}")
                                     st.rerun()
                                 else:
-                                    st.error("⚠️ ID SIGAP ne'e bele iha ona ka iha erro ruma iha database.")
-    except Exception as e:
-        st.sidebar.error(f"⚠️ Erro iha Leitura Ficheiru Excel: {e}")
-else:
-    st.info("👋 Favór upload ficheiru Excel (.xlsx) iha sidebar honia hahú eksplora sistema klasifikasaun.")
+                                    st.error("⚠️ Falla atu salva dadus ba database.")
