@@ -1,6 +1,7 @@
 import sqlite3
 import pandas as pd
 import bcrypt
+from datetime import datetime
 
 def init_db(db_name="cfp_database.db"):
     conn = sqlite3.connect(db_name)
@@ -32,12 +33,24 @@ def init_db(db_name="cfp_database.db"):
         )
     ''')
     
-    # 2. Tabela ba Users (Autentikasaun)
+    # 2. Tabela ba Users (Autentikasaun & RBAC)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             username TEXT PRIMARY KEY,
             password TEXT,
             role TEXT
+        )
+    ''')
+    
+    # 3. Tabela ba Audit Trail (Rejistu Mudansa)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            action TEXT,
+            table_name TEXT,
+            record_id TEXT,
+            timestamp TEXT
         )
     ''')
     
@@ -107,6 +120,8 @@ def update_extra_in_db_by_index(index, data, db_name="cfp_database.db"):
         ))
         conn.commit()
         conn.close()
+        return True
+    return False
 
 def delete_extra_from_db_by_index(index, db_name="cfp_database.db"):
     records = load_extra_from_db(db_name)
@@ -133,6 +148,14 @@ def verify_user(username, password, db_name="cfp_database.db"):
         return bcrypt.checkpw(password.encode('utf-8'), result[0])
     return False
 
+def get_user_role(username, db_name="cfp_database.db"):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    cursor.execute("SELECT role FROM users WHERE username = ?", (username,))
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result else 'user'
+
 def add_user(username, password, role='user', db_name="cfp_database.db"):
     hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     conn = sqlite3.connect(db_name)
@@ -145,3 +168,25 @@ def add_user(username, password, role='user', db_name="cfp_database.db"):
         return False
     finally:
         conn.close()
+
+# ==========================================
+# FUNSAUN AUDIT TRAIL (REJISTU MUDANSA)
+# ==========================================
+def log_action(username, action, table_name, record_id, db_name="cfp_database.db"):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO audit_log (username, action, table_name, record_id, timestamp) VALUES (?, ?, ?, ?, ?)",
+        (username, action, table_name, str(record_id), datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    )
+    conn.commit()
+    conn.close()
+
+def get_audit_logs(db_name="cfp_database.db"):
+    try:
+        conn = sqlite3.connect(db_name)
+        df = pd.read_sql("SELECT * FROM audit_log ORDER BY timestamp DESC", conn)
+        conn.close()
+        return df
+    except Exception:
+        return pd.DataFrame(columns=["id", "username", "action", "table_name", "record_id", "timestamp"])
