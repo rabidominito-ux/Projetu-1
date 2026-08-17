@@ -546,6 +546,7 @@ if uploaded_file is not None:
                             default_date = pd.to_datetime(def_val.get("data_de_nascimento", "1995-01-01")).date()
                         except Exception:
                             default_date = pd.to_datetime("1995-01-01").date()
+                        
                         txt_nascimento = st.date_input("Data de Nascimento", value=default_date)
                     with col_i3:
                         cur_func = def_val.get("funcao", funcoes[0])
@@ -615,4 +616,4 @@ if uploaded_file is not None:
                                 st.success(f"Dadus salva ona! Rezultadu Prediksaun: **{pred_label}**")
                             st.rerun()
     else:
-        st.info("ℹ️ Favor upload uluk ficheiru Excel dataset iha sidebar hersi hahu ezekusaun sistema.")
+        st.info("ℹ️ Favor upload uluk ficheiru Excel dataset iha sidebar hodi hahu ezekusaun sistema.")
