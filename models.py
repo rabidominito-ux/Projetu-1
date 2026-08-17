@@ -5,6 +5,22 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 
+def salvar_modelo(model, le, filename="modelu_cfp.pkl"):
+    try:
+        # Rai hamutuk model no LabelEncoder iha formatu dictionary
+        joblib.dump({"model": model, "le": le}, filename)
+        return True
+    except Exception as e:
+        print(f"Erro atu salva modelu: {e}")
+        return False
+
+def carregar_modelo_pkl(filename="modelu_cfp.pkl"):
+    try:
+        dados_salvos = joblib.load(filename)
+        return dados_salvos
+    except Exception as e:
+        return None
+
 def treinar_modelo(df, nota_cols, target_col):
     le = LabelEncoder()
     df["target_encoded"] = le.fit_transform(df[target_col].astype(str))
@@ -27,19 +43,3 @@ def treinar_modelo(df, nota_cols, target_col):
     salvar_modelo(model, le)
     
     return model, le, X_train, X_test, y_train, y_test
-
-def carregar_modelo_pkl(filename="modelu_cfp.pkl"):
-    try:
-        dados_salvos = joblib.load(filename)
-        return dados_salvos
-    except Exception as e:
-        return None
-
-def salvar_modelo(model, le, filename="modelu_cfp.pkl"):
-    try:
-        # Rai hamutuk model no LabelEncoder iha formatu dictionary
-        joblib.dump({"model": model, "le": le}, filename)
-        return True
-    except Exception as e:
-        print(f"Erro atu salva modelu: {e}")
-        return False
