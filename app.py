@@ -102,7 +102,6 @@ if not st.session_state["authenticated"]:
     """, unsafe_allow_html=True)
 
     with st.container():
-        # Tau imajen logo.jpg iha leten card login nian
         col1, col2, col3 = st.columns([1, 1.5, 1])
         with col2:
             st.image("logo.jpg", width=90)
@@ -545,7 +544,7 @@ if uploaded_file is not None:
                         
                         try:
                             default_date = pd.to_datetime(def_val.get("data_de_nascimento", "1995-01-01")).date()
-                        except:
+                        except Exception:
                             default_date = pd.to_datetime("1995-01-01").date()
                         txt_nascimento = st.date_input("Data de Nascimento", value=default_date)
                     with col_i3:
@@ -582,18 +581,19 @@ if uploaded_file is not None:
                             input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
                             pred_encoded = model.predict(input_data)
                             pred_label = le.inverse_transform(pred_encoded)[0]
+                            media_val = np.mean([p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp])
 
                             new_record = {
                                 "controlo_ativo_identificacao": txt_ativo,
                                 "nome_pessoal": txt_nome,
                                 "id_sigap": txt_sigap,
+                                "id_grp": txt_grp,
                                 "sexo": txt_sexo,
+                                "data_de_nascimento": str(txt_nascimento),
                                 "instituicao": txt_inst,
                                 "local_trabalho": txt_local,
-                                "data_de_nascimento": str(txt_nascimento),
                                 "funcao": txt_funcao,
                                 "cargo": txt_cargo,
-                                "id_grp": txt_grp,
                                 "Asiduidade": p_asid,
                                 "Pontualidade": p_pont,
                                 "Produtividade": p_prod,
@@ -602,25 +602,17 @@ if uploaded_file is not None:
                                 "Inisiativa": p_inis,
                                 "Disiplina": p_disp,
                                 "Responsabilidade": p_resp,
+                                "Media": media_val,
                                 "Rezultadu_Avaliasaun": pred_label
                             }
 
                             if idx_edit is not None:
-                                if update_extra_in_db_by_index(idx_edit, new_record):
-                                    st.success(f"✅ Atualiza dadus susesu! Prediksaun: **{pred_label}**")
-                                    st.session_state["edit_index"] = None
-                                    st.session_state["extra_reports"] = load_extra_from_db()
-                                    st.rerun()
-                                else:
-                                    st.error("⚠️ Falha atu atualiza dadus.")
+                                update_extra_in_db_by_index(idx_edit, new_record)
+                                st.session_state["edit_index"] = None
+                                st.success(f"Dadus atualiza ona! Rezultadu Prediksaun: **{pred_label}**")
                             else:
-                                if save_extra_to_db(new_record):
-                                    st.success(f"✅ Salva dadus susesu! Prediksaun: **{pred_label}**")
-                                    st.session_state["extra_reports"] = load_extra_from_db()
-                                    st.rerun()
-                                else:
-                                    st.error("⚠️ ID SIGAP ne'e bele iha ona ka iha erro ruma iha database.")
-    except Exception as e:
-        st.sidebar.error(f"⚠️ Erro iha Leitura Ficheiru Excel: {e}")
-else:
-    st.info("👋 Favór upload ficheiru Excel (.xlsx) iha sidebar honia hahú eksplora sistema klasifikasaun.")
+                                save_extra_to_db(new_record)
+                                st.success(f"Dadus salva ona! Rezultadu Prediksaun: **{pred_label}**")
+                            st.rerun()
+    else:
+        st.info("ℹ️ Favor upload uluk ficheiru Excel dataset iha sidebar hersi hahu ezekusaun sistema.")
