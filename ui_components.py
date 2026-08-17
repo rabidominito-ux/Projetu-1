@@ -1,9 +1,10 @@
 import streamlit as st
 
+
 def render_custom_css():
-    st.markdown("""
+  st.markdown(
+      """
         <style>
-        /* Estilu Fundu no Tipografia Prinsipal */
         .main {
             background-color: #F8FAFC;
         }
@@ -19,23 +20,19 @@ def render_custom_css():
             font-size: 1.1rem;
             margin-bottom: 25px;
         }
-        
-        /* Estilu Botun Generál */
         .stButton > button {
-            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+            background: linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 100%);
             color: white;
             border-radius: 8px;
             padding: 0.6rem 1.2rem;
             font-weight: 600;
             border: none;
-            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 4px 6px rgba(30, 58, 138, 0.2);
             transition: all 0.2s ease-in-out;
         }
         .stButton > button:hover {
             background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%);
         }
-        
-        /* Estilu Tabs */
         .stTabs [data-baseweb="tab-list"] {
             gap: 8px;
         }
@@ -47,15 +44,10 @@ def render_custom_css():
             color: #334155;
         }
         .stTabs [aria-selected="true"] {
-            background-color: #2563EB !important;
+            background-color: #1E3A8A !important;
             color: white !important;
         }
-        
-        /* Estilu Tabelas no Container sira */
-        div[data-testid="stDataFrame"] {
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #E2E8F0;
-        }
         </style>
-    """, unsafe_allow_html=True)
+    """,
+      unsafe_allow_html=True,
+  )
