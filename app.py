@@ -1,9 +1,3 @@
-# ============================================================
-# APP.PY
-# SISTEMA KLASIFIKASAUN DESEMPENU FUNSIONÁRIU CFP
-# DECISION TREE + STREAMLIT
-# ============================================================
-
 import base64
 from io import BytesIO
 from pathlib import Path
@@ -16,10 +10,7 @@ import streamlit as st
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import (
-    ParagraphStyle,
-    getSampleStyleSheet,
-)
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import (
     Paragraph,
     SimpleDocTemplate,
@@ -34,10 +25,7 @@ from sklearn.metrics import (
     confusion_matrix,
 )
 
-from sklearn.tree import (
-    DecisionTreeClassifier,
-    plot_tree,
-)
+from sklearn.tree import DecisionTreeClassifier, plot_tree
 
 from database import (
     delete_extra_from_db_by_index,
@@ -108,7 +96,7 @@ def load_data(file):
 
 
 # ============================================================
-# SESSION LOGIN
+# SESSION AUTHENTICATION
 # ============================================================
 
 if "authenticated" not in st.session_state:
@@ -117,7 +105,7 @@ if "authenticated" not in st.session_state:
 
 
 # ============================================================
-# LOGIN PAGE
+# LOGIN
 # ============================================================
 
 if not st.session_state["authenticated"]:
@@ -136,7 +124,7 @@ if not st.session_state["authenticated"]:
         }
 
         .block-container {
-            padding-top: 2rem !important;
+            padding-top: 3rem !important;
             padding-bottom: 2rem !important;
             max-width: 500px !important;
             margin: 0 auto !important;
@@ -146,34 +134,25 @@ if not st.session_state["authenticated"]:
             background-color: #ffffff;
             padding: 35px;
             border-radius: 12px;
+
             box-shadow:
                 0 10px 25px
                 rgba(0,0,0,0.30);
+
             border-top:
                 6px solid #D97706;
         }
 
         .cfp-logo-container {
             text-align: center;
-            margin-bottom: 15px;
-        }
-
-        .cfp-header-title {
-            color: #1E3A8A;
-            font-weight: 800;
-            font-size: 15px;
-            text-align: center;
-            letter-spacing: 0.5px;
-            line-height: 1.5;
-            margin-bottom: 5px;
-        }
-
-        .cfp-subtitle {
-            text-align: center;
-            color: #64748B;
-            font-size: 12px;
             margin-bottom: 25px;
-            font-weight: 600;
+        }
+
+        .cfp-logo {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            display: inline-block;
         }
 
         div.stButton > button {
@@ -185,6 +164,7 @@ if not st.session_state["authenticated"]:
             padding: 10px;
             border: none;
             letter-spacing: 1px;
+
             box-shadow:
                 0 4px 6px
                 rgba(0,0,0,0.10);
@@ -213,169 +193,144 @@ if not st.session_state["authenticated"]:
 
 
     # ========================================================
-    # LOGIN CARD - ABERTURA
+    # LOGIN CARD
     # ========================================================
 
-    st.markdown(
-        """
-        <div class="cfp-login-card">
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-    # ========================================================
-    # LOGO CFP
-    # ========================================================
-
-    st.markdown(
-        '<div class="cfp-logo-container">',
-        unsafe_allow_html=True,
-    )
-
-
-    if LOGO_PATH.exists():
-
-        st.image(
-            str(LOGO_PATH),
-            width=100,
-        )
-
-    else:
-
-        st.warning(
-            "⚠️ Arquivo 'logo cfp.png' la hetan."
-        )
-
-
-    st.markdown(
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-
-    # ========================================================
-    # TITULU LOGIN
-    # ========================================================
-
-    st.markdown(
-        """
-        <div class="cfp-header-title">
-
-            COMISSÃO DA FUNÇÃO PÚBLICA<br>
-
-            REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE
-
-        </div>
-
-        <div class="cfp-subtitle">
-
-            Portal de Gestão e Classificação de Desempenho
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-    # ========================================================
-    # LOGIN FORM
-    # ========================================================
-
-    with st.form("login_form"):
-
-        username = st.text_input(
-            "Username:",
-            placeholder="Hatama ita-nia username",
-        )
-
-
-        password = st.text_input(
-            "Password:",
-            type="password",
-            placeholder="Hatama ita-nia password",
-        )
-
+    with st.container():
 
         st.markdown(
-            "<br>",
+            """
+            <div class="cfp-login-card">
+            """,
             unsafe_allow_html=True,
         )
 
 
-        submit_login = st.form_submit_button(
-            "ENTRADA / LOGIN"
+        # ====================================================
+        # LOGO DE'IT
+        # ====================================================
+
+        st.markdown(
+            '<div class="cfp-logo-container">',
+            unsafe_allow_html=True,
         )
 
 
-        if submit_login:
+        if LOGO_PATH.exists():
 
-            try:
+            st.image(
+                str(LOGO_PATH),
+                width=120,
+            )
 
-                correct_username = st.secrets[
-                    "username"
-                ]
+        else:
 
-                correct_password = st.secrets[
-                    "password"
-                ]
+            st.error(
+                "⚠️ Arquivo 'logo cfp.png' la hetan."
+            )
 
 
-                if (
-                    username == correct_username
-                    and password == correct_password
-                ):
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
-                    st.session_state[
-                        "authenticated"
-                    ] = True
 
-                    st.success(
-                        "Login susesu! Redirecting..."
-                    )
+        # ====================================================
+        # LOGIN FORM
+        # ====================================================
 
-                    st.rerun()
+        with st.form("login_form"):
 
-                else:
+            username = st.text_input(
+                "Username:",
+                placeholder="Hatama ita-nia username",
+            )
+
+
+            password = st.text_input(
+                "Password:",
+                type="password",
+                placeholder="Hatama ita-nia password",
+            )
+
+
+            st.markdown(
+                "<br>",
+                unsafe_allow_html=True,
+            )
+
+
+            submit_login = (
+                st.form_submit_button(
+                    "ENTRADA / LOGIN"
+                )
+            )
+
+
+            if submit_login:
+
+                try:
+
+                    if (
+                        username
+                        == st.secrets["username"]
+                        and
+                        password
+                        == st.secrets["password"]
+                    ):
+
+                        st.session_state[
+                            "authenticated"
+                        ] = True
+
+
+                        st.success(
+                            "Login susesu! Redirecting..."
+                        )
+
+
+                        st.rerun()
+
+
+                    else:
+
+                        st.error(
+                            "⚠️ Username ka Password sala! "
+                            "Favor koko fali."
+                        )
+
+
+                except Exception:
 
                     st.error(
-                        "⚠️ Username ka Password sala! "
-                        "Favor koko fali."
+                        "⚠️ Konfigurasaun Secrets seidauk "
+                        "iha Streamlit Cloud ka lokál."
                     )
 
 
-            except Exception:
+        # ====================================================
+        # FOOTER
+        # ====================================================
 
-                st.error(
-                    "⚠️ Konfigurasaun Secrets seidauk "
-                    "iha Streamlit Cloud ka lokál."
-                )
+        st.markdown(
+            """
+            <div class="login-footer-text">
+                © 2026 Comissão da Função Pública - RDTL.
+                All rights reserved.
+            </div>
 
-
-    # ========================================================
-    # LOGIN FOOTER
-    # ========================================================
-
-    st.markdown(
-        """
-        <div class="login-footer-text">
-
-            © 2026 Comissão da Função Pública - RDTL.
-            All rights reserved.
-
-        </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
     st.stop()
 
 
 # ============================================================
-# APLIKASAUN PRINCIPAL
+# APLIKASAUN PRINSIPAL
 # ============================================================
 
 st.sidebar.markdown(
@@ -405,16 +360,14 @@ if st.sidebar.button(
 
 
 # ============================================================
-# TITULU PRINCIPAL
+# TITULU SISTEMA
 # ============================================================
 
 st.markdown(
     """
     <p class="main-title">
-
         📊 Sistema Klasifikasaun Dezempenu
         Funsionáriu CFP
-
     </p>
     """,
     unsafe_allow_html=True,
@@ -424,11 +377,9 @@ st.markdown(
 st.markdown(
     """
     <p class="sub-title">
-
-        Aplikasaun Intelijénsia Artifisiál
-        uza algoritmu Decision Tree bazeia ba
+        Aplikasaun Intelijénsia Artifisiál uza
+        algoritmu Decision Tree bazeia ba
         indikadór Komisaun Função Pública RDTL.
-
     </p>
     """,
     unsafe_allow_html=True,
@@ -709,7 +660,7 @@ def generate_pdf_report(
 
 
 # ============================================================
-# SIDEBAR - DATASET
+# SIDEBAR DATASET
 # ============================================================
 
 st.sidebar.markdown("---")
@@ -726,7 +677,7 @@ uploaded_file = st.sidebar.file_uploader(
 
 
 # ============================================================
-# SE UPLOAD DATASET
+# DATASET
 # ============================================================
 
 if uploaded_file is not None:
@@ -739,7 +690,7 @@ if uploaded_file is not None:
 
 
         # ====================================================
-        # RENAME COLUMNS
+        # RENAME DATASET COLUMNS
         # ====================================================
 
         rename_map = {
@@ -817,16 +768,16 @@ if uploaded_file is not None:
 
         df_raw.rename(
             columns={
-                key: value
-                for key, value in rename_map.items()
-                if key in df_raw.columns
+                k: v
+                for k, v in rename_map.items()
+                if k in df_raw.columns
             },
             inplace=True,
         )
 
 
         # ====================================================
-        # NOTA / KRITÉRIU
+        # KRITÉRIU
         # ====================================================
 
         nota_cols = [
@@ -863,7 +814,10 @@ if uploaded_file is not None:
 
             col
 
-            for col in nota_cols + [target_col]
+            for col in (
+                nota_cols
+                + [target_col]
+            )
 
             if col not in df_raw.columns
 
@@ -884,16 +838,25 @@ if uploaded_file is not None:
             # DATA CLEANING
             # =================================================
 
-            df_base = df_raw.dropna(
-                subset=nota_cols + [target_col]
-            ).copy()
+            df_base = (
+                df_raw
+                .dropna(
+                    subset=(
+                        nota_cols
+                        + [target_col]
+                    )
+                )
+                .copy()
+            )
 
 
             for col in nota_cols:
 
-                df_base[col] = pd.to_numeric(
-                    df_base[col],
-                    errors="coerce",
+                df_base[col] = (
+                    pd.to_numeric(
+                        df_base[col],
+                        errors="coerce",
+                    )
                 )
 
 
@@ -903,7 +866,7 @@ if uploaded_file is not None:
 
 
             # =================================================
-            # LOAD DATABASE DATA
+            # LOAD EXTRA DATA
             # =================================================
 
             st.session_state[
@@ -957,23 +920,26 @@ if uploaded_file is not None:
             )
 
 
-            cargo_values = (
-                df["cargo"]
-                .dropna()
-                .astype(str)
-                .unique()
-                .tolist()
+            cargo_list = [
+
+                "Tomak (Hotu-hotu)"
+
+            ] + sorted(
+                list(
+                    df[
+                        "cargo"
+                    ]
+                    .dropna()
+                    .unique()
+                )
             )
 
 
-            cargo_list = [
-                "Tomak (Hotu-hotu)"
-            ] + sorted(cargo_values)
-
-
-            selected_cargo = st.sidebar.selectbox(
-                "Filtru Kargo:",
-                cargo_list,
+            selected_cargo = (
+                st.sidebar.selectbox(
+                    "Filtru Kargo:",
+                    cargo_list,
+                )
             )
 
 
@@ -987,7 +953,9 @@ if uploaded_file is not None:
 
                 df_filtered = (
                     df_filtered[
-                        df_filtered["cargo"]
+                        df_filtered[
+                            "cargo"
+                        ]
                         == selected_cargo
                     ]
                 )
@@ -1002,15 +970,21 @@ if uploaded_file is not None:
 
             csv_full = (
                 df_filtered
-                .to_csv(index=False)
+                .to_csv(
+                    index=False
+                )
                 .encode("utf-8")
             )
 
 
             st.sidebar.download_button(
-                label="⬇️ Download Backup (CSV)",
+                label=(
+                    "⬇️ Download Backup (CSV)"
+                ),
                 data=csv_full,
-                file_name="dataset_cfp_filtrado.csv",
+                file_name=(
+                    "dataset_cfp_filtrado.csv"
+                ),
                 mime="text/csv",
             )
 
@@ -1050,7 +1024,9 @@ if uploaded_file is not None:
 
             acc = accuracy_score(
                 y_test,
-                model.predict(X_test),
+                model.predict(
+                    X_test
+                ),
             )
 
 
@@ -1070,7 +1046,7 @@ if uploaded_file is not None:
 
 
             # =================================================
-            # TAB 1 - DASHBOARD
+            # TAB 1
             # =================================================
 
             with tab1:
@@ -1088,7 +1064,8 @@ if uploaded_file is not None:
                 counts_real = (
                     df_filtered[
                         target_col
-                    ].value_counts()
+                    ]
+                    .value_counts()
                 )
 
 
@@ -1164,11 +1141,16 @@ if uploaded_file is not None:
                         st.session_state[
                             "selected_category"
                         ] = (
+
                             "Tomak"
+
                             if st.session_state[
                                 "selected_category"
-                            ] != "Tomak"
+                            ]
+                            != "Tomak"
+
                             else None
+
                         )
 
 
@@ -1184,11 +1166,16 @@ if uploaded_file is not None:
                         st.session_state[
                             "selected_category"
                         ] = (
+
                             "Muito Bom"
+
                             if st.session_state[
                                 "selected_category"
-                            ] != "Muito Bom"
+                            ]
+                            != "Muito Bom"
+
                             else None
+
                         )
 
 
@@ -1204,11 +1191,16 @@ if uploaded_file is not None:
                         st.session_state[
                             "selected_category"
                         ] = (
+
                             "Bom"
+
                             if st.session_state[
                                 "selected_category"
-                            ] != "Bom"
+                            ]
+                            != "Bom"
+
                             else None
+
                         )
 
 
@@ -1224,11 +1216,16 @@ if uploaded_file is not None:
                         st.session_state[
                             "selected_category"
                         ] = (
+
                             "Suficiente"
+
                             if st.session_state[
                                 "selected_category"
-                            ] != "Suficiente"
+                            ]
+                            != "Suficiente"
+
                             else None
+
                         )
 
 
@@ -1244,11 +1241,16 @@ if uploaded_file is not None:
                         st.session_state[
                             "selected_category"
                         ] = (
+
                             "Insuficiente"
+
                             if st.session_state[
                                 "selected_category"
-                            ] != "Insuficiente"
+                            ]
+                            != "Insuficiente"
+
                             else None
+
                         )
 
 
@@ -1268,10 +1270,19 @@ if uploaded_file is not None:
                     st.markdown("---")
 
 
-                    if selected_cat == "Tomak":
+                    if (
+                        selected_cat
+                        == "Tomak"
+                    ):
 
                         df_table = (
                             df_filtered
+                        )
+
+
+                        st.markdown(
+                            f"### 📋 Lista Funsionáriu "
+                            f"Tomak ({len(df_table)})"
                         )
 
 
@@ -1287,10 +1298,12 @@ if uploaded_file is not None:
                         )
 
 
-                    st.markdown(
-                        f"### 📋 Lista Funsionáriu "
-                        f"({len(df_table)})"
-                    )
+                        st.markdown(
+                            f"### 📋 Lista Funsionáriu "
+                            f"ba Kategoria: "
+                            f"`{selected_cat}` "
+                            f"({len(df_table)})"
+                        )
 
 
                     display_cols = [
@@ -1341,19 +1354,25 @@ if uploaded_file is not None:
                             .to_csv(
                                 index=False
                             )
-                            .encode("utf-8")
+                            .encode(
+                                "utf-8"
+                            )
                         )
 
 
                         st.download_button(
-                            label="📥 Download CSV",
+                            label=(
+                                "📥 Download CSV"
+                            ),
                             data=csv_filtered,
                             file_name=(
                                 f"relatorio_cfp_"
                                 f"{selected_cat}.csv"
                             ),
                             mime="text/csv",
-                            key="dl_filtered_csv",
+                            key=(
+                                "dl_filtered_csv"
+                            ),
                         )
 
 
@@ -1364,7 +1383,7 @@ if uploaded_file is not None:
                                 df_table,
                                 (
                                     "Relatóriu Dezempenu "
-                                    f"Funsionáriu - "
+                                    "Funsionáriu - "
                                     f"{selected_cat}"
                                 ),
                             )
@@ -1382,7 +1401,9 @@ if uploaded_file is not None:
                                 f"{selected_cat}.pdf"
                             ),
                             mime="application/pdf",
-                            key="dl_filtered_pdf",
+                            key=(
+                                "dl_filtered_pdf"
+                            ),
                         )
 
 
@@ -1419,7 +1440,7 @@ if uploaded_file is not None:
 
 
                 # =================================================
-                # GRAFIKU BAR
+                # BAR CHART
                 # =================================================
 
                 with col_g1:
@@ -1474,6 +1495,7 @@ if uploaded_file is not None:
                         width,
                         label="Dadus Reál",
                         color="#1E3A8A",
+                        alpha=0.9,
                     )
 
 
@@ -1483,6 +1505,7 @@ if uploaded_file is not None:
                         width,
                         label="Prediksaun Tree",
                         color="#D97706",
+                        alpha=0.9,
                     )
 
 
@@ -1520,13 +1543,15 @@ if uploaded_file is not None:
 
 
                     st.pyplot(
-                        fig,
-                        clear_figure=True,
+                        fig
                     )
 
 
+                    plt.close(fig)
+
+
                 # =================================================
-                # GRAFIKU DONUT
+                # DONUT
                 # =================================================
 
                 with col_g2:
@@ -1542,14 +1567,19 @@ if uploaded_file is not None:
 
 
                     sizes = [
-
                         counts_real.get(
                             cat,
                             0,
                         )
-
                         for cat in categories
+                    ]
 
+
+                    colors_list = [
+                        "#1E3A8A",
+                        "#3B82F6",
+                        "#D97706",
+                        "#EF4444",
                     ]
 
 
@@ -1560,39 +1590,34 @@ if uploaded_file is not None:
                             labels=categories,
                             autopct="%1.1f%%",
                             startangle=90,
-                            colors=[
-                                "#1E3A8A",
-                                "#3B82F6",
-                                "#D97706",
-                                "#EF4444",
-                            ],
-                            wedgeprops={
-                                "width": 0.4,
-                                "edgecolor": "white",
-                                "linewidth": 2,
-                            },
+                            colors=colors_list,
+                            wedgeprops=dict(
+                                width=0.4,
+                                edgecolor="white",
+                                linewidth=2,
+                            ),
                         )
 
 
                     st.pyplot(
-                        fig2,
-                        clear_figure=True,
+                        fig2
                     )
 
 
+                    plt.close(fig2)
+
+
                 # =================================================
-                # GRAFIKU MUNISÍPIU
+                # LOCAL CHART
                 # =================================================
 
                 st.markdown("---")
 
 
                 st.markdown(
-                    """
-                    ##### 🗺️ Gráfiku Avansadu:
-                    Desentralizasaun Dezempenu
-                    tuir Local de Trabalhu (Munisípiu)
-                    """
+                    "##### 🗺️ Gráfiku Avansadu: "
+                    "Desentralizasaun Dezempenu "
+                    "tuir Local de Trabalhu (Munisípiu)"
                 )
 
 
@@ -1611,25 +1636,23 @@ if uploaded_file is not None:
                     )
 
 
-                    df_loc_counts = (
-                        pd.crosstab(
-                            df_filtered[
-                                "local_trabalho"
-                            ],
-                            df_filtered[
-                                target_col
-                            ],
-                        )
+                    df_loc_counts = pd.crosstab(
+                        df_filtered[
+                            "local_trabalho"
+                        ],
+                        df_filtered[
+                            target_col
+                        ],
                     )
 
 
                     existing_cats = [
 
-                        cat
+                        c
 
-                        for cat in categories
+                        for c in categories
 
-                        if cat
+                        if c
                         in df_loc_counts.columns
 
                     ]
@@ -1654,8 +1677,8 @@ if uploaded_file is not None:
 
                     ax_loc.set_title(
                         "Distribuisaun Avaliasaun "
-                        "Dezempenu tuir Munisípiu / "
-                        "Local de Trabalhu",
+                        "Dezempenu tuir "
+                        "Munisípiu / Local de Trabalhu",
                         fontsize=11,
                         fontweight="bold",
                     )
@@ -1693,21 +1716,25 @@ if uploaded_file is not None:
 
 
                     st.pyplot(
-                        fig_loc,
-                        clear_figure=True,
+                        fig_loc
                     )
+
+
+                    plt.close(fig_loc)
 
 
                 else:
 
                     st.info(
-                        "Koluna 'local_trabalho' "
-                        "la dispoñível iha dataset."
+                        "Koluna "
+                        "'local_trabalho' "
+                        "la dispoñível "
+                        "iha dataset."
                     )
 
 
             # =================================================
-            # TAB 2 - MODEL
+            # TAB 2
             # =================================================
 
             with tab2:
@@ -1743,8 +1770,8 @@ if uploaded_file is not None:
                 )
 
 
-                y_pred_test = (
-                    model.predict(X_test)
+                y_pred_test = model.predict(
+                    X_test
                 )
 
 
@@ -1795,9 +1822,11 @@ if uploaded_file is not None:
 
 
                     st.pyplot(
-                        fig_cm,
-                        clear_figure=True,
+                        fig_cm
                     )
+
+
+                    plt.close(fig_cm)
 
 
                 # =================================================
@@ -1822,8 +1851,12 @@ if uploaded_file is not None:
 
 
                     present_class_names = [
+
                         le.classes_[i]
-                        for i in unique_labels
+
+                        for i
+                        in unique_labels
+
                     ]
 
 
@@ -1842,12 +1875,21 @@ if uploaded_file is not None:
                     df_report = (
                         pd.DataFrame(
                             report_dict
-                        ).transpose()
+                        )
+                        .transpose()
                     )
 
 
                     st.dataframe(
-                        df_report,
+                        df_report.style.format(
+                            subset=[
+                                "precision",
+                                "recall",
+                                "f1-score",
+                                "support",
+                            ],
+                            formatter="{:.2f}",
+                        ),
                         use_container_width=True,
                     )
 
@@ -1891,7 +1933,10 @@ if uploaded_file is not None:
 
                 fig_tree, ax_tree = (
                     plt.subplots(
-                        figsize=(16, 9),
+                        figsize=(
+                            16,
+                            9,
+                        ),
                         dpi=100,
                     )
                 )
@@ -1909,20 +1954,22 @@ if uploaded_file is not None:
 
 
                 st.pyplot(
-                    fig_tree,
-                    clear_figure=True,
+                    fig_tree
                 )
 
 
+                plt.close(fig_tree)
+
+
             # =================================================
-            # TAB 3 - PREDIKSAUN
+            # TAB 3
             # =================================================
 
             with tab3:
 
                 st.subheader(
-                    "🔍 Prediksaun Funsionáriu Foun "
-                    "& Gestaun Dadus"
+                    "🔍 Prediksaun Funsionáriu "
+                    "Foun & Gestaun Dadus"
                 )
 
 
@@ -1936,19 +1983,19 @@ if uploaded_file is not None:
                 ] = extra_records
 
 
-                # =================================================
-                # LISTA DADUS EXTRA
-                # =================================================
-
                 st.markdown(
-                    """
-                    ##### 📋 Lista Dadus Funsionáriu
-                    Foun & Asaun Gestaun
-                    """
+                    "##### 📋 Lista Dadus "
+                    "Funsionáriu Foun & Asaun Gestaun"
                 )
 
 
-                if len(extra_records) > 0:
+                # =================================================
+                # EXTRA RECORDS
+                # =================================================
+
+                if len(
+                    extra_records
+                ) > 0:
 
                     h1, h2, h3, h4 = (
                         st.columns(
@@ -1963,26 +2010,31 @@ if uploaded_file is not None:
 
 
                     with h1:
+
                         st.markdown(
                             "**Naran / ID SIGAP**"
                         )
 
 
                     with h2:
+
                         st.markdown(
                             "**Munisípiu**"
                         )
 
 
                     with h3:
+
                         st.markdown(
                             "**Kargo**"
                         )
 
 
                     with h4:
+
                         st.markdown(
-                            "**Rezultadu Avaliasaun & Asaun**"
+                            "**Rezultadu Avaliasaun "
+                            "& Asaun**"
                         )
 
 
@@ -2011,8 +2063,15 @@ if uploaded_file is not None:
                         with c1:
 
                             st.write(
-                                f"👤 **{rec.get('nome_pessoal', '')}**"
+                                "👤 "
+                                + str(
+                                    rec.get(
+                                        "nome_pessoal",
+                                        "",
+                                    )
+                                )
                             )
+
 
                             st.caption(
                                 str(
@@ -2052,12 +2111,6 @@ if uploaded_file is not None:
 
                         with c4:
 
-                            result = rec.get(
-                                "Rezultadu_Avaliasaun",
-                                "N/A",
-                            )
-
-
                             sub1, sub2, sub3 = (
                                 st.columns(
                                     [
@@ -2072,7 +2125,14 @@ if uploaded_file is not None:
                             with sub1:
 
                                 st.markdown(
-                                    f"⭐ **{result}**"
+                                    "⭐ **"
+                                    + str(
+                                        rec.get(
+                                            "Rezultadu_Avaliasaun",
+                                            "N/A",
+                                        )
+                                    )
+                                    + "**"
                                 )
 
 
@@ -2101,7 +2161,7 @@ if uploaded_file is not None:
                                     "🗑️"
                                 ):
 
-                                    st.write(
+                                    st.markdown(
                                         "Kerteza hakarak "
                                         "hamos dadus ne'e?"
                                     )
@@ -2120,13 +2180,22 @@ if uploaded_file is not None:
                                             )
                                         ):
 
-                                            st.session_state[
-                                                "edit_index"
-                                            ] = None
+                                            if (
+                                                st.session_state[
+                                                    "edit_index"
+                                                ]
+                                                == i
+                                            ):
+
+                                                st.session_state[
+                                                    "edit_index"
+                                                ] = None
+
 
                                             st.success(
                                                 "Hamos ona!"
                                             )
+
 
                                             st.rerun()
 
@@ -2149,7 +2218,9 @@ if uploaded_file is not None:
                     ):
 
                         st.info(
-                            "⚠️ Módulu Edisaun Index: "
+                            "⚠️ Atualmente hela "
+                            "iha Módulu Edisaun ba "
+                            "Index: "
                             + str(
                                 st.session_state[
                                     "edit_index"
@@ -2159,8 +2230,11 @@ if uploaded_file is not None:
 
 
                         if st.button(
-                            "❌ Kansela / Sai husi Edisaun",
-                            key="cancel_edit_mode",
+                            "❌ Kansela / Sai "
+                            "husi Módulu Edisaun",
+                            key=(
+                                "cancel_edit_mode"
+                            ),
                         ):
 
                             st.session_state[
@@ -2182,7 +2256,7 @@ if uploaded_file is not None:
 
 
                 # =================================================
-                # FORM INPUT / EDIT
+                # EDIT DATA
                 # =================================================
 
                 idx_edit = (
@@ -2213,42 +2287,50 @@ if uploaded_file is not None:
 
 
                     st.markdown(
-                        f"""
-                        #### ✏️ Atualiza Dadus
-                        Funsionáriu
-                        (Index: {idx_edit})
-                        """
+                        f"#### ✏️ Atualiza Dadus "
+                        f"Funsionáriu "
+                        f"(Index: {idx_edit})"
                     )
 
 
                 else:
 
                     st.markdown(
-                        """
-                        #### ➕ Input Funsionáriu
-                        Foun ba Prediksaun
-                        """
+                        "#### ➕ Input Funsionáriu "
+                        "Foun ba Prediksaun"
                     )
 
 
                 # =================================================
-                # MUNICÍPIU
+                # MUNICÍPIUS
                 # =================================================
 
                 municipios = [
 
                     "Aileu",
+
                     "Ainaro",
+
                     "Baucau",
+
                     "Bobonaro",
+
                     "Covalima",
+
                     "Díli",
+
                     "Ermera",
+
                     "Lautém",
+
                     "Liquiçá",
+
                     "Manatuto",
+
                     "Manufahi",
+
                     "Oe-Cusse Ambeno",
+
                     "Viqueque",
 
                 ]
@@ -2336,7 +2418,7 @@ if uploaded_file is not None:
 
 
                 # =================================================
-                # KARGU
+                # KARGO
                 # =================================================
 
                 cargos = [
@@ -2365,7 +2447,7 @@ if uploaded_file is not None:
 
 
                 # =================================================
-                # FORM
+                # FORM INPUT
                 # =================================================
 
                 with st.form(
@@ -2373,11 +2455,9 @@ if uploaded_file is not None:
                 ):
 
                     st.markdown(
-                        """
-                        ##### 📝 1.
-                        Informasaun Identidade
-                        Funsionáriu
-                        """
+                        "##### 📝 1. "
+                        "Informasaun Identidade "
+                        "Funsionáriu"
                     )
 
 
@@ -2398,15 +2478,18 @@ if uploaded_file is not None:
                         ]
 
 
-                        cur_ativo = def_val.get(
-                            "controlo_ativo_identificacao",
-                            "Ativo",
+                        cur_ativo = (
+                            def_val.get(
+                                "controlo_ativo_identificacao",
+                                "Ativo",
+                            )
                         )
 
 
                         txt_ativo = (
                             st.selectbox(
-                                "Controlo Ativo Identifikasaun",
+                                "Controlo Ativo "
+                                "Identifikasaun",
                                 ativo_opts,
                                 index=(
                                     ativo_opts.index(
@@ -2430,7 +2513,8 @@ if uploaded_file is not None:
 
 
                         txt_sigap = st.text_input(
-                            "ID SIGAP (Numeriku no Símbolu)*",
+                            "ID SIGAP "
+                            "(Numeriku no Símbolu)*",
                             def_val.get(
                                 "id_sigap",
                                 "",
@@ -2473,23 +2557,27 @@ if uploaded_file is not None:
                         )
 
 
-                        cur_local = def_val.get(
-                            "local_trabalho",
-                            "Díli",
+                        cur_local = (
+                            def_val.get(
+                                "local_trabalho",
+                                "Díli",
+                            )
                         )
 
 
-                        txt_local = st.selectbox(
-                            "Local Trabalhu",
-                            municipios,
-                            index=(
-                                municipios.index(
-                                    cur_local
-                                )
-                                if cur_local
-                                in municipios
-                                else 0
-                            ),
+                        txt_local = (
+                            st.selectbox(
+                                "Local Trabalhu",
+                                municipios,
+                                index=(
+                                    municipios.index(
+                                        cur_local
+                                    )
+                                    if cur_local
+                                    in municipios
+                                    else 0
+                                ),
+                            )
                         )
 
 
@@ -2501,7 +2589,8 @@ if uploaded_file is not None:
                                         "data_de_nascimento",
                                         "1995-01-01",
                                     )
-                                ).date()
+                                )
+                                .date()
                             )
 
                         except Exception:
@@ -2509,7 +2598,8 @@ if uploaded_file is not None:
                             default_date = (
                                 pd.to_datetime(
                                     "1995-01-01"
-                                ).date()
+                                )
+                                .date()
                             )
 
 
@@ -2585,11 +2675,9 @@ if uploaded_file is not None:
                     # =================================================
 
                     st.markdown(
-                        """
-                        ##### 📊 2.
-                        Indikadór Avaliasaun
-                        Funsionáriu
-                        """
+                        "##### 📊 2. "
+                        "Indikadór Avaliasaun "
+                        "Funsionáriu"
                     )
 
 
@@ -2758,10 +2846,6 @@ if uploaded_file is not None:
 
                         else:
 
-                            # =================================================
-                            # INPUT MODEL
-                            # =================================================
-
                             input_data = np.array(
                                 [
                                     [
@@ -2778,10 +2862,6 @@ if uploaded_file is not None:
                             )
 
 
-                            # =================================================
-                            # PREDIKSAUN
-                            # =================================================
-
                             pred_encoded = (
                                 model.predict(
                                     input_data
@@ -2797,7 +2877,7 @@ if uploaded_file is not None:
 
 
                             # =================================================
-                            # RECORD
+                            # NEW RECORD
                             # =================================================
 
                             new_record = {
@@ -2860,6 +2940,7 @@ if uploaded_file is not None:
 
                                 "Rezultadu_Avaliasaun":
                                     pred_label,
+
                             }
 
 
@@ -2867,17 +2948,15 @@ if uploaded_file is not None:
                             # UPDATE
                             # =================================================
 
-                            if idx_edit is not None:
+                            if (
+                                idx_edit
+                                is not None
+                            ):
 
-                                success = (
-                                    update_extra_in_db_by_index(
-                                        idx_edit,
-                                        new_record,
-                                    )
-                                )
-
-
-                                if success:
+                                if update_extra_in_db_by_index(
+                                    idx_edit,
+                                    new_record,
+                                ):
 
                                     st.success(
                                         "✅ Atualiza dadus "
@@ -2916,14 +2995,9 @@ if uploaded_file is not None:
 
                             else:
 
-                                success = (
-                                    save_extra_to_db(
-                                        new_record
-                                    )
-                                )
-
-
-                                if success:
+                                if save_extra_to_db(
+                                    new_record
+                                ):
 
                                     st.success(
                                         "✅ Salva dadus "
@@ -2953,10 +3027,6 @@ if uploaded_file is not None:
                                     )
 
 
-    # ========================================================
-    # ERROR LEITURA DATASET
-    # ========================================================
-
     except Exception as e:
 
         st.sidebar.error(
@@ -2972,6 +3042,6 @@ else:
 
     st.info(
         "👋 Favór upload ficheiru Excel (.xlsx) "
-        "iha sidebar hodi hahú eksplora sistema "
-        "klasifikasaun."
+        "iha sidebar hodi hahú eksplora "
+        "sistema klasifikasaun."
     )
