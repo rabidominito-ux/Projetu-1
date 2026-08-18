@@ -1,3 +1,4 @@
+import base64
 from io import BytesIO
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,6 +34,17 @@ render_custom_css()
 def load_data(file):
     return pd.read_excel(file)
 
+# Funsaun atu konverte logo ba base64 hodi integra ho di'ak iha HTML card
+def get_image_base64(path):
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except Exception:
+        return ""
+
+logo_base64 = get_image_base64("logo cfp.png")
+
 # ==========================================
 # SISTEMA LOGIN / AUTENTIKASAUN (ESTILU CFP RDTL)
 # ==========================================
@@ -48,12 +60,12 @@ if not st.session_state["authenticated"]:
         .block-container {
             padding-top: 2rem !important;
             padding-bottom: 2rem !important;
-            max-width: 500px !important;
+            max-width: 480px !important;
             margin: 0 auto !important;
         }
         .cfp-login-card {
             background-color: #ffffff;
-            padding: 35px;
+            padding: 30px 35px;
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             border-top: 6px solid #D97706;
@@ -61,17 +73,18 @@ if not st.session_state["authenticated"]:
         .cfp-header-title {
             color: #1E3A8A;
             font-weight: 800;
-            font-size: 15px;
+            font-size: 13.5px;
             text-align: center;
             letter-spacing: 0.5px;
-            line-height: 1.5;
-            margin-bottom: 5px;
+            line-height: 1.4;
+            margin-top: 8px;
+            margin-bottom: 6px;
         }
         .cfp-subtitle {
             text-align: center;
             color: #64748B;
-            font-size: 12px;
-            margin-bottom: 25px;
+            font-size: 11.5px;
+            margin-bottom: 20px;
             font-weight: 600;
         }
         div.stButton > button {
@@ -102,21 +115,16 @@ if not st.session_state["authenticated"]:
     """, unsafe_allow_html=True)
 
     with st.container():
-        st.markdown("""
+        st.markdown(f"""
             <div class="cfp-login-card">
-        """, unsafe_allow_html=True)
-        
-        # Hatama Logo CFP iha Login Card
-        col_logo1, col_logo2, col_logo3 = st.columns([1, 1.2, 1])
-        with col_logo2:
-            st.image("logo_cfp.png", width=90)
-            
-        st.markdown("""
-                <div class="cfp-header-title" style="margin-top: 10px;">
-                    COMISSÃO DA FUNÇÃO PÚBLICA<br>REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE
-                </div>
-                <div class="cfp-subtitle">
-                    Portal de Gestão e Classificação de Desempenho
+                <div style="text-align: center;">
+                    <img src="data:image/png;base64,{logo_base64}" width="85" style="margin-bottom: 5px;">
+                    <div class="cfp-header-title">
+                        COMISSÃO DA FUNÇÃO PÚBLICA<br>REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE
+                    </div>
+                    <div class="cfp-subtitle">
+                        Portal de Gestão e Classificação de Desempenho
+                    </div>
                 </div>
         """, unsafe_allow_html=True)
         
