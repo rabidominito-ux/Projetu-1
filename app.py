@@ -1,4 +1,6 @@
+import base64
 from io import BytesIO
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -32,6 +34,20 @@ render_custom_css()
 # Funsaun atu lee ficheiru Excel
 def load_data(file):
     return pd.read_excel(file)
+
+# Funsaun atu konverte logo ba base64 hodi integra ho di'ak iha HTML card
+def get_image_base64(path):
+    try:
+        if os.path.exists(path):
+            with open(path, "rb") as f:
+                data = f.read()
+            return base64.b64encode(data).decode()
+        return ""
+    except Exception:
+        return ""
+
+logo_path = "logo_cfp.png"
+logo_base64 = get_image_base64(logo_path)
 
 # ==========================================
 # SISTEMA LOGIN / AUTENTIKASAUN (ESTILU CFP RDTL)
@@ -103,20 +119,12 @@ if not st.session_state["authenticated"]:
     """, unsafe_allow_html=True)
 
     with st.container():
-        st.markdown("""
-            <div class="cfp-login-card">
-        """, unsafe_allow_html=True)
+        logo_html = f'<img src="data:image/png;base64,{logo_base64}" width="85" style="margin-bottom: 5px;">' if logo_base64 else '<div style="color:red; font-size:12px;">⚠️ Logo logo_cfp.png la hetan</div>'
         
-        # Koluna ba logo (Imi bele troka [1, 2, 1] tuir hakarak)
-        col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
-        with col_l2:
-            try:
-                st.image("logo cfp.png", width=85)
-            except Exception:
-                st.markdown("<div style='text-align: center; font-size: 40px;'>🏛️</div>", unsafe_allow_html=True)
-
-        st.markdown("""
+        st.markdown(f"""
+            <div class="cfp-login-card">
                 <div style="text-align: center;">
+                    {logo_html}
                     <div class="cfp-header-title">
                         COMISSÃO DA FUNÇÃO PÚBLICA<br>REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE
                     </div>
@@ -584,17 +592,9 @@ if uploaded_file is not None:
 
                     if submit_pred:
                         if not txt_nome.strip() or not txt_sigap.strip():
-                            st.error("⚠️ Favór preenxe Naran Pessoal no ID SIGAP ho loos!")
-                        elif any(c.isalpha() for c in txt_sigap):
-                            st.error("⚠️ ID SIGAP labele uza letra/alfabetu! Tenke uza de'it númeru no símbolu.")
+                            st.error("⚠️ Favor prense Naran Pessoal no ID SIGAP!")
                         else:
-                            input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
-                            
-                            media_val = float(np.mean(input_data))
-                            pred_encoded = model.predict(input_data)[0]
-                            pred_result = le.inverse_transform([pred_encoded])[0]
-
-                            record_dict = {
+                            input_data = pd.DataFrame([{
                                 "controlo_ativo_identificacao": txt_ativo,
                                 "nome_pessoal": txt_nome,
                                 "id_sigap": txt_sigap,
@@ -613,22 +613,27 @@ if uploaded_file is not None:
                                 "Inisiativa": p_inis,
                                 "Disiplina": p_disp,
                                 "Responsabilidade": p_resp,
-                                "Media": media_val,
-                                "Rezultadu_Avaliasaun": pred_result
-                            }
-
+                            }])
+                            
+                            for col in nota_cols:
+                                input_data[col] = pd.to_numeric(input_data[col], errors="coerce")
+                            
+                            pred_encoded = model.predict(input_data[nota_cols])
+                            pred_label = le.inverse_transform(pred_encoded)[0]
+                            input_data["Rezultadu_Avaliasaun"] = pred_label
+                            
+                            record_dict = input_data.iloc[0].to_dict()
+                            
                             if idx_edit is not None:
                                 if update_extra_in_db_by_index(idx_edit, record_dict):
+                                    st.success(f"✅ Dadus atualiza ho susesu! Rezultadu Prediksaun: **{pred_label}**")
                                     st.session_state["edit_index"] = None
-                                    st.success(f"✅ Dadus ba **{txt_nome}** atualiza ho susesu! Prediksaun: **{pred_result}**")
                                     st.rerun()
                                 else:
-                                    st.error("⚠️ Falla atu atualiza dadus iha database.")
+                                    st.error("⚠️ Erru bainhira atualiza dadus iha database.")
                             else:
                                 if save_extra_to_db(record_dict):
-                                    st.success(f"✅ Dadus ba **{txt_nome}** salvas ho susesu! Prediksaun Dezempenu: **{pred_result}**")
+                                    st.success(f"✅ Dadus salva no prediza ho susesu! Rezultadu: **{pred_label}**")
                                     st.rerun()
                                 else:
-                                    st.error("⚠️ Falla atu salva dadus ba database lokal.")
-    except Exception as e:
-        st.sidebar.error(f"⚠️ Erru ruma mosu iha prosesu dataset: {e}")
+                                    st.error("⚠️ ID SIGAP ne'e bele iha ona ka erru iha database.")
