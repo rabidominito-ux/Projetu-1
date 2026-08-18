@@ -41,36 +41,48 @@ if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
 if not st.session_state["authenticated"]:
-    st.markdown("""
+    # Funsaun atu konverte imajen ba base64 hodi evita error path iha Streamlit Cloud
+    def get_image_base64(path):
+        try:
+            with open(path, "rb") as f:
+                data = f.read()
+            return base64.b64encode(data).decode()
+        except Exception:
+            return ""
+
+    img_b64 = get_image_base64("logo_cfp.png")
+    img_tag = f'<img src="data:image/png;base64,{img_b64}" width="90" style="margin-bottom: 10px;" />' if img_b64 else ''
+
+    st.markdown(f"""
         <style>
-        .stApp {
+        .stApp {{
             background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
-        }
-        .block-container {
-            padding-top: 1rem !important;
-            padding-bottom: 1rem !important;
+        }}
+        .block-container {{
+            padding-top: 2rem !important;
+            padding-bottom: 2rem !important;
             max-width: 440px !important;
             margin: 0 auto !important;
-        }
-        .cfp-login-card {
+        }}
+        .cfp-login-card {{
             background-color: #ffffff;
             padding: 35px 30px;
             border-radius: 16px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
             border-top: 6px solid #D97706;
-            margin-top: 20px;
-        }
-        .cfp-header-title {
+            margin-top: 10px;
+        }}
+        .cfp-header-title {{
             color: #1E3A8A;
             font-weight: 800;
             font-size: 13px;
             text-align: center;
             letter-spacing: 0.5px;
             line-height: 1.4;
-            margin-top: 12px;
+            margin-top: 5px;
             margin-bottom: 4px;
-        }
-        .cfp-subtitle {
+        }}
+        .cfp-subtitle {{
             text-align: center;
             color: #64748B;
             font-size: 11px;
@@ -78,8 +90,8 @@ if not st.session_state["authenticated"]:
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-        }
-        div.stButton > button {
+        }}
+        div.stButton > button {{
             background-color: #1E3A8A !important;
             color: white !important;
             width: 100%;
@@ -90,71 +102,60 @@ if not st.session_state["authenticated"]:
             letter-spacing: 1px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
-        }
-        div.stButton > button:hover {
+        }}
+        div.stButton > button:hover {{
             background-color: #1D4ED8 !important;
             box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }
-        label {
+        }}
+        label {{
             color: #334155 !important;
             font-weight: 600 !important;
             font-size: 13px !important;
-        }
-        .login-footer-text {
+        }}
+        .login-footer-text {{
             text-align: center;
             color: #94A3B8;
             font-size: 11px;
             margin-top: 25px;
-        }
+        }}
         </style>
-    """, unsafe_allow_html=True)
 
-    with st.container():
-        st.markdown('<div class="cfp-login-card">', unsafe_allow_html=True)
-        
-        try:
-            col_i1, col_i2, col_i3 = st.columns([1, 1.2, 1])
-            with col_i2:
-                st.image("logo_cfp.png", width=95)
-        except Exception:
-            pass
-            
-        st.markdown("""
-                <div style="text-align: center;">
-                    <div class="cfp-header-title">
-                        COMISSÃO DA FUNÇÃO PÚBLICA<br>REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE
-                    </div>
-                    <div class="cfp-subtitle">
-                        Portal de Gestão e Classificação de Desempenho
-                    </div>
+        <div class="cfp-login-card">
+            <div style="text-align: center;">
+                {img_tag}
+                <div class="cfp-header-title">
+                    COMISSÃO DA FUNÇÃO PÚBLICA<br>REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE
                 </div>
-        """, unsafe_allow_html=True)
-        
-        with st.form("login_form"):
-            username = st.text_input("Username:", placeholder="Hatama ita-nia username")
-            password = st.text_input("Password:", type="password", placeholder="Hatama ita-nia password")
-            st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
-            submit_login = st.form_submit_button("ENTRADA / LOGIN")
-            
-            if submit_login:
-                try:
-                    if username == st.secrets["username"] and password == st.secrets["password"]:
-                        st.session_state["authenticated"] = True
-                        st.success("Login susesu! Redirecting...")
-                        st.rerun()
-                    else:
-                        st.error("⚠️ Username ka Password sala! Favor koko fali.")
-                except Exception:
-                    st.error("⚠️ Konfigurasaun Secrets seidauk iha Streamlit Cloud.")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown("""
-                <div class="login-footer-text">
-                    © 2026 Comissão da Função Pública - RDTL. All rights reserved.
+                <div class="cfp-subtitle">
+                    Portal de Gestão e Classificação de Desempenho
                 </div>
-        """, unsafe_allow_html=True)
-            
+            </div>
+    """, unsafe_allow_html=True)
+        
+    with st.form("login_form"):
+        username = st.text_input("Username:", placeholder="Hatama ita-nia username")
+        password = st.text_input("Password:", type="password", placeholder="Hatama ita-nia password")
+        st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
+        submit_login = st.form_submit_button("ENTRADA / LOGIN")
+        
+        if submit_login:
+            try:
+                if username == st.secrets["username"] and password == st.secrets["password"]:
+                    st.session_state["authenticated"] = True
+                    st.success("Login susesu! Redirecting...")
+                    st.rerun()
+                else:
+                    st.error("⚠️ Username ka Password sala! Favor koko fali.")
+            except Exception:
+                st.error("⚠️ Konfigurasaun Secrets seidauk iha Streamlit Cloud.")
+    
+    st.markdown("""
+        </div>
+        <div class="login-footer-text">
+            © 2026 Comissão da Função Pública - RDTL. All rights reserved.
+        </div>
+    """, unsafe_allow_html=True)
+        
     st.stop()
 
 # ==========================================
