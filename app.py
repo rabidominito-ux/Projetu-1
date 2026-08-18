@@ -34,17 +34,6 @@ render_custom_css()
 def load_data(file):
     return pd.read_excel(file)
 
-# Funsaun atu konverte logo ba base64 hodi integra ho di'ak iha HTML card
-def get_image_base64(path):
-    try:
-        with open(path, "rb") as f:
-            data = f.read()
-        return base64.b64encode(data).decode()
-    except Exception:
-        return ""
-
-logo_base64 = get_image_base64("logo_cfp.png")
-
 # ==========================================
 # SISTEMA LOGIN / AUTENTIKASAUN (ESTILU CFP RDTL)
 # ==========================================
@@ -115,10 +104,15 @@ if not st.session_state["authenticated"]:
     """, unsafe_allow_html=True)
 
     with st.container():
-        st.markdown(f"""
-            <div class="cfp-login-card">
+        st.markdown('<div class="cfp-login-card">', unsafe_allow_html=True)
+        
+        # Uza st.image nativu hodi garante logo sai ho seguru no la'ós broken image
+        col_i1, col_i2, col_i3 = st.columns([1, 1, 1])
+        with col_i2:
+            st.image("logo_cfp.png", width=85)
+            
+        st.markdown("""
                 <div style="text-align: center;">
-                    <img src="data:image/png;base64,{logo_base64}" width="85" style="margin-bottom: 5px;">
                     <div class="cfp-header-title">
                         COMISSÃO DA FUNÇÃO PÚBLICA<br>REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE
                     </div>
@@ -586,17 +580,12 @@ if uploaded_file is not None:
 
                     if submit_pred:
                         if not txt_nome.strip() or not txt_sigap.strip():
-                            st.error("⚠️ Favór preenxe Naran Pessoal no ID SIGAP ho loos!")
-                        elif any(c.isalpha() for c in txt_sigap):
-                            st.error("⚠️ ID SIGAP labele uza letra/alfabetu! Tenke uza de'it númeru no símbolu.")
+                            st.error("⚠️ Favor prennde naran no ID SIGAP ho loloos!")
                         else:
-                            input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
-                            
-                            media_val = float(np.mean(input_data))
-                            pred_encoded = model.predict(input_data)[0]
-                            pred_result = le.inverse_transform([pred_encoded])[0]
+                            input_features = pd.DataFrame([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]], columns=nota_cols)
+                            pred_val = le.inverse_transform(model.predict(input_features))[0]
 
-                            record_dict = {
+                            record_data = {
                                 "controlo_ativo_identificacao": txt_ativo,
                                 "nome_pessoal": txt_nome,
                                 "id_sigap": txt_sigap,
@@ -615,22 +604,21 @@ if uploaded_file is not None:
                                 "Inisiativa": p_inis,
                                 "Disiplina": p_disp,
                                 "Responsabilidade": p_resp,
-                                "Media": media_val,
-                                "Rezultadu_Avaliasaun": pred_result
+                                "Rezultadu_Avaliasaun": pred_val
                             }
 
                             if idx_edit is not None:
-                                if update_extra_in_db_by_index(idx_edit, record_dict):
+                                if update_extra_in_db_by_index(idx_edit, record_data):
+                                    st.success(f"✅ Dadus ba {txt_nome} atualiza ona ho susesu! Prediksaun: {pred_val}")
                                     st.session_state["edit_index"] = None
-                                    st.success(f"✅ Dadus ba **{txt_nome}** atualiza ho susesu! Prediksaun: **{pred_result}**")
                                     st.rerun()
                                 else:
-                                    st.error("⚠️ Falla atu atualiza dadus iha database.")
+                                    st.error("⚠️ Sala akontese bainhira atu atualiza database.")
                             else:
-                                if save_extra_to_db(record_dict):
-                                    st.success(f"✅ Dadus ba **{txt_nome}** salvas ho susesu! Prediksaun Dezempenu: **{pred_result}**")
+                                if save_extra_to_db(record_data):
+                                    st.success(f"✅ Dadus ba {txt_nome} salva ona ho susesu! Prediksaun: {pred_val}")
                                     st.rerun()
                                 else:
-                                    st.error("⚠️ Falla atu salva dadus ba database lokal.")
+                                    st.error("⚠️ ID SIGAP ne'e bele iha ona ka sala iha database.")
     except Exception as e:
-        st.sidebar.error(f"⚠️ Erru ruma mosu iha prosesu dataset: {e}")
+        st.sidebar.error(f"⚠️ Errór lee ficheiru Excel: {e}")
