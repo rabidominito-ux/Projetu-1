@@ -43,7 +43,7 @@ def get_image_base64(path):
     except Exception:
         return ""
 
-logo_base64 = get_image_base64("logo cfp.png")
+logo_base64 = get_image_base64("logo_cfp.png")
 
 # ==========================================
 # SISTEMA LOGIN / AUTENTIKASAUN (ESTILU CFP RDTL)
