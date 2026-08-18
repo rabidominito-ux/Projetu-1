@@ -1,3 +1,4 @@
+import base64
 from io import BytesIO
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,6 +33,17 @@ render_custom_css()
 # Funsaun atu lee ficheiru Excel
 def load_data(file):
     return pd.read_excel(file)
+
+# Funsaun atu konverte logo ba base64 hodi integra ho di'ak iha HTML card
+def get_image_base64(path):
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except Exception:
+        return ""
+
+logo_base64 = get_image_base64("logo cfp.png")
 
 # ==========================================
 # SISTEMA LOGIN / AUTENTIKASAUN (ESTILU CFP RDTL)
@@ -103,20 +115,10 @@ if not st.session_state["authenticated"]:
     """, unsafe_allow_html=True)
 
     with st.container():
-        st.markdown("""
+        st.markdown(f"""
             <div class="cfp-login-card">
-        """, unsafe_allow_html=True)
-        
-        # Hatama logo uza Streamlit native image hodi garantidu sai duni
-        col_l1, col_l2, col_l3 = st.columns([1, 1, 1])
-        with col_l2:
-            try:
-                st.image("logo cfp.png", width=85)
-            except Exception:
-                st.markdown("<div style='text-align: center; font-size: 40px;'>🏛️</div>", unsafe_allow_html=True)
-
-        st.markdown("""
                 <div style="text-align: center;">
+                    <img src="data:image/png;base64,{logo_base64}" width="85" style="margin-bottom: 5px;">
                     <div class="cfp-header-title">
                         COMISSÃO DA FUNÇÃO PÚBLICA<br>REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE
                     </div>
