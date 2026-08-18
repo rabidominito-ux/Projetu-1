@@ -1,4 +1,3 @@
-import base64
 from io import BytesIO
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,120 +40,105 @@ if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
 if not st.session_state["authenticated"]:
-    def get_image_base64(path):
-        try:
-            with open(path, "rb") as f:
-                data = f.read()
-            return base64.b64encode(data).decode()
-        except Exception:
-            return ""
-
-    img_b64 = get_image_base64("logo_cfp.png")
-    img_tag = f'<img src="data:image/png;base64,{img_b64}" width="90" style="margin-bottom: 10px;" />' if img_b64 else ''
-
-    st.markdown(f"""
+    st.markdown("""
         <style>
-        .stApp {{
+        .stApp {
             background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
-        }}
-        .block-container {{
+        }
+        .block-container {
             padding-top: 2rem !important;
             padding-bottom: 2rem !important;
-            max-width: 440px !important;
+            max-width: 500px !important;
             margin: 0 auto !important;
-        }}
-        .cfp-login-card {{
+        }
+        .cfp-login-card {
             background-color: #ffffff;
-            padding: 35px 30px;
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             border-top: 6px solid #D97706;
-            margin-top: 10px;
-        }}
-        .cfp-header-title {{
+        }
+        .cfp-header-title {
             color: #1E3A8A;
             font-weight: 800;
-            font-size: 13px;
+            font-size: 15px;
             text-align: center;
             letter-spacing: 0.5px;
-            line-height: 1.4;
-            margin-top: 5px;
-            margin-bottom: 4px;
-        }}
-        .cfp-subtitle {{
+            line-height: 1.5;
+            margin-bottom: 5px;
+        }
+        .cfp-subtitle {
             text-align: center;
             color: #64748B;
-            font-size: 11px;
+            font-size: 12px;
             margin-bottom: 25px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }}
-        div.stButton > button {{
+        }
+        div.stButton > button {
             background-color: #1E3A8A !important;
             color: white !important;
             width: 100%;
             border-radius: 8px;
             font-weight: bold;
-            padding: 11px;
+            padding: 10px;
             border: none;
             letter-spacing: 1px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-        }}
-        div.stButton > button:hover {{
+        }
+        div.stButton > button:hover {
             background-color: #1D4ED8 !important;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }}
-        label {{
-            color: #334155 !important;
-            font-weight: 600 !important;
-            font-size: 13px !important;
-        }}
-        .login-footer-text {{
+        }
+        label {
+            color: #1E293B !important;
+            font-weight: bold !important;
+        }
+        .login-footer-text {
             text-align: center;
             color: #94A3B8;
             font-size: 11px;
-            margin-top: 25px;
-        }}
+            margin-top: 20px;
+        }
         </style>
+    """, unsafe_allow_html=True)
 
-        <div class="cfp-login-card">
-            <div style="text-align: center;">
-                {img_tag}
+    with st.container():
+        st.markdown("""
+            <div class="cfp-login-card">
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <span style="font-size: 38px;">🏛️</span>
+                </div>
                 <div class="cfp-header-title">
                     COMISSÃO DA FUNÇÃO PÚBLICA<br>REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE
                 </div>
                 <div class="cfp-subtitle">
                     Portal de Gestão e Classificação de Desempenho
                 </div>
+        """, unsafe_allow_html=True)
+        
+        with st.form("login_form"):
+            username = st.text_input("Username:", placeholder="Hatama ita-nia username")
+            password = st.text_input("Password:", type="password", placeholder="Hatama ita-nia password")
+            st.markdown("<br>", unsafe_allow_html=True)
+            submit_login = st.form_submit_button("ENTRADA / LOGIN")
+            
+            if submit_login:
+                try:
+                    if username == st.secrets["username"] and password == st.secrets["password"]:
+                        st.session_state["authenticated"] = True
+                        st.success("Login susesu! Redirecting...")
+                        st.rerun()
+                    else:
+                        st.error("⚠️ Username ka Password sala! Favor koko fali.")
+                except Exception:
+                    st.error("⚠️ Konfigurasaun Secrets seidauk iha Streamlit Cloud ka lokál.")
+        
+        st.markdown("""
+                <div class="login-footer-text">
+                    © 2026 Comissão da Função Pública - RDTL. All rights reserved.
+                </div>
             </div>
-    """, unsafe_allow_html=True)
-        
-    with st.form("login_form"):
-        username = st.text_input("Username:", placeholder="Hatama ita-nia username")
-        password = st.text_input("Password:", type="password", placeholder="Hatama ita-nia password")
-        st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
-        submit_login = st.form_submit_button("ENTRADA / LOGIN")
-        
-        if submit_login:
-            try:
-                if username == st.secrets["username"] and password == st.secrets["password"]:
-                    st.session_state["authenticated"] = True
-                    st.success("Login susesu! Redirecting...")
-                    st.rerun()
-                else:
-                    st.error("⚠️ Username ka Password sala! Favor koko fali.")
-            except Exception:
-                st.error("⚠️ Konfigurasaun Secrets seidauk iha Streamlit Cloud.")
-    
-    st.markdown("""
-        </div>
-        <div class="login-footer-text">
-            © 2026 Comissão da Função Pública - RDTL. All rights reserved.
-        </div>
-    """, unsafe_allow_html=True)
-        
+        """, unsafe_allow_html=True)
+                    
     st.stop()
 
 # ==========================================
@@ -181,6 +165,7 @@ if "edit_index" not in st.session_state:
 if "selected_category" not in st.session_state:
     st.session_state["selected_category"] = None
 
+# Funsaun Generál PDF Ofisiál CFP
 def generate_pdf_report(df_data, title_report):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
@@ -584,27 +569,29 @@ if uploaded_file is not None:
                         p_disp = st.slider("Disiplina", 1.0, 5.0, float(def_val.get("Disiplina", 4.0)), 0.5)
                         p_resp = st.slider("Responsabilidade", 1.0, 5.0, float(def_val.get("Responsabilidade", 4.0)), 0.5)
 
-                    submit_pred = st.form_submit_button("💾 Salva / Prediksa Dezempenu")
+                    submit_pred = st.form_submit_button("💾 Salva / Prediksaun")
 
                     if submit_pred:
                         if not txt_nome.strip() or not txt_sigap.strip():
-                            st.error("⚠️ Favor prende Naran Pessoal no ID SIGAP ho loos!")
+                            st.error("⚠️ Favór preenxe Naran Pessoal no ID SIGAP ho loos!")
+                        elif any(c.isalpha() for c in txt_sigap):
+                            st.error("⚠️ ID SIGAP labele uza letra/alfabetu! Tenke uza de'it númeru no símbolu.")
                         else:
-                            input_features = pd.DataFrame([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]], columns=nota_cols)
-                            pred_encoded = model.predict(input_features)
+                            input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
+                            pred_encoded = model.predict(input_data)
                             pred_label = le.inverse_transform(pred_encoded)[0]
 
-                            record_data = {
+                            new_record = {
                                 "controlo_ativo_identificacao": txt_ativo,
                                 "nome_pessoal": txt_nome,
                                 "id_sigap": txt_sigap,
-                                "id_grp": txt_grp,
                                 "sexo": txt_sexo,
-                                "data_de_nascimento": str(txt_nascimento),
                                 "instituicao": txt_inst,
                                 "local_trabalho": txt_local,
+                                "data_de_nascimento": str(txt_nascimento),
                                 "funcao": txt_funcao,
                                 "cargo": txt_cargo,
+                                "id_grp": txt_grp,
                                 "Asiduidade": p_asid,
                                 "Pontualidade": p_pont,
                                 "Produtividade": p_prod,
@@ -617,19 +604,21 @@ if uploaded_file is not None:
                             }
 
                             if idx_edit is not None:
-                                success_db = update_extra_in_db_by_index(idx_edit, record_data)
-                                if success_db:
-                                    st.success(f"✨ Dadus ba **{txt_nome}** atualiza ona ho susesu! Prediksaun: **{pred_label}**")
+                                if update_extra_in_db_by_index(idx_edit, new_record):
+                                    st.success(f"✅ Atualiza dadus susesu! Prediksaun: **{pred_label}**")
                                     st.session_state["edit_index"] = None
+                                    st.session_state["extra_reports"] = load_extra_from_db()
                                     st.rerun()
                                 else:
-                                    st.error("❌ Erru bainhira atualiza dadus iha database.")
+                                    st.error("⚠️ Falha atu atualiza dadus.")
                             else:
-                                success_db = save_extra_to_db(record_data)
-                                if success_db:
-                                    st.success(f"🎉 Dadus salvus! Prediksaun Dezempenu: **{pred_label}**")
+                                if save_extra_to_db(new_record):
+                                    st.success(f"✅ Salva dadus susesu! Prediksaun: **{pred_label}**")
+                                    st.session_state["extra_reports"] = load_extra_from_db()
                                     st.rerun()
                                 else:
-                                    st.error("❌ Erru: ID SIGAP bele uza ona ka database kaput.")
-    else:
-        st.info("📁 Favor upload ficheiru dataset Excel (.xlsx) iha menu lateral atu hahú vizualizasaun no análistika.")
+                                    st.error("⚠️ ID SIGAP ne'e bele iha ona ka iha erro ruma iha database.")
+    except Exception as e:
+        st.sidebar.error(f"⚠️ Erro iha Leitura Ficheiru Excel: {e}")
+else:
+    st.info("👋 Favór upload ficheiru Excel (.xlsx) iha sidebar honia hahú eksplora sistema klasifikasaun.")
