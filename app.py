@@ -3044,4 +3044,4 @@ else:
         "👋 Favór upload ficheiru Excel (.xlsx) "
         "iha sidebar hodi hahú eksplora "
         "sistema klasifikasaun."
-    )
+    )    
