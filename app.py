@@ -47,34 +47,37 @@ if not st.session_state["authenticated"]:
             background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
         }
         .block-container {
-            padding-top: 2rem !important;
-            padding-bottom: 2rem !important;
-            max-width: 480px !important;
+            padding-top: 1rem !important;
+            padding-bottom: 1rem !important;
+            max-width: 440px !important;
             margin: 0 auto !important;
         }
         .cfp-login-card {
             background-color: #ffffff;
-            padding: 30px 35px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            padding: 35px 30px;
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
             border-top: 6px solid #D97706;
+            margin-top: 20px;
         }
         .cfp-header-title {
             color: #1E3A8A;
             font-weight: 800;
-            font-size: 13.5px;
+            font-size: 13px;
             text-align: center;
             letter-spacing: 0.5px;
             line-height: 1.4;
-            margin-top: 8px;
-            margin-bottom: 6px;
+            margin-top: 12px;
+            margin-bottom: 4px;
         }
         .cfp-subtitle {
             text-align: center;
             color: #64748B;
-            font-size: 11.5px;
-            margin-bottom: 20px;
+            font-size: 11px;
+            margin-bottom: 25px;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         div.stButton > button {
             background-color: #1E3A8A !important;
@@ -82,23 +85,26 @@ if not st.session_state["authenticated"]:
             width: 100%;
             border-radius: 8px;
             font-weight: bold;
-            padding: 10px;
+            padding: 11px;
             border: none;
             letter-spacing: 1px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
         }
         div.stButton > button:hover {
             background-color: #1D4ED8 !important;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         }
         label {
-            color: #1E293B !important;
-            font-weight: bold !important;
+            color: #334155 !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
         }
         .login-footer-text {
             text-align: center;
             color: #94A3B8;
             font-size: 11px;
-            margin-top: 20px;
+            margin-top: 25px;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -106,10 +112,12 @@ if not st.session_state["authenticated"]:
     with st.container():
         st.markdown('<div class="cfp-login-card">', unsafe_allow_html=True)
         
-        # Uza st.image nativu hodi garante logo sai ho seguru no la'ós broken image
-        col_i1, col_i2, col_i3 = st.columns([1, 1, 1])
-        with col_i2:
-            st.image("logo_cfp.png", width=85)
+        try:
+            col_i1, col_i2, col_i3 = st.columns([1, 1.2, 1])
+            with col_i2:
+                st.image("logo_cfp.png", width=95)
+        except Exception:
+            pass
             
         st.markdown("""
                 <div style="text-align: center;">
@@ -125,7 +133,7 @@ if not st.session_state["authenticated"]:
         with st.form("login_form"):
             username = st.text_input("Username:", placeholder="Hatama ita-nia username")
             password = st.text_input("Password:", type="password", placeholder="Hatama ita-nia password")
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
             submit_login = st.form_submit_button("ENTRADA / LOGIN")
             
             if submit_login:
@@ -137,13 +145,14 @@ if not st.session_state["authenticated"]:
                     else:
                         st.error("⚠️ Username ka Password sala! Favor koko fali.")
                 except Exception:
-                    st.error("⚠️ Konfigurasaun Secrets seidauk iha Streamlit Cloud ka lokál.")
+                    st.error("⚠️ Konfigurasaun Secrets seidauk iha Streamlit Cloud.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
         
         st.markdown("""
                 <div class="login-footer-text">
                     © 2026 Comissão da Função Pública - RDTL. All rights reserved.
                 </div>
-            </div>
         """, unsafe_allow_html=True)
             
     st.stop()
@@ -172,7 +181,6 @@ if "edit_index" not in st.session_state:
 if "selected_category" not in st.session_state:
     st.session_state["selected_category"] = None
 
-# Funsaun Generál PDF Ofisiál CFP
 def generate_pdf_report(df_data, title_report):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
