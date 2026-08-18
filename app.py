@@ -41,7 +41,6 @@ if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
 if not st.session_state["authenticated"]:
-    # Funsaun atu konverte imajen ba base64 hodi evita error path iha Streamlit Cloud
     def get_image_base64(path):
         try:
             with open(path, "rb") as f:
@@ -585,14 +584,15 @@ if uploaded_file is not None:
                         p_disp = st.slider("Disiplina", 1.0, 5.0, float(def_val.get("Disiplina", 4.0)), 0.5)
                         p_resp = st.slider("Responsabilidade", 1.0, 5.0, float(def_val.get("Responsabilidade", 4.0)), 0.5)
 
-                    submit_pred = st.form_submit_button("💾 Salva / Prediksaun")
+                    submit_pred = st.form_submit_button("💾 Salva / Prediksa Dezempenu")
 
                     if submit_pred:
                         if not txt_nome.strip() or not txt_sigap.strip():
-                            st.error("⚠️ Favor prennde naran no ID SIGAP ho loloos!")
+                            st.error("⚠️ Favor prende Naran Pessoal no ID SIGAP ho loos!")
                         else:
                             input_features = pd.DataFrame([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]], columns=nota_cols)
-                            pred_val = le.inverse_transform(model.predict(input_features))[0]
+                            pred_encoded = model.predict(input_features)
+                            pred_label = le.inverse_transform(pred_encoded)[0]
 
                             record_data = {
                                 "controlo_ativo_identificacao": txt_ativo,
@@ -613,21 +613,23 @@ if uploaded_file is not None:
                                 "Inisiativa": p_inis,
                                 "Disiplina": p_disp,
                                 "Responsabilidade": p_resp,
-                                "Rezultadu_Avaliasaun": pred_val
+                                "Rezultadu_Avaliasaun": pred_label
                             }
 
                             if idx_edit is not None:
-                                if update_extra_in_db_by_index(idx_edit, record_data):
-                                    st.success(f"✅ Dadus ba {txt_nome} atualiza ona ho susesu! Prediksaun: {pred_val}")
+                                success_db = update_extra_in_db_by_index(idx_edit, record_data)
+                                if success_db:
+                                    st.success(f"✨ Dadus ba **{txt_nome}** atualiza ona ho susesu! Prediksaun: **{pred_label}**")
                                     st.session_state["edit_index"] = None
                                     st.rerun()
                                 else:
-                                    st.error("⚠️ Sala akontese bainhira atu atualiza database.")
+                                    st.error("❌ Erru bainhira atualiza dadus iha database.")
                             else:
-                                if save_extra_to_db(record_data):
-                                    st.success(f"✅ Dadus ba {txt_nome} salva ona ho susesu! Prediksaun: {pred_val}")
+                                success_db = save_extra_to_db(record_data)
+                                if success_db:
+                                    st.success(f"🎉 Dadus salvus! Prediksaun Dezempenu: **{pred_label}**")
                                     st.rerun()
                                 else:
-                                    st.error("⚠️ ID SIGAP ne'e bele iha ona ka sala iha database.")
-    except Exception as e:
-        st.sidebar.error(f"⚠️ Errór lee ficheiru Excel: {e}")
+                                    st.error("❌ Erru: ID SIGAP bele uza ona ka database kaput.")
+    else:
+        st.info("📁 Favor upload ficheiru dataset Excel (.xlsx) iha menu lateral atu hahú vizualizasaun no análistika.")
