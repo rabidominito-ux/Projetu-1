@@ -588,17 +588,28 @@ if uploaded_file is not None:
                         p_disp = st.slider("Disiplina", 1.0, 5.0, float(def_val.get("Disiplina", 4.0)), 0.5)
                         p_resp = st.slider("Responsabilidade", 1.0, 5.0, float(def_val.get("Responsabilidade", 4.0)), 0.5)
 
-                    submit_form = st.form_submit_button("💾 Tau iha Database / Prontu Prediksaun")
-                    
-                    if submit_form:
-                        if not txt_nome or not txt_sigap:
-                            st.error("⚠️ Favor preenche Naran Pessoal no ID SIGAP!")
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    submit_pred = st.form_submit_button("🔮 Hamosu Prediksaun & Rejisitu ba Database")
+
+                    if submit_pred:
+                        if not txt_nome.strip() or not txt_sigap.strip():
+                            st.error("⚠️ Favor prenenche 'Naran Pessoal' no 'ID SIGAP' molok halo prediksaun!")
                         else:
-                            media_val = np.mean([p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp])
-                            input_features = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
-                            pred_encoded = model.predict(input_features)
-                            pred_label = le.inverse_transform(pred_encoded)[0]
+                            input_df = pd.DataFrame([{
+                                "Asiduidade": p_asid,
+                                "Pontualidade": p_pont,
+                                "Produtividade": p_prod,
+                                "Kualidade_Servisu": p_kual,
+                                "Kooperasaun": p_koop,
+                                "Inisiativa": p_inis,
+                                "Disiplina": p_disp,
+                                "Responsabilidade": p_resp
+                            }])
+                            pred_encoded = model.predict(input_df)[0]
+                            pred_label = le.inverse_transform([pred_encoded])[0]
                             
+                            media_val = np.mean([p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp])
+
                             new_record = {
                                 "controlo_ativo_identificacao": txt_ativo,
                                 "nome_pessoal": txt_nome,
@@ -619,21 +630,21 @@ if uploaded_file is not None:
                                 "Disiplina": p_disp,
                                 "Responsabilidade": p_resp,
                                 "Media": media_val,
-                                "Rezultadu_Avaliasaun": pred_label,
+                                "Rezultadu_Avaliasaun": pred_label
                             }
-                            
-                            try:
-                                if idx_edit is not None:
-                                    update_extra_in_db_by_index(idx_edit, new_record)
+
+                            if idx_edit is not None:
+                                if update_extra_in_db_by_index(idx_edit, new_record):
+                                    st.success(f"✅ Dadus ba {txt_nome} atualiza ona ho susesu! Rezultadu: **{pred_label}**")
                                     st.session_state["edit_index"] = None
-                                    st.success(f"✅ Atualiza susesu ba funsionáriu: {txt_nome} (Prediksaun: {pred_label})")
+                                    st.rerun()
                                 else:
-                                    save_extra_to_db(new_record)
-                                    st.success(f"✅ Rejistu no Prediksaun Susesu! Rezultadu: **{pred_label}**")
+                                    st.error("⚠️ Falha durante atualizasaun dadus iha database.")
+                            else:
+                                save_extra_to_db(new_record)
+                                st.success(f"✅ Prediksaun Susesu! Rezultadu Avaliasaun: **{pred_label}** (Media: {media_val:.2f}). Rejisitu rai ona iha database!")
                                 st.rerun()
-                            except Exception as e:
-                                st.error("⚠️ ID SIGAP ne'e bele iha ona ka erru iha database.")
-    else:
-        st.sidebar.info("ℹ️ Favor upload ficheiru Excel dataset CFP hodi hahú sistema.")
+    except Exception as e:
+        st.error(f"⚠️ Erru wainhira lee ficheiru Excel ka processa modelu: {e}")
 else:
-    st.sidebar.info("ℹ️ Favor upload ficheiru Excel dataset CFP hodi hahú sistema.")
+    st.info("👋 Favor halo upload ficheiru Excel (.xlsx) iha sidebar (menu sorin karuk) h atu hahú uza aplikasaun no haree dashboard.")
