@@ -341,6 +341,8 @@ if uploaded_file is not None:
 
                 st.markdown("---")
                 col_g1, col_g2 = st.columns(2)
+                
+                # GRÁFIKU 1: BARRA (REÁL VS PREDIKSAUN)
                 with col_g1:
                     st.markdown("##### 📊 Komparasaun Kategoria (Reál vs Prediksaun)")
 
@@ -354,11 +356,13 @@ if uploaded_file is not None:
                         fig_compare = go.Figure()
                         fig_compare.add_trace(go.Bar(
                             name="Dadus Reál", x=categories, y=real_counts,
+                            marker_color="#1E3A8A",
                             customdata=[[cat, "real"] for cat in categories],
                             hovertemplate="<b>%{x}</b><br>Dadus Reál<br>Total: %{y}<br><extra>Klik iha barra</extra>"
                         ))
                         fig_compare.add_trace(go.Bar(
                             name="Prediksaun Tree", x=categories, y=pred_counts,
+                            marker_color="#3B82F6",
                             customdata=[[cat, "prediksaun"] for cat in categories],
                             hovertemplate="<b>%{x}</b><br>Prediksaun Decision Tree<br>Total: %{y}<br><extra>Klik iha barra</extra>"
                         ))
@@ -371,23 +375,23 @@ if uploaded_file is not None:
                             margin=dict(l=20, r=20, t=30, b=20),
                         )
 
-                        chart_key = f"grafiku_real_vs_pred_{st.session_state['chart_key_version']}"
-                        event = st.plotly_chart(
+                        chart_key_bar = f"grafiku_real_vs_pred_{st.session_state['chart_key_version']}"
+                        event_bar = st.plotly_chart(
                             fig_compare,
                             use_container_width=True,
                             on_select="rerun",
                             selection_mode="points",
-                            key=chart_key,
+                            key=chart_key_bar,
                         )
 
-                        if event is not None:
+                        if event_bar is not None:
                             try:
-                                points = event.selection.points
+                                points_bar = event_bar.selection.points
                             except Exception:
-                                points = []
+                                points_bar = []
 
-                            if points:
-                                point = points[0]
+                            if points_bar:
+                                point = points_bar[0]
                                 custom = point.get("customdata") if isinstance(point, dict) else None
                                 if custom and len(custom) >= 2:
                                     st.session_state["comparison_selection"] = {
@@ -395,79 +399,129 @@ if uploaded_file is not None:
                                         "type": str(custom[1]),
                                     }
 
-                        selection = st.session_state.get("comparison_selection")
-
-                        if selection:
-                            selected_category = selection["category"]
-                            selected_type = selection["type"]
-
-                            st.markdown("---")
-
-                            if selected_type == "real":
-                                df_selected = df_filtered[
-                                    df_filtered[target_col].astype(str).str.strip() == selected_category
-                                ].copy()
-
-                                st.markdown(f"### 📋 Dadus Reál – {selected_category}")
-                                st.info(f"Total funsionáriu: **{len(df_selected)}**")
-
-                                columns_show = [
-                                    "controlo_ativo_identificacao", "nome_pessoal", "id_sigap",
-                                    "id_grp", "sexo", "local_trabalho", "cargo",
-                                    "Asiduidade", "Pontualidade", "Produtividade",
-                                    "Kualidade_Servisu", "Kooperasaun", "Inisiativa",
-                                    "Disiplina", "Responsabilidade", target_col
-                                ]
-
-                                columns_show = [c for c in columns_show if c in df_selected.columns]
-                                st.dataframe(df_selected[columns_show], use_container_width=True, hide_index=True)
-
-                                csv_data = df_selected.to_csv(index=False).encode("utf-8")
-                                st.download_button(
-                                    "📥 Download Dadus Reál (CSV)", csv_data,
-                                    f"dadus_real_{selected_category}.csv", "text/csv",
-                                    key=f"download_real_comparison_{selected_category}"
-                                )
-
-                            else:
-                                df_selected = df_filtered[
-                                    df_filtered["Prediksaun"].astype(str).str.strip() == selected_category
-                                ].copy()
-
-                                st.markdown(f"### 🔮 Dadus Prediksaun Decision Tree – {selected_category}")
-                                st.info(f"Total funsionáriu ne'ebé Decision Tree prediz: **{len(df_selected)}**")
-
-                                columns_show = [
-                                    "controlo_ativo_identificacao", "nome_pessoal", "id_sigap",
-                                    "id_grp", "sexo", "local_trabalho", "cargo",
-                                    "Asiduidade", "Pontualidade", "Produtividade",
-                                    "Kualidade_Servisu", "Kooperasaun", "Inisiativa",
-                                    "Disiplina", "Responsabilidade", target_col, "Prediksaun"
-                                ]
-
-                                columns_show = [c for c in columns_show if c in df_selected.columns]
-                                st.dataframe(df_selected[columns_show], use_container_width=True, hide_index=True)
-
-                                csv_data = df_selected.to_csv(index=False).encode("utf-8")
-                                st.download_button(
-                                    "📥 Download Dadus Prediksaun (CSV)", csv_data,
-                                    f"dadus_prediksaun_{selected_category}.csv", "text/csv",
-                                    key=f"download_pred_comparison_{selected_category}"
-                                )
-
-                            if st.button("❌ Taka Tabela", key="close_comparison_table"):
-                                st.session_state["comparison_selection"] = None
-                                st.session_state["chart_key_version"] += 1
-                                st.rerun()
-
+                # GRÁFIKU 2: DONUT CHART INTERATIVU
                 with col_g2:
                     st.markdown("##### 🍩 Proporsaun Kategoria Dezempenu")
-                    fig2, ax2 = plt.subplots(figsize=(6, 4))
-                    sizes = [counts_real.get(cat, 0) for cat in categories]
-                    colors_list = ["#1E3A8A", "#3B82F6", "#D97706", "#EF4444"]
-                    if sum(sizes) > 0:
-                        ax2.pie(sizes, labels=categories, autopct="%1.1f%%", startangle=90, colors=colors_list, wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2))
-                    st.pyplot(fig2)
+                    
+                    if go is None:
+                        st.error("Biblioteca Plotly seidauk instala. Halo: pip install plotly")
+                    else:
+                        categories = ["Muito Bom", "Bom", "Suficiente", "Insuficiente"]
+                        colors_map = {
+                            "Muito Bom": "#1E3A8A", 
+                            "Bom": "#3B82F6", 
+                            "Suficiente": "#D97706", 
+                            "Insuficiente": "#EF4444"
+                        }
+                        
+                        sizes = [counts_real.get(cat, 0) for cat in categories]
+                        
+                        fig_donut = go.Figure(data=[go.Pie(
+                            labels=categories,
+                            values=sizes,
+                            hole=0.5,
+                            marker_colors=[colors_map[cat] for cat in categories],
+                            customdata=categories,
+                            hovertemplate="<b>%{label}</b><br>Total: %{value}<br>Percentagem: %{percent}<br><extra>Klik atu hare lista</extra>"
+                        )])
+                        
+                        fig_donut.update_layout(
+                            height=450,
+                            margin=dict(l=20, r=20, t=30, b=20),
+                            showlegend=True,
+                            clickmode="event+select"
+                        )
+
+                        chart_key_donut = f"grafiku_donut_{st.session_state['chart_key_version']}"
+                        
+                        event_donut = st.plotly_chart(
+                            fig_donut,
+                            use_container_width=True,
+                            on_select="rerun",
+                            selection_mode="points",
+                            key=chart_key_donut
+                        )
+
+                        if event_donut is not None:
+                            try:
+                                points_donut = event_donut.selection.points
+                            except Exception:
+                                points_donut = []
+
+                            if points_donut:
+                                point_d = points_donut[0]
+                                cat_selected = point_d.get("customdata") or point_d.get("label")
+                                if cat_selected:
+                                    st.session_state["comparison_selection"] = {
+                                        "category": str(cat_selected),
+                                        "type": "real"
+                                    }
+
+                # SELEKSAUN TABELA BA GRÁFIKU RUA HOTU
+                selection = st.session_state.get("comparison_selection")
+
+                if selection:
+                    selected_category = selection["category"]
+                    selected_type = selection["type"]
+
+                    st.markdown("---")
+
+                    if selected_type == "real":
+                        df_selected = df_filtered[
+                            df_filtered[target_col].astype(str).str.strip() == selected_category
+                        ].copy()
+
+                        st.markdown(f"### 📋 Dadus Reál – Kategoria: `{selected_category}`")
+                        st.info(f"Total funsionáriu: **{len(df_selected)}**")
+
+                        columns_show = [
+                            "controlo_ativo_identificacao", "nome_pessoal", "id_sigap",
+                            "id_grp", "sexo", "local_trabalho", "cargo",
+                            "Asiduidade", "Pontualidade", "Produtividade",
+                            "Kualidade_Servisu", "Kooperasaun", "Inisiativa",
+                            "Disiplina", "Responsabilidade", target_col
+                        ]
+
+                        columns_show = [c for c in columns_show if c in df_selected.columns]
+                        st.dataframe(df_selected[columns_show], use_container_width=True, hide_index=True)
+
+                        csv_data = df_selected.to_csv(index=False).encode("utf-8")
+                        st.download_button(
+                            "📥 Download Dadus Reál (CSV)", csv_data,
+                            f"dadus_real_{selected_category}.csv", "text/csv",
+                            key=f"download_real_chart_{selected_category}"
+                        )
+
+                    else:
+                        df_selected = df_filtered[
+                            df_filtered["Prediksaun"].astype(str).str.strip() == selected_category
+                        ].copy()
+
+                        st.markdown(f"### 🔮 Dadus Prediksaun Decision Tree – Kategoria: `{selected_category}`")
+                        st.info(f"Total funsionáriu ne'ebé Decision Tree prediz: **{len(df_selected)}**")
+
+                        columns_show = [
+                            "controlo_ativo_identificacao", "nome_pessoal", "id_sigap",
+                            "id_grp", "sexo", "local_trabalho", "cargo",
+                            "Asiduidade", "Pontualidade", "Produtividade",
+                            "Kualidade_Servisu", "Kooperasaun", "Inisiativa",
+                            "Disiplina", "Responsabilidade", target_col, "Prediksaun"
+                        ]
+
+                        columns_show = [c for c in columns_show if c in df_selected.columns]
+                        st.dataframe(df_selected[columns_show], use_container_width=True, hide_index=True)
+
+                        csv_data = df_selected.to_csv(index=False).encode("utf-8")
+                        st.download_button(
+                            "📥 Download Dadus Prediksaun (CSV)", csv_data,
+                            f"dadus_prediksaun_{selected_category}.csv", "text/csv",
+                            key=f"download_pred_chart_{selected_category}"
+                        )
+
+                    if st.button("❌ Taka Tabela", key="close_chart_comparison_table"):
+                        st.session_state["comparison_selection"] = None
+                        st.session_state["chart_key_version"] += 1
+                        st.rerun()
 
                 st.markdown("---")
                 st.markdown("##### 🗺️ Gráfiku Avansadu: Desentralizasaun Dezempenu tuir Local de Trabalhu (Munisípiu)")
