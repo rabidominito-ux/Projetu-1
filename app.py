@@ -676,6 +676,19 @@ if uploaded_file is not None:
                     st.markdown("##### 📝 1. Informasaun Identidade Funsionáriu")
                     municipios = ["Aileu", "Ainaro", "Baucau", "Bobonaro", "Covalima", "Díli", "Ermera", "Lautém", "Liquiçá", "Manatuto", "Manufahi", "Oe-Cusse Ambeno", "Viqueque"]
                     
+                    cargos_list = [
+                        "Técnico Superior",
+                        "Técnico Profissional",
+                        "Assistente Administrativo",
+                        "Oficial Administrativo",
+                        "Assistente Técnico",
+                        "Técnico Informática",
+                        "Analista de Dados",
+                        "Chefe de Unidade",
+                        "Chefe de Departamento",
+                        "Diretor Nacional"
+                    ]
+
                     funcoes = [
                         "Regime Geral das Carreiras, Técnico Superior Grau B, 10, PERMANENTE",
                         "Regime Geral das Carreiras, Técnico Administrativo Grau E, 1, PERMANENTE",
@@ -700,6 +713,9 @@ if uploaded_file is not None:
                         "Regime Geral das Carreiras, Assistente Grau F, 1, PERMANENTE",
                     ]
 
+                    cargo_def_val = def_val.get("cargo", "Técnico Superior")
+                    cargo_index = cargos_list.index(cargo_def_val) if cargo_def_val in cargos_list else 0
+
                     col_f1, col_f2 = st.columns(2)
                     with col_f1:
                         nome_input = st.text_input("Naran Pessoal:", value=def_val.get("nome_pessoal", ""))
@@ -708,7 +724,7 @@ if uploaded_file is not None:
                         local_input = st.selectbox("Munisípiu / Local Trabalho:", municipios, index=municipios.index(def_val.get("local_trabalho")) if def_val.get("local_trabalho") in municipios else 5)
                     with col_f2:
                         id_grp_input = st.text_input("ID GRP:", value=def_val.get("id_grp", ""))
-                        cargo_input = st.text_input("Kargo:", value=def_val.get("cargo", "Técnico"))
+                        cargo_input = st.selectbox("Kargo:", cargos_list, index=cargo_index)
                         funcao_input = st.selectbox("Funsaun / Karreira:", funcoes, index=0)
 
                     st.markdown("##### 📊 2. Nota Avaliasaun Dezempenu (1.0 - 5.0)")
