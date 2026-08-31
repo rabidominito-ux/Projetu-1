@@ -170,6 +170,12 @@ if "edit_index" not in st.session_state:
 if "selected_category" not in st.session_state:
     st.session_state["selected_category"] = None
 
+if "comparison_selection" not in st.session_state:
+    st.session_state["comparison_selection"] = None
+
+if "chart_key_version" not in st.session_state:
+    st.session_state["chart_key_version"] = 0
+
 # Funsaun Generál PDF Ofisiál CFP
 def generate_pdf_report(df_data, title_report):
     buffer = BytesIO()
@@ -365,18 +371,14 @@ if uploaded_file is not None:
                             margin=dict(l=20, r=20, t=30, b=20),
                         )
 
+                        chart_key = f"grafiku_real_vs_pred_{st.session_state['chart_key_version']}"
                         event = st.plotly_chart(
                             fig_compare,
                             use_container_width=True,
                             on_select="rerun",
                             selection_mode="points",
-                            key="grafiku_real_vs_pred",
+                            key=chart_key,
                         )
-
-                        # Guarda seleksaun iha session_state atu tabela la lakon
-                        # bainhira Streamlit halo rerun.
-                        if "comparison_selection" not in st.session_state:
-                            st.session_state["comparison_selection"] = None
 
                         if event is not None:
                             try:
@@ -455,6 +457,7 @@ if uploaded_file is not None:
 
                             if st.button("❌ Taka Tabela", key="close_comparison_table"):
                                 st.session_state["comparison_selection"] = None
+                                st.session_state["chart_key_version"] += 1
                                 st.rerun()
 
                 with col_g2:
@@ -604,129 +607,82 @@ if uploaded_file is not None:
                         "Regime Geral das Carreiras, Técnico Profissional Grau C, 1, NOMEAÇÃO PROBATÓRIA",
                         "Regime Geral das Carreiras, Técnico Superior Grau B, 2, PERMANENTE",
                         "Regime Geral das Carreiras, Técnico Superior Grau A, 8, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Profissional Grau D, 7, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Superior Grau A, 2, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Superior Grau A, 1, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Administrativo Grau E, 2, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Profissional Grau D, 3, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Profissional Grau C, 3, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Profissional Grau D, 4, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Profissional Grau C, 4, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Profissional Grau C, 2, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Superior Grau B, 4, PERMANENTE",
-                        "Regime Geral das Carreiras, Assistente Grau F, 2, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Profissional Grau D, 5, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Superior Grau B, 5, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Superior Grau B, 7, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Superior Grau B, 3, PERMANENTE",
-                        "Regime Geral das Carreiras, Técnico Superior Grau B, 9, PERMANENTE"
+                        "Regime Geral das Carreiras, Assistente Grau F, 1, PERMANENTE",
                     ]
 
-                    cargos = [
-                        "Técnico Superior", 
-                        "Técnico Profissional", 
-                        "Assistente Administrativo", 
-                        "Oficial Administrativo", 
-                        "Assistente Técnico", 
-                        "Técnico Informática", 
-                        "Analista de Dados", 
-                        "Chefe de Unidade", 
-                        "Chefe de Departamento", 
-                        "Diretor Nacional"
-                    ]
+                    col_f1, col_f2 = st.columns(2)
+                    with col_f1:
+                        nome_input = st.text_input("Naran Pessoal:", value=def_val.get("nome_pessoal", ""))
+                        id_sigap_input = st.text_input("ID SIGAP:", value=def_val.get("id_sigap", ""))
+                        sexo_input = st.selectbox("Sexo:", ["M", "F"], index=0 if def_val.get("sexo") == "M" else 1)
+                        local_input = st.selectbox("Munisípiu / Local Trabalho:", municipios, index=municipios.index(def_val.get("local_trabalho")) if def_val.get("local_trabalho") in municipios else 5)
+                    with col_f2:
+                        id_grp_input = st.text_input("ID GRP:", value=def_val.get("id_grp", ""))
+                        cargo_input = st.text_input("Kargo:", value=def_val.get("cargo", "Técnico"))
+                        funcao_input = st.selectbox("Funsaun / Karreira:", funcoes, index=0)
 
-                    col_i1, col_i2, col_i3 = st.columns(3)
-                    with col_i1:
-                        ativo_opts = ["Ativo", "La Ativo"]
-                        cur_ativo = def_val.get("controlo_ativo_identificacao", "Ativo")
-                        txt_ativo = st.selectbox("Controlo Ativo Identifikasaun", ativo_opts, index=ativo_opts.index(cur_ativo) if cur_ativo in ativo_opts else 0)
-                        txt_nome = st.text_input("Naran Pessoal*", def_val.get("nome_pessoal", ""))
-                        txt_sigap = st.text_input("ID SIGAP (Numeriku no Símbolu)*", def_val.get("id_sigap", ""))
-                        cur_sexo = def_val.get("sexo", "M")
-                        txt_sexo = st.selectbox("Sexo", ["M", "F"], index=0 if cur_sexo == "M" else 1)
-                    with col_i2:
-                        txt_inst = st.text_input("Instituisaun", def_val.get("instituicao", "CFP"))
-                        cur_local = def_val.get("local_trabalho", "Díli")
-                        txt_local = st.selectbox("Local Trabalhu", municipios, index=municipios.index(cur_local) if cur_local in municipios else 0)
-                        
-                        try:
-                            default_date = pd.to_datetime(def_val.get("data_de_nascimento", "1995-01-01")).date()
-                        except:
-                            default_date = pd.to_datetime("1995-01-01").date()
-                        txt_nascimento = st.date_input("Data de Nascimento", value=default_date)
-                    with col_i3:
-                        cur_func = def_val.get("funcao", funcoes[0])
-                        txt_funcao = st.selectbox("Funsaun", funcoes, index=funcoes.index(cur_func) if cur_func in funcoes else 0)
-                        
-                        cur_cargo = def_val.get("cargo", cargos[0])
-                        txt_cargo = st.selectbox("Kargo", cargos, index=cargos.index(cur_cargo) if cur_cargo in cargos else 0)
-                        txt_grp = st.text_input("ID GRP", def_val.get("id_grp", ""))
+                    st.markdown("##### 📊 2. Nota Avaliasaun Dezempenu (1.0 - 5.0)")
+                    col_n1, col_n2, col_n3, col_n4 = st.columns(4)
+                    with col_n1:
+                        asid = st.number_input("Asiduidade:", 1.0, 5.0, float(def_val.get("Asiduidade", 4.0)), step=0.1)
+                        pont = st.number_input("Pontualidade:", 1.0, 5.0, float(def_val.get("Pontualidade", 4.0)), step=0.1)
+                    with col_n2:
+                        prod = st.number_input("Produtividade:", 1.0, 5.0, float(def_val.get("Produtividade", 4.0)), step=0.1)
+                        kual = st.number_input("Kualidade Servisu:", 1.0, 5.0, float(def_val.get("Kualidade_Servisu", 4.0)), step=0.1)
+                    with col_n3:
+                        koop = st.number_input("Kooperasaun:", 1.0, 5.0, float(def_val.get("Kooperasaun", 4.0)), step=0.1)
+                        inis = st.number_input("Inisiativa:", 1.0, 5.0, float(def_val.get("Inisiativa", 4.0)), step=0.1)
+                    with col_n4:
+                        disi = st.number_input("Disiplina:", 1.0, 5.0, float(def_val.get("Disiplina", 4.0)), step=0.1)
+                        resp = st.number_input("Responsabilidade:", 1.0, 5.0, float(def_val.get("Responsabilidade", 4.0)), step=0.1)
 
-                    st.markdown("##### 📊 2. Indikadór Avaliasaun Funsionáriu")
-                    col_a, col_b, col_c, col_d = st.columns(4)
-                    with col_a:
-                        p_asid = st.slider("Asiduidade", 1.0, 5.0, float(def_val.get("Asiduidade", 4.0)), 0.5)
-                        p_pont = st.slider("Pontualidade", 1.0, 5.0, float(def_val.get("Pontualidade", 4.0)), 0.5)
-                    with col_b:
-                        p_prod = st.slider("Produtividade", 1.0, 5.0, float(def_val.get("Produtividade", 4.0)), 0.5)
-                        p_kual = st.slider("Kualidade Servisu", 1.0, 5.0, float(def_val.get("Kualidade_Servisu", 4.0)), 0.5)
-                    with col_c:
-                        p_koop = st.slider("Kooperasaun", 1.0, 5.0, float(def_val.get("Kooperasaun", 4.0)), 0.5)
-                        p_inis = st.slider("Inisiativa", 1.0, 5.0, float(def_val.get("Inisiativa", 4.0)), 0.5)
-                    with col_d:
-                        p_disp = st.slider("Disiplina", 1.0, 5.0, float(def_val.get("Disiplina", 4.0)), 0.5)
-                        p_resp = st.slider("Responsabilidade", 1.0, 5.0, float(def_val.get("Responsabilidade", 4.0)), 0.5)
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    btn_label = "💾 Atualiza Dadus" if idx_edit is not None else "🔮 Halo Prediksaun & Guarda"
+                    submit_funs = st.form_submit_button(btn_label)
 
-                    submit_pred = st.form_submit_button("💾 Salva / Prediksaun")
-
-                    if submit_pred:
-                        if not txt_nome.strip() or not txt_sigap.strip():
-                            st.error("⚠️ Favór preenxe Naran Pessoal no ID SIGAP ho loos!")
-                        elif any(c.isalpha() for c in txt_sigap):
-                            st.error("⚠️ ID SIGAP labele uza letra/alfabetu! Tenke uza de'it númeru no símbolu.")
+                    if submit_funs:
+                        if not nome_input or not id_sigap_input:
+                            st.error("⚠️ Naran no ID SIGAP keta mamuk!")
                         else:
-                            input_data = np.array([[p_asid, p_pont, p_prod, p_kual, p_koop, p_inis, p_disp, p_resp]])
-                            pred_encoded = model.predict(input_data)
-                            pred_label = le.inverse_transform(pred_encoded)[0]
+                            input_df = pd.DataFrame([[asid, pont, prod, kual, koop, inis, disi, resp]], columns=nota_cols)
+                            pred_encoded = model.predict(input_df)[0]
+                            pred_label = le.inverse_transform([pred_encoded])[0]
 
-                            new_record = {
-                                "controlo_ativo_identificacao": txt_ativo,
-                                "nome_pessoal": txt_nome,
-                                "id_sigap": txt_sigap,
-                                "sexo": txt_sexo,
-                                "instituicao": txt_inst,
-                                "local_trabalho": txt_local,
-                                "data_de_nascimento": str(txt_nascimento),
-                                "funcao": txt_funcao,
-                                "cargo": txt_cargo,
-                                "id_grp": txt_grp,
-                                "Asiduidade": p_asid,
-                                "Pontualidade": p_pont,
-                                "Produtividade": p_prod,
-                                "Kualidade_Servisu": p_kual,
-                                "Kooperasaun": p_koop,
-                                "Inisiativa": p_inis,
-                                "Disiplina": p_disp,
-                                "Responsabilidade": p_resp,
-                                "Rezultadu_Avaliasaun": pred_label
+                            media_calculated = np.mean([asid, pont, prod, kual, koop, inis, disi, resp])
+
+                            record = {
+                                "controlo_ativo_identificacao": "ATIVO",
+                                "nome_pessoal": nome_input,
+                                "id_sigap": id_sigap_input,
+                                "id_grp": id_grp_input,
+                                "sexo": sexo_input,
+                                "local_trabalho": local_input,
+                                "funcao": funcao_input,
+                                "cargo": cargo_input,
+                                "Asiduidade": asid,
+                                "Pontualidade": pont,
+                                "Produtividade": prod,
+                                "Kualidade_Servisu": kual,
+                                "Kooperasaun": koop,
+                                "Inisiativa": inis,
+                                "Disiplina": disi,
+                                "Responsabilidade": resp,
+                                "Media": float(media_calculated),
+                                "Rezultadu_Avaliasaun": pred_label,
                             }
 
                             if idx_edit is not None:
-                                if update_extra_in_db_by_index(idx_edit, new_record):
-                                    st.success(f"✅ Atualiza dadus susesu! Prediksaun: **{pred_label}**")
-                                    st.session_state["edit_index"] = None
-                                    st.session_state["extra_reports"] = load_extra_from_db()
-                                    st.rerun()
-                                else:
-                                    st.error("⚠️ Falha atu atualiza dadus.")
+                                update_extra_in_db_by_index(idx_edit, record)
+                                st.session_state["edit_index"] = None
+                                st.success(f"✅ Dadus ba **{nome_input}** atualiza ho susesu! Prediksaun foun: **{pred_label}**")
                             else:
-                                if save_extra_to_db(new_record):
-                                    st.success(f"✅ Salva dadus susesu! Prediksaun: **{pred_label}**")
-                                    st.session_state["extra_reports"] = load_extra_from_db()
-                                    st.rerun()
-                                else:
-                                    st.error("⚠️ ID SIGAP ne'e bele iha ona ka iha erro ruma iha database.")
+                                save_extra_to_db(record)
+                                st.success(f"✅ Prediksaun ba **{nome_input}**: **{pred_label}** (Guarda ona ba Database!)")
+
+                            st.session_state["extra_reports"] = load_extra_from_db()
+                            st.rerun()
+
     except Exception as e:
-        st.sidebar.error(f"⚠️ Erro iha Leitura Ficheiru Excel: {e}")
+        st.sidebar.error(f"❌ Erru lee ficheiru: {e}")
 else:
-    st.info("👋 Favór upload ficheiru Excel (.xlsx) iha sidebar honia hahú eksplora sistema klasifikasaun.")
+    st.info("👈 Favor submete (upload) ficheiru Excel iha sidebar atu hahú.")
