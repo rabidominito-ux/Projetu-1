@@ -28,6 +28,7 @@ from database import (
 from models import treinar_modelo
 from ui_components import render_custom_css
 
+# Konfigurasaun Pajina ho Logo Decision Tree (🌳)
 st.set_page_config(
     page_title="Sistema Klasifikasaun CFP - RDTL",
     page_icon="🌳",
@@ -36,7 +37,7 @@ st.set_page_config(
 
 render_custom_css()
 
-# Kaminhu (path) ka URL ba Imajen Árbore (Tree Icon/Logo)
+# Kaminhu (path) ka URL ba Imajen Árbore (Decision Tree Icon/Logo)
 TREE_IMAGE_PATH = "https://cdn-icons-png.flaticon.com/512/4325/4325956.png"  
 
 # Funsaun atu lee ficheiru Excel
@@ -166,7 +167,7 @@ if st.sidebar.button("🚪 Logout / Sai"):
     st.session_state["authenticated"] = False
     st.rerun()
 
-st.markdown('<p class="main-title">📊 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-title">🌳 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Aplikasaun Intelijénsia Artifisiál uza algoritmu Decision Tree bazeia ba indikadór Komisaun Função Pública RDTL.</p>', unsafe_allow_html=True)
 
 init_db()
