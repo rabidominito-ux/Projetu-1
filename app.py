@@ -559,25 +559,6 @@ if uploaded_file is not None:
                         st.session_state["chart_key_version"] += 1
                         st.rerun()
 
-                st.markdown("---")
-                st.markdown("##### 🗺️ Gráfiku Avansadu: Desentralizasaun Dezempenu tuir Local de Trabalhu (Munisípiu)")
-                if "local_trabalho" in df_filtered.columns:
-                    fig_loc, ax_loc = plt.subplots(figsize=(10, 4.5))
-                    df_loc_counts = pd.crosstab(df_filtered["local_trabalho"], df_filtered[target_col])
-                    existing_cats = [c for c in categories if c in df_loc_counts.columns]
-                    df_loc_counts = df_loc_counts.reindex(columns=existing_cats, fill_value=0)
-                    
-                    df_loc_counts.plot(kind="bar", stacked=True, ax=ax_loc, colormap="crest", edgecolor="none")
-                    ax_loc.set_title("Distribuisaun Avaliasaun Dezempenu tuir Munisípiu / Local de Trabalhu", fontsize=11, fontweight="bold")
-                    ax_loc.set_xlabel("Local de Trabalhu", fontsize=9)
-                    ax_loc.set_ylabel("Total Funsionáriu", fontsize=9)
-                    plt.xticks(rotation=45, ha="right")
-                    ax_loc.legend(title="Kategoria", bbox_to_anchor=(1.02, 1), loc="upper left")
-                    sns.despine()
-                    st.pyplot(fig_loc)
-                else:
-                    st.info("Koluna 'local_trabalho' la dispoñível iha dataset atu halo grafiku ne'e.")
-
             with tab2:
                 st.subheader("📋 Amostra Dadus (Preview)")
                 st.dataframe(df_filtered.head(10), use_container_width=True)
