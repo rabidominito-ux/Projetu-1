@@ -28,7 +28,7 @@ from database import (
 from models import treinar_modelo
 from ui_components import render_custom_css
 
-# Konfigurasaun Pajina ho Logo Decision Tree (🌳)
+# Konfigurasaun Pajina ho Icon Árbore Desizaun (🌳)
 st.set_page_config(
     page_title="Sistema Klasifikasaun CFP - RDTL",
     page_icon="🌳",
@@ -36,9 +36,6 @@ st.set_page_config(
 )
 
 render_custom_css()
-
-# Kaminhu (path) ka URL ba Imajen Árbore (Decision Tree Icon/Logo)
-TREE_IMAGE_PATH = "https://cdn-icons-png.flaticon.com/512/4325/4325956.png"  
 
 # Funsaun atu lee ficheiru Excel
 def load_data(file):
@@ -113,10 +110,10 @@ if not st.session_state["authenticated"]:
     """, unsafe_allow_html=True)
 
     with st.container():
-        st.markdown(f"""
+        st.markdown("""
             <div class="cfp-login-card">
-                <div style="text-align: center; margin-bottom: 15px;">
-                    <img src="{TREE_IMAGE_PATH}" width="75" height="75" style="object-fit: contain;">
+                <div style="text-align: center; font-size: 65px; line-height: 1; margin-bottom: 15px;">
+                    🌳
                 </div>
                 <div class="cfp-header-title">
                     COMISSÃO DA FUNÇÃO PÚBLICA<br>REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE
@@ -157,7 +154,7 @@ if not st.session_state["authenticated"]:
 # ==========================================
 col_side_img, col_side_txt = st.sidebar.columns([1, 4])
 with col_side_img:
-    st.image(TREE_IMAGE_PATH, width=35)
+    st.markdown("<h2 style='margin:0; padding:0;'>🌳</h2>", unsafe_allow_html=True)
 with col_side_txt:
     st.markdown("### CFP-RDTL Portal")
 
