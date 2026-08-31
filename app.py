@@ -13,8 +13,10 @@ import streamlit as st
 
 try:
     import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
 except ImportError:
     go = None
+    make_subplots = None
 
 from database import (
     delete_extra_from_db_by_index,
@@ -291,28 +293,37 @@ if uploaded_file is not None:
             with tab1:
                 st.markdown("### 📈 Sumáriu Dezempenu Funsionáriu")
                 total_funs = len(df_filtered)
+                
+                # Dadus Reál
                 counts_real = df_filtered[target_col].value_counts()
+                mb_real_pct = (counts_real.get("Muito Bom", 0) / total_funs) * 100 if total_funs > 0 else 0
+                b_real_pct = (counts_real.get("Bom", 0) / total_funs) * 100 if total_funs > 0 else 0
+                s_real_pct = (counts_real.get("Suficiente", 0) / total_funs) * 100 if total_funs > 0 else 0
+                i_real_pct = (counts_real.get("Insuficiente", 0) / total_funs) * 100 if total_funs > 0 else 0
 
-                mb_pct = (counts_real.get("Muito Bom", 0) / total_funs) * 100 if total_funs > 0 else 0
-                b_pct = (counts_real.get("Bom", 0) / total_funs) * 100 if total_funs > 0 else 0
-                s_pct = (counts_real.get("Suficiente", 0) / total_funs) * 100 if total_funs > 0 else 0
-                i_pct = (counts_real.get("Insuficiente", 0) / total_funs) * 100 if total_funs > 0 else 0
+                # Dadus Prediksaun
+                counts_pred = df_filtered["Prediksaun"].value_counts()
+                mb_pred_pct = (counts_pred.get("Muito Bom", 0) / total_funs) * 100 if total_funs > 0 else 0
+                b_pred_pct = (counts_pred.get("Bom", 0) / total_funs) * 100 if total_funs > 0 else 0
+                s_pred_pct = (counts_pred.get("Suficiente", 0) / total_funs) * 100 if total_funs > 0 else 0
+                i_pred_pct = (counts_pred.get("Insuficiente", 0) / total_funs) * 100 if total_funs > 0 else 0
 
+                # KPI Cards ho Persentajen Reál vs Prediksaun
                 col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
                 with col_m1:
                     if st.button(f"📊 Total Funsionáriu\n\n{total_funs}", key="btn_m1"):
                         st.session_state["selected_category"] = "Tomak" if st.session_state["selected_category"] != "Tomak" else None
                 with col_m2:
-                    if st.button(f"⭐ Muito Bom\n\n{counts_real.get('Muito Bom', 0)}\n({mb_pct:.1f}%)", key="btn_m2"):
+                    if st.button(f"⭐ Muito Bom\n\nReál: {mb_real_pct:.1f}%\nPred: {mb_pred_pct:.1f}%", key="btn_m2"):
                         st.session_state["selected_category"] = "Muito Bom" if st.session_state["selected_category"] != "Muito Bom" else None
                 with col_m3:
-                    if st.button(f"✨ Bom\n\n{counts_real.get('Bom', 0)}\n({b_pct:.1f}%)", key="btn_m3"):
+                    if st.button(f"✨ Bom\n\nReál: {b_real_pct:.1f}%\nPred: {b_pred_pct:.1f}%", key="btn_m3"):
                         st.session_state["selected_category"] = "Bom" if st.session_state["selected_category"] != "Bom" else None
                 with col_m4:
-                    if st.button(f"📌 Suficiente\n\n{counts_real.get('Suficiente', 0)}\n({s_pct:.1f}%)", key="btn_m4"):
+                    if st.button(f"📌 Suficiente\n\nReál: {s_real_pct:.1f}%\nPred: {s_pred_pct:.1f}%", key="btn_m4"):
                         st.session_state["selected_category"] = "Suficiente" if st.session_state["selected_category"] != "Suficiente" else None
                 with col_m5:
-                    if st.button(f"⚠️ Insuficiente\n\n{counts_real.get('Insuficiente', 0)}\n({i_pct:.1f}%)", key="btn_m5"):
+                    if st.button(f"⚠️ Insuficiente\n\nReál: {i_real_pct:.1f}%\nPred: {i_pred_pct:.1f}%", key="btn_m5"):
                         st.session_state["selected_category"] = "Insuficiente" if st.session_state["selected_category"] != "Insuficiente" else None
 
                 selected_cat = st.session_state["selected_category"]
@@ -351,7 +362,7 @@ if uploaded_file is not None:
                     else:
                         categories = ["Muito Bom", "Bom", "Suficiente", "Insuficiente"]
                         real_counts = [counts_real.get(cat, 0) for cat in categories]
-                        pred_counts = [df_filtered["Prediksaun"].value_counts().get(cat, 0) for cat in categories]
+                        pred_counts = [counts_pred.get(cat, 0) for cat in categories]
 
                         fig_compare = go.Figure()
                         fig_compare.add_trace(go.Bar(
@@ -399,11 +410,11 @@ if uploaded_file is not None:
                                         "type": str(custom[1]),
                                     }
 
-                # GRÁFIKU 2: DONUT CHART INTERATIVU
+                # GRÁFIKU 2: DONUT CHART COMPARAÇÃO (REÁL VS PREDIKSAUN)
                 with col_g2:
-                    st.markdown("##### 🍩 Proporsaun Kategoria Dezempenu")
+                    st.markdown("##### 🍩 Proporsaun Persentajen (Reál vs Prediksaun)")
                     
-                    if go is None:
+                    if go is None or make_subplots is None:
                         st.error("Biblioteca Plotly seidauk instala. Halo: pip install plotly")
                     else:
                         categories = ["Muito Bom", "Bom", "Suficiente", "Insuficiente"]
@@ -414,21 +425,43 @@ if uploaded_file is not None:
                             "Insuficiente": "#EF4444"
                         }
                         
-                        sizes = [counts_real.get(cat, 0) for cat in categories]
+                        sizes_real = [counts_real.get(cat, 0) for cat in categories]
+                        sizes_pred = [counts_pred.get(cat, 0) for cat in categories]
+
+                        # Kria subplots Donut Charts 2 iha ninin ba ninin
+                        fig_donut = make_subplots(
+                            rows=1, cols=2,
+                            specs=[[{"type": "domain"}, {"type": "domain"}]],
+                            subplot_titles=["<b>Dadus Reál</b>", "<b>Prediksaun</b>"]
+                        )
                         
-                        fig_donut = go.Figure(data=[go.Pie(
+                        # Donut Chart Dadus Reál
+                        fig_donut.add_trace(go.Pie(
                             labels=categories,
-                            values=sizes,
-                            hole=0.5,
+                            values=sizes_real,
+                            hole=0.4,
+                            name="Dadus Reál",
                             marker_colors=[colors_map[cat] for cat in categories],
-                            customdata=categories,
-                            hovertemplate="<b>%{label}</b><br>Total: %{value}<br>Percentagem: %{percent}<br><extra>Klik atu hare lista</extra>"
-                        )])
+                            customdata=[[cat, "real"] for cat in categories],
+                            hovertemplate="<b>Reál: %{label}</b><br>Total: %{value}<br>Persentajen: %{percent}<extra></extra>"
+                        ), 1, 1)
+
+                        # Donut Chart Dadus Prediksaun
+                        fig_donut.add_trace(go.Pie(
+                            labels=categories,
+                            values=sizes_pred,
+                            hole=0.4,
+                            name="Prediksaun",
+                            marker_colors=[colors_map[cat] for cat in categories],
+                            customdata=[[cat, "prediksaun"] for cat in categories],
+                            hovertemplate="<b>Prediksaun: %{label}</b><br>Total: %{value}<br>Persentajen: %{percent}<extra></extra>"
+                        ), 1, 2)
                         
                         fig_donut.update_layout(
                             height=450,
-                            margin=dict(l=20, r=20, t=30, b=20),
+                            margin=dict(l=10, r=10, t=40, b=10),
                             showlegend=True,
+                            legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5),
                             clickmode="event+select"
                         )
 
@@ -450,11 +483,11 @@ if uploaded_file is not None:
 
                             if points_donut:
                                 point_d = points_donut[0]
-                                cat_selected = point_d.get("customdata") or point_d.get("label")
-                                if cat_selected:
+                                custom_d = point_d.get("customdata") if isinstance(point_d, dict) else None
+                                if custom_d and len(custom_d) >= 2:
                                     st.session_state["comparison_selection"] = {
-                                        "category": str(cat_selected),
-                                        "type": "real"
+                                        "category": str(custom_d[0]),
+                                        "type": str(custom_d[1])
                                     }
 
                 # SELEKSAUN TABELA BA GRÁFIKU RUA HOTU
