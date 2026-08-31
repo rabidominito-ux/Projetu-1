@@ -11,6 +11,11 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 import streamlit as st
 
+try:
+    import plotly.graph_objects as go
+except ImportError:
+    go = None
+
 from database import (
     delete_extra_from_db_by_index,
     init_db,
@@ -333,158 +338,124 @@ if uploaded_file is not None:
                 with col_g1:
                     st.markdown("##### 📊 Komparasaun Kategoria (Reál vs Prediksaun)")
 
-                    # Gráfiku interativu: klik barra Reál ka Prediksaun
-                    # sei hatudu tabela dadus correspondente.
-                    import plotly.graph_objects as go
+                    if go is None:
+                        st.error("Biblioteca Plotly seidauk instala. Halo: pip install plotly")
+                    else:
+                        categories = ["Muito Bom", "Bom", "Suficiente", "Insuficiente"]
+                        real_counts = [counts_real.get(cat, 0) for cat in categories]
+                        pred_counts = [df_filtered["Prediksaun"].value_counts().get(cat, 0) for cat in categories]
 
-                    categories = ["Muito Bom", "Bom", "Suficiente", "Insuficiente"]
-                    real_counts = [counts_real.get(cat, 0) for cat in categories]
-                    pred_counts = [
-                        df_filtered["Prediksaun"].value_counts().get(cat, 0)
-                        for cat in categories
-                    ]
-
-                    fig_compare = go.Figure()
-
-                    fig_compare.add_trace(
-                        go.Bar(
-                            name="Dadus Reál",
-                            x=categories,
-                            y=real_counts,
-                            customdata=[[cat, "Dadus Reál"] for cat in categories],
-                            hovertemplate=(
-                                "<b>%{customdata[0]}</b><br>"
-                                "Tipu: %{customdata[1]}<br>"
-                                "Total: %{y}<br>"
-                                "<extra>Klik atu haree tabela</extra>"
-                            ),
+                        fig_compare = go.Figure()
+                        fig_compare.add_trace(go.Bar(
+                            name="Dadus Reál", x=categories, y=real_counts,
+                            customdata=[[cat, "real"] for cat in categories],
+                            hovertemplate="<b>%{x}</b><br>Dadus Reál<br>Total: %{y}<br><extra>Klik iha barra</extra>"
+                        ))
+                        fig_compare.add_trace(go.Bar(
+                            name="Prediksaun Tree", x=categories, y=pred_counts,
+                            customdata=[[cat, "prediksaun"] for cat in categories],
+                            hovertemplate="<b>%{x}</b><br>Prediksaun Decision Tree<br>Total: %{y}<br><extra>Klik iha barra</extra>"
+                        ))
+                        fig_compare.update_layout(
+                            barmode="group", height=450,
+                            xaxis_title="Kategoria Dezempenu",
+                            yaxis_title="Total Funsionáriu",
+                            legend_title="Tipu Dadus",
+                            clickmode="event+select",
+                            margin=dict(l=20, r=20, t=30, b=20),
                         )
-                    )
 
-                    fig_compare.add_trace(
-                        go.Bar(
-                            name="Prediksaun Tree",
-                            x=categories,
-                            y=pred_counts,
-                            customdata=[[cat, "Prediksaun Decision Tree"] for cat in categories],
-                            hovertemplate=(
-                                "<b>%{customdata[0]}</b><br>"
-                                "Tipu: %{customdata[1]}<br>"
-                                "Total: %{y}<br>"
-                                "<extra>Klik atu haree tabela</extra>"
-                            ),
+                        event = st.plotly_chart(
+                            fig_compare,
+                            use_container_width=True,
+                            on_select="rerun",
+                            selection_mode="points",
+                            key="grafiku_real_vs_pred",
                         )
-                    )
 
-                    fig_compare.update_layout(
-                        barmode="group",
-                        xaxis_title="Kategoria Dezempenu",
-                        yaxis_title="Total Funsionáriu",
-                        legend_title="Tipu Dadus",
-                        height=450,
-                        margin=dict(l=20, r=20, t=30, b=20),
-                    )
+                        # Guarda seleksaun iha session_state atu tabela la lakon
+                        # bainhira Streamlit halo rerun.
+                        if "comparison_selection" not in st.session_state:
+                            st.session_state["comparison_selection"] = None
 
-                    event = st.plotly_chart(
-                        fig_compare,
-                        use_container_width=True,
-                        on_select="rerun",
-                        selection_mode="points",
-                        key="grafiku_real_vs_pred",
-                    )
+                        if event is not None:
+                            try:
+                                points = event.selection.points
+                            except Exception:
+                                points = []
 
-                    # Bainhira klik barra, hatudu tabela correspondente.
-                    if event and event.selection and event.selection.points:
-                        selected_point = event.selection.points[0]
-                        point_index = selected_point.get("point_index")
-                        curve_number = selected_point.get("curve_number")
+                            if points:
+                                point = points[0]
+                                custom = point.get("customdata") if isinstance(point, dict) else None
+                                if custom and len(custom) >= 2:
+                                    st.session_state["comparison_selection"] = {
+                                        "category": str(custom[0]),
+                                        "type": str(custom[1]),
+                                    }
 
-                        if point_index is not None and curve_number is not None:
-                            selected_category = categories[point_index]
+                        selection = st.session_state.get("comparison_selection")
 
-                            if curve_number == 0:
-                                # Dadus Reál: filtra husi Rezultadu_Avaliasaun.
+                        if selection:
+                            selected_category = selection["category"]
+                            selected_type = selection["type"]
+
+                            st.markdown("---")
+
+                            if selected_type == "real":
                                 df_selected = df_filtered[
-                                    df_filtered[target_col] == selected_category
+                                    df_filtered[target_col].astype(str).str.strip() == selected_category
                                 ].copy()
 
-                                st.markdown("---")
                                 st.markdown(f"### 📋 Dadus Reál – {selected_category}")
-                                st.info(
-                                    f"Total funsionáriu iha kategoria **{selected_category}**: "
-                                    f"{len(df_selected)}"
-                                )
+                                st.info(f"Total funsionáriu: **{len(df_selected)}**")
 
-                                columns_real = [
-                                    "controlo_ativo_identificacao", "nome_pessoal",
-                                    "id_sigap", "id_grp", "sexo", "local_trabalho",
-                                    "cargo", "Asiduidade", "Pontualidade",
-                                    "Produtividade", "Kualidade_Servisu", "Kooperasaun",
-                                    "Inisiativa", "Disiplina", "Responsabilidade",
-                                    target_col,
-                                ]
-                                columns_real = [
-                                    col for col in columns_real
-                                    if col in df_selected.columns
+                                columns_show = [
+                                    "controlo_ativo_identificacao", "nome_pessoal", "id_sigap",
+                                    "id_grp", "sexo", "local_trabalho", "cargo",
+                                    "Asiduidade", "Pontualidade", "Produtividade",
+                                    "Kualidade_Servisu", "Kooperasaun", "Inisiativa",
+                                    "Disiplina", "Responsabilidade", target_col
                                 ]
 
-                                st.dataframe(
-                                    df_selected[columns_real],
-                                    use_container_width=True,
-                                    hide_index=True,
-                                )
+                                columns_show = [c for c in columns_show if c in df_selected.columns]
+                                st.dataframe(df_selected[columns_show], use_container_width=True, hide_index=True)
 
-                                csv_real = df_selected.to_csv(index=False).encode("utf-8")
+                                csv_data = df_selected.to_csv(index=False).encode("utf-8")
                                 st.download_button(
-                                    label="📥 Download Dadus Reál (CSV)",
-                                    data=csv_real,
-                                    file_name=f"dadus_real_{selected_category}.csv",
-                                    mime="text/csv",
-                                    key=f"download_real_{selected_category}",
+                                    "📥 Download Dadus Reál (CSV)", csv_data,
+                                    f"dadus_real_{selected_category}.csv", "text/csv",
+                                    key=f"download_real_comparison_{selected_category}"
                                 )
 
-                            elif curve_number == 1:
-                                # Predisaun: filtra husi koluna Prediksaun.
+                            else:
                                 df_selected = df_filtered[
-                                    df_filtered["Prediksaun"] == selected_category
+                                    df_filtered["Prediksaun"].astype(str).str.strip() == selected_category
                                 ].copy()
 
-                                st.markdown("---")
-                                st.markdown(
-                                    f"### 🔮 Dadus Prediksaun Decision Tree – {selected_category}"
-                                )
-                                st.info(
-                                    f"Total funsionáriu ne'ebé Decision Tree prediz "
-                                    f"**{selected_category}**: {len(df_selected)}"
-                                )
+                                st.markdown(f"### 🔮 Dadus Prediksaun Decision Tree – {selected_category}")
+                                st.info(f"Total funsionáriu ne'ebé Decision Tree prediz: **{len(df_selected)}**")
 
-                                columns_pred = [
-                                    "controlo_ativo_identificacao", "nome_pessoal",
-                                    "id_sigap", "id_grp", "sexo", "local_trabalho",
-                                    "cargo", "Asiduidade", "Pontualidade",
-                                    "Produtividade", "Kualidade_Servisu", "Kooperasaun",
-                                    "Inisiativa", "Disiplina", "Responsabilidade",
-                                    target_col, "Prediksaun",
-                                ]
-                                columns_pred = [
-                                    col for col in columns_pred
-                                    if col in df_selected.columns
+                                columns_show = [
+                                    "controlo_ativo_identificacao", "nome_pessoal", "id_sigap",
+                                    "id_grp", "sexo", "local_trabalho", "cargo",
+                                    "Asiduidade", "Pontualidade", "Produtividade",
+                                    "Kualidade_Servisu", "Kooperasaun", "Inisiativa",
+                                    "Disiplina", "Responsabilidade", target_col, "Prediksaun"
                                 ]
 
-                                st.dataframe(
-                                    df_selected[columns_pred],
-                                    use_container_width=True,
-                                    hide_index=True,
-                                )
+                                columns_show = [c for c in columns_show if c in df_selected.columns]
+                                st.dataframe(df_selected[columns_show], use_container_width=True, hide_index=True)
 
-                                csv_pred = df_selected.to_csv(index=False).encode("utf-8")
+                                csv_data = df_selected.to_csv(index=False).encode("utf-8")
                                 st.download_button(
-                                    label="📥 Download Dadus Prediksaun (CSV)",
-                                    data=csv_pred,
-                                    file_name=f"dadus_prediksaun_{selected_category}.csv",
-                                    mime="text/csv",
-                                    key=f"download_pred_{selected_category}",
+                                    "📥 Download Dadus Prediksaun (CSV)", csv_data,
+                                    f"dadus_prediksaun_{selected_category}.csv", "text/csv",
+                                    key=f"download_pred_comparison_{selected_category}"
                                 )
+
+                            if st.button("❌ Taka Tabela", key="close_comparison_table"):
+                                st.session_state["comparison_selection"] = None
+                                st.rerun()
 
                 with col_g2:
                     st.markdown("##### 🍩 Proporsaun Kategoria Dezempenu")
