@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 from io import BytesIO
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from reportlab.lib import colors
@@ -18,43 +18,36 @@ except ImportError:
     go = None
     make_subplots = None
 
-# Importa modul sira tuir padraun sistema nian
+# Importa husi modulu seluk sira
 from database import (
     delete_extra_from_db_by_index,
     init_db,
     load_extra_from_db,
     save_extra_to_db,
-    update_extra_in_db_by_index,
     verify_user,
 )
-from models import treinar_modelo
-from ui_components import render_custom_css
+from models import nota_cols, target_col, treinar_modelo
+from ui_components import render_custom_css, render_header, render_kpi_card
 
-# ==========================================
-# KONFIGURASAUN PAJINA NO ESTILU (UI MODEL)
-# ==========================================
+# Konfigurasaun Pajina
 st.set_page_config(
     page_title="Sistema Klasifikasaun CFP - RDTL",
     page_icon="🌳",
     layout="wide",
 )
 
-# Chama custom CSS husi ui_components.py ba tema interfas ne'ebé padronizadu
 render_custom_css()
+init_db()
 
-# Funsaun atu lee ficheiru Excel
 @st.cache_data
 def load_data(file):
     return pd.read_excel(file)
 
-# ==========================================
-# SISTEMA LOGIN / AUTENTIKASAUN
-# ==========================================
+# Gestao Autentikasaun
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
 if not st.session_state["authenticated"]:
-    # CSS parser adicionál espesífiku ba form Login nian hodi la sobu tema
     st.markdown("""
         <style>
         .login-card {
@@ -64,7 +57,7 @@ if not st.session_state["authenticated"]:
             box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
             border-top: 5px solid #2563EB;
             max-width: 450px;
-            margin: 2rem auto;
+            margin: 3rem auto;
         }
         .login-header-title {
             color: #0F172A;
@@ -98,31 +91,27 @@ if not st.session_state["authenticated"]:
         submit_login = st.form_submit_button("ENTRADA / LOGIN", use_container_width=True)
         
         if submit_login:
-            # 1. Tenta verifica via Database (BCrypt)
             if verify_user(username, password):
                 st.session_state["authenticated"] = True
                 st.session_state["user_role"] = username
-                st.success("Login susesu! Redirecting...")
+                st.success("Login susesu!")
                 st.rerun()
-            # 2. Alternativa verifikasaun via Streamlit Secrets
             elif "username" in st.secrets and "password" in st.secrets:
                 if username == st.secrets["username"] and password == st.secrets["password"]:
                     st.session_state["authenticated"] = True
-                    st.success("Login susesu! Redirecting...")
+                    st.success("Login susesu!")
                     st.rerun()
                 else:
-                    st.error("⚠️ Username ka Password sala! Favor koko fali.")
+                    st.error("⚠️ Username ka Password sala!")
             else:
-                st.error("⚠️ Credenciais la válidu ka dadus user la hetan iha database.")
+                st.error("⚠️ Credenciais la válidu ka dadus user la hetan.")
     
     st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# ==========================================
-# APLIKASAUN PRINSIPAL (PÓS-LOGIN)
-# ==========================================
+# Dashboard Prinsipal
+render_header()
 
-# Header & Sidebar Layout
 st.sidebar.markdown("## 🌳 CFP-RDTL Portal")
 st.sidebar.markdown("---")
 
@@ -130,29 +119,15 @@ if st.sidebar.button("🚪 Logout / Sai", use_container_width=True):
     st.session_state["authenticated"] = False
     st.rerun()
 
-st.markdown('<p class="main-title">🌳 Sistema Klasifikasaun Dezempenu Funsionáriu CFP</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">Aplikasaun Intelijénsia Artifisiál uza algoritmu Decision Tree bazeia ba indikadór Komisaun Função Pública RDTL.</p>', unsafe_allow_html=True)
-
-# Inisializa database SQLite
-init_db()
-
-# Inicializasaun Ba Session States
 if "extra_reports" not in st.session_state:
     st.session_state["extra_reports"] = load_extra_from_db()
-
-if "edit_index" not in st.session_state:
-    st.session_state["edit_index"] = None
 
 if "selected_category" not in st.session_state:
     st.session_state["selected_category"] = None
 
-if "comparison_selection" not in st.session_state:
-    st.session_state["comparison_selection"] = None
-
 if "chart_key_version" not in st.session_state:
     st.session_state["chart_key_version"] = 0
 
-# Funsaun Generál ba Relatóriu PDF
 def generate_pdf_report(df_data, title_report):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
@@ -178,7 +153,7 @@ def generate_pdf_report(df_data, title_report):
             str(row.get("id_sigap", "")),
             str(row.get("local_trabalho", "")),
             str(row.get("cargo", "")),
-            str(row.get("Rezultadu_Avaliasaun", ""))
+            str(row.get(target_col, ""))
         ])
 
     t = Table(table_data, colWidths=[150, 70, 90, 110, 80])
@@ -200,9 +175,6 @@ def generate_pdf_report(df_data, title_report):
     buffer.seek(0)
     return buffer
 
-# ==========================================
-# SIDEBAR GESTAUN DATASET
-# ==========================================
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📁 Gestaun Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
@@ -220,12 +192,6 @@ if uploaded_file is not None:
             "Column22": "Rezultadu_Avaliasaun", "Column23": "temp2",
         }
         df_raw.rename(columns={k: v for k, v in rename_map.items() if k in df_raw.columns}, inplace=True)
-
-        nota_cols = [
-            "Asiduidade", "Pontualidade", "Produtividade", "Kualidade_Servisu",
-            "Kooperasaun", "Inisiativa", "Disiplina", "Responsabilidade"
-        ]
-        target_col = "Rezultadu_Avaliasaun"
 
         missing_cols = [col for col in nota_cols + [target_col] if col not in df_raw.columns]
 
@@ -259,7 +225,7 @@ if uploaded_file is not None:
                 label="⬇️ Download Backup (CSV)", data=csv_full, file_name="dataset_cfp_filtrado.csv", mime="text/csv", use_container_width=True
             )
 
-            model, le, X_train, X_test, y_train, y_test = treinar_modelo(df, nota_cols, target_col)
+            model, le, X_train, X_test, y_train, y_test = treinar_modelo(df)
             df_filtered["Prediksaun"] = le.inverse_transform(model.predict(df_filtered[nota_cols]))
             acc = accuracy_score(y_test, model.predict(X_test))
 
@@ -267,7 +233,6 @@ if uploaded_file is not None:
                 "📊 Dashboard Analítiku", "⚙️ Modelu & Performance", "🔮 Prediksaun & Gestaun Dadus"
             ])
 
-            # TAB 1: DASHBOARD ANALÍTIKU
             with tab1:
                 st.markdown("### 📈 Sumáriu Dezempenu Funsionáriu")
                 total_funs = len(df_filtered)
@@ -286,19 +251,24 @@ if uploaded_file is not None:
 
                 col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
                 with col_m1:
-                    if st.button(f"📊 Total Funsionáriu\n\n{total_funs}", key="btn_m1", use_container_width=True):
+                    render_kpi_card("Total Funsionáriu", str(total_funs), "👥 Dadus Filtradu")
+                    if st.button("Ver Dadus Tomak", key="btn_m1", use_container_width=True):
                         st.session_state["selected_category"] = "Tomak" if st.session_state["selected_category"] != "Tomak" else None
                 with col_m2:
-                    if st.button(f"⭐ Muito Bom\n\nReál: {mb_real_pct:.1f}%\nPred: {mb_pred_pct:.1f}%", key="btn_m2", use_container_width=True):
+                    render_kpi_card("Muito Bom", f"{mb_real_pct:.1f}%", f"Pred: {mb_pred_pct:.1f}%")
+                    if st.button("Filtru Muito Bom", key="btn_m2", use_container_width=True):
                         st.session_state["selected_category"] = "Muito Bom" if st.session_state["selected_category"] != "Muito Bom" else None
                 with col_m3:
-                    if st.button(f"✨ Bom\n\nReál: {b_real_pct:.1f}%\nPred: {b_pred_pct:.1f}%", key="btn_m3", use_container_width=True):
+                    render_kpi_card("Bom", f"{b_real_pct:.1f}%", f"Pred: {b_pred_pct:.1f}%")
+                    if st.button("Filtru Bom", key="btn_m3", use_container_width=True):
                         st.session_state["selected_category"] = "Bom" if st.session_state["selected_category"] != "Bom" else None
                 with col_m4:
-                    if st.button(f"📌 Suficiente\n\nReál: {s_real_pct:.1f}%\nPred: {s_pred_pct:.1f}%", key="btn_m4", use_container_width=True):
+                    render_kpi_card("Suficiente", f"{s_real_pct:.1f}%", f"Pred: {s_pred_pct:.1f}%")
+                    if st.button("Filtru Suficiente", key="btn_m4", use_container_width=True):
                         st.session_state["selected_category"] = "Suficiente" if st.session_state["selected_category"] != "Suficiente" else None
                 with col_m5:
-                    if st.button(f"⚠️ Insuficiente\n\nReál: {i_real_pct:.1f}%\nPred: {i_pred_pct:.1f}%", key="btn_m5", use_container_width=True):
+                    render_kpi_card("Insuficiente", f"{i_real_pct:.1f}%", f"Pred: {i_pred_pct:.1f}%")
+                    if st.button("Filtru Insuficiente", key="btn_m5", use_container_width=True):
                         st.session_state["selected_category"] = "Insuficiente" if st.session_state["selected_category"] != "Insuficiente" else None
 
                 selected_cat = st.session_state["selected_category"]
@@ -337,12 +307,10 @@ if uploaded_file is not None:
 
                         fig_compare = go.Figure()
                         fig_compare.add_trace(go.Bar(
-                            name="Dadus Reál", x=categories, y=real_counts, marker_color="#2563EB",
-                            customdata=[[cat, "real"] for cat in categories]
+                            name="Dadus Reál", x=categories, y=real_counts, marker_color="#2563EB"
                         ))
                         fig_compare.add_trace(go.Bar(
-                            name="Prediksaun Tree", x=categories, y=pred_counts, marker_color="#60A5FA",
-                            customdata=[[cat, "prediksaun"] for cat in categories]
+                            name="Prediksaun Tree", x=categories, y=pred_counts, marker_color="#60A5FA"
                         ))
                         fig_compare.update_layout(barmode="group", height=400, margin=dict(l=20, r=20, t=30, b=20))
 
@@ -365,7 +333,6 @@ if uploaded_file is not None:
                         chart_key_donut = f"grafiku_donut_{st.session_state['chart_key_version']}"
                         st.plotly_chart(fig_donut, use_container_width=True, key=chart_key_donut)
 
-            # TAB 2: MODELU & PERFORMANCE
             with tab2:
                 st.subheader("📋 Amostra Dadus (Preview)")
                 st.dataframe(df_filtered.head(10), use_container_width=True)
@@ -400,7 +367,6 @@ if uploaded_file is not None:
                 plot_tree(vis_model, feature_names=nota_cols, class_names=le.classes_, filled=True, rounded=True, ax=ax_tree, fontsize=9)
                 st.pyplot(fig_tree)
 
-            # TAB 3: PREDIKSAUN & GESTAUN DADUS
             with tab3:
                 st.subheader("🔍 Prediksaun Funsionáriu Foun & Gestaun Dadus")
                 extra_records = load_extra_from_db()
@@ -413,7 +379,7 @@ if uploaded_file is not None:
                         with c2: st.write(f"📍 {rec.get('local_trabalho')}")
                         with c3: st.write(f"💼 {rec.get('cargo')}")
                         with c4:
-                            res_val = rec.get('Rezultadu_Avaliasaun', 'N/A')
+                            res_val = rec.get(target_col, 'N/A')
                             sub_res, sub_del = st.columns([2, 1])
                             with sub_res: st.markdown(f"⭐ **{res_val}**")
                             with sub_del:
@@ -470,7 +436,7 @@ if uploaded_file is not None:
                                 "sexo": sexo_input, "local_trabalho": local_input, "cargo": cargo_input,
                                 "Asiduidade": asid, "Pontualidade": pont, "Produtividade": prod,
                                 "Kualidade_Servisu": kual, "Kooperasaun": koop, "Inisiativa": inis,
-                                "Disiplina": disi, "Responsabilidade": resp, "Rezultadu_Avaliasaun": pred_label
+                                "Disiplina": disi, "Responsabilidade": resp, target_col: pred_label
                             }
                             save_extra_to_db(record)
                             st.success(f"✅ Prediksaun ba **{nome_input}**: **{pred_label}**!")
