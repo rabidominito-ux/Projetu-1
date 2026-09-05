@@ -3,4 +3,5 @@ import streamlit as st
 
 @st.cache_data
 def load_data(file):
-    return pd.read_excel(file, sheet_name="Sheet1", header=0)
+    """Lê ficheiro Excel (.xlsx) ho re-uso em cache"""
+    return pd.read_excel(file)
