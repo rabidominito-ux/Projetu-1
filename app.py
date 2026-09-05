@@ -30,7 +30,7 @@ from ui_components import render_custom_css
 
 # Konfigurasaun Pajina
 st.set_page_config(
-    page_title="Sistema Klasifikasaun CFP - RDTL",
+    page_title="Sistema Klasifikasaun CFP - Kapítulu IV",
     page_icon="🌳",
     layout="wide",
 )
@@ -40,9 +40,7 @@ render_custom_css()
 def load_data(file):
     return pd.read_excel(file)
 
-# ==========================================
-# SISTEMA LOGIN / AUTENTIKASAUN
-# ==========================================
+# Autentikasaun / Login
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
@@ -81,8 +79,8 @@ if not st.session_state["authenticated"]:
         """, unsafe_allow_html=True)
         
         with st.form("login_form"):
-            username = st.text_input("Username:", placeholder="Hatama ita-nia username")
-            password = st.text_input("Password:", type="password", placeholder="Hatama ita-nia password")
+            username = st.text_input("Username:", placeholder="Hatama username")
+            password = st.text_input("Password:", type="password", placeholder="Hatama password")
             submit_login = st.form_submit_button("ENTRADA / LOGIN")
             
             if submit_login:
@@ -94,85 +92,30 @@ if not st.session_state["authenticated"]:
                     else:
                         st.error("⚠️ Username ka Password sala!")
                 except Exception:
-                    # Fallback ba test/demo
                     if username == "admin" and password == "admin123":
                         st.session_state["authenticated"] = True
                         st.rerun()
                     else:
-                        st.error("⚠️ Konfigurasaun Secrets seidauk ihak Streamlit Cloud.")
+                        st.error("⚠️ Konfigurasaun Secrets/Credentials seidauk iha.")
         st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# ==========================================
-# APLIKASAUN PRINSIPAL (PÓS-LOGIN)
-# ==========================================
+# Main Application Interface
 st.sidebar.markdown("### 🌳 CFP-RDTL Portal")
 st.sidebar.markdown("---")
 if st.sidebar.button("🚪 Logout / Sai"):
     st.session_state["authenticated"] = False
     st.rerun()
 
-st.markdown('<p class="main-title">🌳 Sistema Klasifikasaun Dezempenu CFP - Kapítulu IV</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">Sistem Intelijénsia Artifisiál Decision Tree ba Analíza, Implementasaun, no Relatóriu Evaluasaun Kapítulu IV.</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-title">🌳 Sistema Klasifikasaun Dezempenu CFP</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">Interface ne' + "'" + 'ebé alinha diretu ho Referénsia Kapítulu IV (Rezultadu, Evaluasaun & Diskusaun Decision Tree).</p>', unsafe_allow_html=True)
 
 init_db()
 
 if "extra_reports" not in st.session_state:
     st.session_state["extra_reports"] = load_extra_from_db()
-if "edit_index" not in st.session_state:
-    st.session_state["edit_index"] = None
-if "selected_category" not in st.session_state:
-    st.session_state["selected_category"] = None
-if "comparison_selection" not in st.session_state:
-    st.session_state["comparison_selection"] = None
-if "chart_key_version" not in st.session_state:
-    st.session_state["chart_key_version"] = 0
 
-def generate_pdf_report(df_data, title_report):
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
-    elements = []
-    
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=11, textColor=colors.HexColor('#1E3A8A'), spaceAfter=2, alignment=1, fontName='Helvetica-Bold')
-    subtitle_style = ParagraphStyle('SubTitleStyle', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#4B5563'), spaceAfter=15, alignment=1, fontName='Helvetica')
-
-    elements.append(Paragraph("REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE", title_style))
-    elements.append(Paragraph("COMISSÃO DA FUNÇÃO PÚBLICA (CFP)", title_style))
-    elements.append(Paragraph(title_report, subtitle_style))
-    elements.append(Spacer(1, 5))
-
-    table_data = [["Naran Pessoal", "ID SIGAP", "Munisípiu", "Kargo", "Avaliasaun"]]
-    for _, row in df_data.iterrows():
-        table_data.append([
-            str(row.get("nome_pessoal", "")),
-            str(row.get("id_sigap", "")),
-            str(row.get("local_trabalho", "")),
-            str(row.get("cargo", "")),
-            str(row.get("Rezultadu_Avaliasaun", ""))
-        ])
-
-    t = Table(table_data, colWidths=[140, 70, 90, 110, 80])
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E3A8A')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 9),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F8FAFC')),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 8),
-    ]))
-    
-    elements.append(t)
-    doc.build(elements)
-    buffer.seek(0)
-    return buffer
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 📁 Gestaun Dataset")
+st.sidebar.markdown("### 📁 Upload Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload ficheiru Excel (.xlsx)", type=["xlsx"])
 
 if uploaded_file is not None:
@@ -192,231 +135,164 @@ if uploaded_file is not None:
         nota_cols = ["Asiduidade", "Pontualidade", "Produtividade", "Kualidade_Servisu", "Kooperasaun", "Inisiativa", "Disiplina", "Responsabilidade"]
         target_col = "Rezultadu_Avaliasaun"
 
-        missing_cols = [col for col in nota_cols + [target_col] if col not in df_raw.columns]
+        df_base = df_raw.dropna(subset=nota_cols + [target_col]).copy()
+        for col in nota_cols:
+            df_base[col] = pd.to_numeric(df_base[col], errors="coerce")
 
-        if len(missing_cols) > 0:
-            st.sidebar.error(f"⚠️ Falta koluna: {', '.join(missing_cols)}")
+        st.session_state["extra_reports"] = load_extra_from_db()
+        if len(st.session_state["extra_reports"]) > 0:
+            df_extra = pd.DataFrame(st.session_state["extra_reports"])
+            df = pd.concat([df_base, df_extra], ignore_index=True)
+            df = df.drop_duplicates(subset=["id_sigap"], keep="last")
         else:
-            df_base = df_raw.dropna(subset=nota_cols + [target_col]).copy()
-            for col in nota_cols:
-                df_base[col] = pd.to_numeric(df_base[col], errors="coerce")
+            df = df_base
 
-            st.session_state["extra_reports"] = load_extra_from_db()
-            if len(st.session_state["extra_reports"]) > 0:
-                df_extra = pd.DataFrame(st.session_state["extra_reports"])
-                df = pd.concat([df_base, df_extra], ignore_index=True)
-                df = df.drop_duplicates(subset=["id_sigap"], keep="last")
-            else:
-                df = df_base
+        model, le, X_train, X_test, y_train, y_test = treinar_modelo(df, nota_cols, target_col)
+        df["Prediksaun"] = le.inverse_transform(model.predict(df[nota_cols]))
+        acc = accuracy_score(y_test, model.predict(X_test))
 
-            st.sidebar.markdown("---")
-            st.sidebar.markdown("### 🔍 Filtru Globál Dadus")
-            cargo_list = ["Tomak (Hotu-hotu)"] + sorted(list(df["cargo"].dropna().unique()))
-            selected_cargo = st.sidebar.selectbox("Filtru Kargo:", cargo_list)
+        # TABS STRUCTURA SINCRO HO KAPÍTULU IV
+        tab1, tab2, tab3 = st.tabs([
+            "📖 KAPÍTULU IV: Rezultadu & Diskusaun", 
+            "📊 Dashboard & Komparasaun Prediksaun", 
+            "🔮 Prediksaun Funsionáriu Foun"
+        ])
 
-            df_filtered = df.copy()
-            if selected_cargo != "Tomak (Hotu-hotu)":
-                df_filtered = df_filtered[df_filtered["cargo"] == selected_cargo]
+        # ------------------------------------------------------------------
+        # TAB 1: KAPÍTULU IV (ESTRUTURA REFERÉNSIA PRINSIPAL)
+        # ------------------------------------------------------------------
+        with tab1:
+            st.markdown("""
+                <div style="background-color: #EFF6FF; border-left: 5px solid #1E3A8A; padding: 15px 20px; border-radius: 0 8px 8px 0; margin-bottom: 20px;">
+                    <h3 style="margin:0; color:#1E3A8A;">📖 REFERÉNSIA KAPÍTULU IV: REZULTADU NO DISKUSAUN</h3>
+                    <p style="margin:5px 0 0 0; color:#334155;">Seksaun ne'e foti husi dadus analítiku no métrika ne'ebé bazeia ba implementasaun algoritmu Decision Tree.</p>
+                </div>
+            """, unsafe_allow_html=True)
 
-            model, le, X_train, X_test, y_train, y_test = treinar_modelo(df, nota_cols, target_col)
-            df_filtered["Prediksaun"] = le.inverse_transform(model.predict(df_filtered[nota_cols]))
-            acc = accuracy_score(y_test, model.predict(X_test))
+            # 4.1 Metrics & Confusion Matrix
+            st.markdown("#### 4.1. Rezultadu Akurasi no Métrika Evaluasaun")
+            
+            y_pred_test = model.predict(X_test)
+            unique_labels = np.unique(np.concatenate((y_test, y_pred_test)))
+            present_class_names = [le.classes_[i] for i in unique_labels]
+            report_dict = classification_report(y_test, y_pred_test, labels=unique_labels, target_names=present_class_names, output_dict=True, zero_division=0)
+            
+            m1, m2, m3, m4 = st.columns(4)
+            with m1:
+                st.markdown(f'<div class="metric-card"><div class="metric-title">Accuracy</div><div class="metric-value">{acc*100:.1f}%</div></div>', unsafe_allow_html=True)
+            with m2:
+                macro_prec = report_dict['macro avg']['precision'] * 100
+                st.markdown(f'<div class="metric-card"><div class="metric-title">Precision (Avg)</div><div class="metric-value">{macro_prec:.1f}%</div></div>', unsafe_allow_html=True)
+            with m3:
+                macro_rec = report_dict['macro avg']['recall'] * 100
+                st.markdown(f'<div class="metric-card"><div class="metric-title">Recall (Avg)</div><div class="metric-value">{macro_rec:.1f}%</div></div>', unsafe_allow_html=True)
+            with m4:
+                macro_f1 = report_dict['macro avg']['f1-score'] * 100
+                st.markdown(f'<div class="metric-card"><div class="metric-title">F1-Score (Avg)</div><div class="metric-value">{macro_f1:.1f}%</div></div>', unsafe_allow_html=True)
 
-            # STRUKTURA TABS ATUALIZADA HO KAPÍTULU IV
-            tab1, tab2, tab3, tab4 = st.tabs([
-                "📊 Dashboard Analítiku", 
-                "📖 KAPÍTULU IV: Rezultadu & Diskusaun", 
-                "⚙️ Performance Modelu", 
-                "🔮 Prediksaun & Input Dadus"
-            ])
+            st.markdown("<br>", unsafe_allow_html=True)
+            col_tbl, col_cm = st.columns([1.2, 1])
 
-            # ----------------------------------------------------
-            # TAB 1: DASHBOARD
-            # ----------------------------------------------------
-            with tab1:
-                st.markdown("### 📈 Sumáriu Dezempenu Funsionáriu")
-                total_funs = len(df_filtered)
-                
-                counts_real = df_filtered[target_col].value_counts()
-                mb_real_pct = (counts_real.get("Muito Bom", 0) / total_funs) * 100 if total_funs > 0 else 0
-                b_real_pct = (counts_real.get("Bom", 0) / total_funs) * 100 if total_funs > 0 else 0
-                s_real_pct = (counts_real.get("Suficiente", 0) / total_funs) * 100 if total_funs > 0 else 0
-                i_real_pct = (counts_real.get("Insuficiente", 0) / total_funs) * 100 if total_funs > 0 else 0
-
-                counts_pred = df_filtered["Prediksaun"].value_counts()
-                mb_pred_pct = (counts_pred.get("Muito Bom", 0) / total_funs) * 100 if total_funs > 0 else 0
-                b_pred_pct = (counts_pred.get("Bom", 0) / total_funs) * 100 if total_funs > 0 else 0
-                s_pred_pct = (counts_pred.get("Suficiente", 0) / total_funs) * 100 if total_funs > 0 else 0
-                i_pred_pct = (counts_pred.get("Insuficiente", 0) / total_funs) * 100 if total_funs > 0 else 0
-
-                col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
-                with col_m1:
-                    st.markdown(f'<div class="metric-card"><div class="metric-title">Total Funsionáriu</div><div class="metric-value">{total_funs}</div></div>', unsafe_allow_html=True)
-                with col_m2:
-                    st.markdown(f'<div class="metric-card"><div class="metric-title">⭐ Muito Bom</div><div class="metric-value">{mb_real_pct:.1f}%</div><small>Pred: {mb_pred_pct:.1f}%</small></div>', unsafe_allow_html=True)
-                with col_m3:
-                    st.markdown(f'<div class="metric-card"><div class="metric-title">✨ Bom</div><div class="metric-value">{b_real_pct:.1f}%</div><small>Pred: {b_pred_pct:.1f}%</small></div>', unsafe_allow_html=True)
-                with col_m4:
-                    st.markdown(f'<div class="metric-card"><div class="metric-title">📌 Suficiente</div><div class="metric-value">{s_real_pct:.1f}%</div><small>Pred: {s_pred_pct:.1f}%</small></div>', unsafe_allow_html=True)
-                with col_m5:
-                    st.markdown(f'<div class="metric-card"><div class="metric-title">⚠️ Insuficiente</div><div class="metric-value">{i_real_pct:.1f}%</div><small>Pred: {i_pred_pct:.1f}%</small></div>', unsafe_allow_html=True)
-
-                st.markdown("<br>", unsafe_allow_html=True)
-                col_g1, col_g2 = st.columns(2)
-                
-                with col_g1:
-                    st.markdown("##### 📊 Komparasaun Kategoria (Reál vs Prediksaun)")
-                    if go is not None:
-                        categories = ["Muito Bom", "Bom", "Suficiente", "Insuficiente"]
-                        fig_compare = go.Figure()
-                        fig_compare.add_trace(go.Bar(name="Dadus Reál", x=categories, y=[counts_real.get(c,0) for c in categories], marker_color="#1E3A8A"))
-                        fig_compare.add_trace(go.Bar(name="Prediksaun Tree", x=categories, y=[counts_pred.get(c,0) for c in categories], marker_color="#3B82F6"))
-                        fig_compare.update_layout(barmode="group", height=380, margin=dict(l=20, r=20, t=30, b=20))
-                        st.plotly_chart(fig_compare, use_container_width=True)
-
-                with col_g2:
-                    st.markdown("##### 🍩 Proporsaun Persentajen (Reál vs Prediksaun)")
-                    if go is not None and make_subplots is None:
-                        pass
-                    else:
-                        categories = ["Muito Bom", "Bom", "Suficiente", "Insuficiente"]
-                        fig_donut = make_subplots(rows=1, cols=2, specs=[[{"type": "domain"}, {"type": "domain"}]], subplot_titles=["<b>Reál</b>", "<b>Prediksaun</b>"])
-                        fig_donut.add_trace(go.Pie(labels=categories, values=[counts_real.get(c,0) for c in categories], hole=0.4, name="Reál"), 1, 1)
-                        fig_donut.add_trace(go.Pie(labels=categories, values=[counts_pred.get(c,0) for c in categories], hole=0.4, name="Prediksaun"), 1, 2)
-                        fig_donut.update_layout(height=380, margin=dict(l=10, r=10, t=30, b=10))
-                        st.plotly_chart(fig_donut, use_container_width=True)
-
-            # ----------------------------------------------------
-            # TAB 2: KAPÍTULU IV (REZULTADU NO DISKUSAUN)
-            # ----------------------------------------------------
-            with tab2:
-                st.markdown("""
-                    <div class="capitulo-box">
-                        <h3 style="margin:0; color:#1E3A8A;">📖 KAPÍTULU IV: REZULTADU NO DISKUSAUN</h3>
-                        <p style="margin:5px 0 0 0; color:#334155;">Apresentasaun análiza impementasaun modelu algoritmu Decision Tree ba avaliasaun dezempenu funsionáriu públicos iha Comissão da Função Pública (CFP).</p>
-                    </div>
-                """, unsafe_allow_html=True)
-
-                st.markdown("#### 4.1. Rezultadu Akurasi no Evaluasaun Modelu")
-                st.success(f"🎯 **Akurasi Globál Modelu (Accuracy): {acc * 100:.2f}%**")
-
-                y_pred_test = model.predict(X_test)
-                unique_labels = np.unique(np.concatenate((y_test, y_pred_test)))
-                present_class_names = [le.classes_[i] for i in unique_labels]
-                report_dict = classification_report(y_test, y_pred_test, labels=unique_labels, target_names=present_class_names, output_dict=True, zero_division=0)
+            with col_tbl:
+                st.markdown("**Tabela 4.1: Relatóriu Detalladu Klasifikasaun**")
                 df_report = pd.DataFrame(report_dict).transpose()
+                st.dataframe(df_report.style.format(subset=["precision", "recall", "f1-score", "support"], formatter="{:.2f}"), use_container_width=True)
 
-                col_c1, col_c2 = st.columns([1.2, 1])
-                with col_c1:
-                    st.markdown("**Tabela 4.1: Métrika Evaluasaun Kualidade Klasifikasaun (Precision, Recall, F1-Score)**")
-                    st.dataframe(df_report.style.format(subset=["precision", "recall", "f1-score", "support"], formatter="{:.2f}"), use_container_width=True)
-                
-                with col_c2:
-                    st.markdown("**Matris Konfuzaun (Confusion Matrix)**")
-                    cm = confusion_matrix(y_test, y_pred_test)
-                    fig_cm, ax_cm = plt.subplots(figsize=(4, 3))
-                    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=present_class_names, yticklabels=present_class_names, ax=ax_cm)
-                    plt.ylabel('Valór Ne' + "'" + 'e Duni (Actual)')
-                    plt.xlabel('Valór Prediksaun (Predicted)')
-                    st.pyplot(fig_cm)
+            with col_cm:
+                st.markdown("**Figura 4.1: Confusion Matrix (Matris Konfuzaun)**")
+                cm = confusion_matrix(y_test, y_pred_test)
+                fig_cm, ax_cm = plt.subplots(figsize=(4, 2.8))
+                sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=present_class_names, yticklabels=present_class_names, ax=ax_cm)
+                plt.ylabel('Actual')
+                plt.xlabel('Predicted')
+                st.pyplot(fig_cm)
 
-                st.markdown("---")
-                st.markdown("#### 4.2. Estrutura Desizaun & Regra Sira (Decision Tree Rules)")
-                st.write("Estrutura hirak ne'e mak sai hanesan matadalan desizaun algoritmu nian ba atribuisaun kategoria dezempenu funsionáriu:")
-                
-                fig_tree_cap, ax_tree_cap = plt.subplots(figsize=(14, 6), dpi=100)
-                plot_tree(model, feature_names=nota_cols, class_names=le.classes_, filled=True, rounded=True, ax=ax_tree_cap, fontsize=8)
-                st.pyplot(fig_tree_cap)
+            st.markdown("---")
 
-                st.markdown("---")
-                st.markdown("#### 4.3. Diskusaun no Konklusaun Kapítulu IV")
-                st.info(f"""
-                **Análiza Diskusaun:**
-                - Algoritmu Decision Tree konsege halo prediksaun kategoria dezempenu ho akurasi **{acc * 100:.2f}%**.
-                - Indikadór sira ne'ebé ho **impaktu boot liu** ba foti desizaun mak kriteria sira hanesan **Produtividade**, **Kualidade Servisu**, no **Asiduidade**.
-                - Implementasaun dixital ne'e fo fasilidade ba Komisaun Função Pública (CFP) atu redus tempu halo evaluasaun ho manuál no minimiza erru umannu (*human error*).
-                """)
+            # 4.2 Decision Tree Visual
+            st.markdown("#### 4.2. Estrutura Regra Árbore Desizaun (Decision Tree)")
+            fig_tree, ax_tree = plt.subplots(figsize=(15, 6), dpi=100)
+            plot_tree(model, feature_names=nota_cols, class_names=le.classes_, filled=True, rounded=True, ax=ax_tree, fontsize=8)
+            st.pyplot(fig_tree)
 
-            # ----------------------------------------------------
-            # TAB 3: PERFORMANCE MODELU
-            # ----------------------------------------------------
-            with tab3:
-                st.subheader("📋 Amostra Dadus (Preview)")
-                st.dataframe(df_filtered.head(10), use_container_width=True)
-                st.markdown("---")
-                st.subheader("🌳 Vizualizasaun Árbore Desizaun Interativu")
-                max_depth_vis = st.slider("Hili Profundidade Árbore (Max Depth)", 1, 5, 3, key="tree_depth_slider")
-                vis_model = DecisionTreeClassifier(criterion="entropy", max_depth=max_depth_vis, random_state=42)
-                vis_model.fit(X_train, y_train)
-                fig_tree, ax_tree = plt.subplots(figsize=(16, 8), dpi=100)
-                plot_tree(vis_model, feature_names=nota_cols, class_names=le.classes_, filled=True, rounded=True, ax=ax_tree, fontsize=9)
-                st.pyplot(fig_tree)
+            st.markdown("---")
 
-            # ----------------------------------------------------
-            # TAB 4: PREDIKSAUN NO INPUT DADUS FOUN
-            # ----------------------------------------------------
-            with tab4:
-                st.subheader("🔍 Prediksaun Funsionáriu Foun & Gestaun Dadus")
-                extra_records = load_extra_from_db()
-                
-                if len(extra_records) > 0:
-                    st.markdown("##### 📋 Lista Dadus Funsionáriu Foun Rejisitadu")
-                    df_extra_view = pd.DataFrame(extra_records)
-                    st.dataframe(df_extra_view[["nome_pessoal", "id_sigap", "local_trabalho", "cargo", "Rezultadu_Avaliasaun"]], use_container_width=True)
-                
-                st.markdown("---")
-                st.markdown("#### ➕ Input Dadus Funsionáriu Foun")
-                
-                with st.form("funsionariu_form"):
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        nome_input = st.text_input("Naran Pessoal:")
-                        id_sigap_input = st.text_input("ID SIGAP:")
-                        sexo_input = st.selectbox("Sexo:", ["M", "F"])
-                        local_input = st.selectbox("Munisípiu:", ["Díli", "Baucau", "Bobonaro", "Ermera", "Liquiçá", "Aileu", "Ainaro", "Covalima", "Manatuto", "Manufahi", "Lautém", "Oe-Cusse Ambeno", "Viqueque"])
-                    with c2:
-                        id_grp_input = st.text_input("ID GRP:")
-                        cargo_input = st.text_input("Kargo:", value="Técnico Superior")
-                        funcao_input = st.text_input("Funsaun:", value="Permanente")
+            # 4.3 Feature Importance (Diskusaun)
+            st.markdown("#### 4.3. Diskusaun Indikadór Sira (Feature Importance)")
+            importances = model.feature_importances_
+            feat_df = pd.DataFrame({"Indikadór": nota_cols, "Importánsia": importances}).sort_values(by="Importánsia", ascending=True)
 
-                    st.markdown("##### 📊 Nota Indikadór Sira (1.0 - 5.0)")
-                    n1, n2, n3, n4 = st.columns(4)
-                    with n1:
-                        asid = st.number_input("Asiduidade:", 1.0, 5.0, 4.0, step=0.1)
-                        pont = st.number_input("Pontualidade:", 1.0, 5.0, 4.0, step=0.1)
-                    with n2:
-                        prod = st.number_input("Produtividade:", 1.0, 5.0, 4.0, step=0.1)
-                        kual = st.number_input("Kualidade Servisu:", 1.0, 5.0, 4.0, step=0.1)
-                    with n3:
-                        koop = st.number_input("Kooperasaun:", 1.0, 5.0, 4.0, step=0.1)
-                        inis = st.number_input("Inisiativa:", 1.0, 5.0, 4.0, step=0.1)
-                    with n4:
-                        disi = st.number_input("Disiplina:", 1.0, 5.0, 4.0, step=0.1)
-                        resp = st.number_input("Responsabilidade:", 1.0, 5.0, 4.0, step=0.1)
+            fig_feat, ax_feat = plt.subplots(figsize=(8, 3.5))
+            ax_feat.barh(feat_df["Indikadór"], feat_df["Importánsia"], color="#1E3A8A")
+            ax_feat.set_xlabel("Nível Importánsia")
+            st.pyplot(fig_feat)
 
-                    submit_funs = st.form_submit_button("🔮 Prediz & Rai Dadus")
+        # ------------------------------------------------------------------
+        # TAB 2: DASHBOARD GENERAL
+        # ------------------------------------------------------------------
+        with tab2:
+            st.markdown("### 📊 Visao Geral & Komparasaun")
+            counts_real = df[target_col].value_counts()
+            counts_pred = df["Prediksaun"].value_counts()
 
-                    if submit_funs:
-                        if not nome_input or not id_sigap_input:
-                            st.error("⚠️ Naran no ID SIGAP la bele mamuk!")
-                        else:
-                            input_df = pd.DataFrame([[asid, pont, prod, kual, koop, inis, disi, resp]], columns=nota_cols)
-                            pred_encoded = model.predict(input_df)[0]
-                            pred_label = le.inverse_transform([pred_encoded])[0]
+            if go is not None:
+                categories = ["Muito Bom", "Bom", "Suficiente", "Insuficiente"]
+                fig_compare = go.Figure()
+                fig_compare.add_trace(go.Bar(name="Dadus Reál", x=categories, y=[counts_real.get(c,0) for c in categories], marker_color="#1E3A8A"))
+                fig_compare.add_trace(go.Bar(name="Prediksaun Tree", x=categories, y=[counts_pred.get(c,0) for c in categories], marker_color="#3B82F6"))
+                fig_compare.update_layout(barmode="group", height=400)
+                st.plotly_chart(fig_compare, use_container_width=True)
 
-                            record = {
-                                "controlo_ativo_identificacao": "ATIVO",
-                                "nome_pessoal": nome_input, "id_sigap": id_sigap_input, "id_grp": id_grp_input,
-                                "sexo": sexo_input, "local_trabalho": local_input, "funcao": funcao_input, "cargo": cargo_input,
-                                "Asiduidade": asid, "Pontualidade": pont, "Produtividade": prod, "Kualidade_Servisu": kual,
-                                "Kooperasaun": koop, "Inisiativa": inis, "Disiplina": disi, "Responsabilidade": resp,
-                                "Rezultadu_Avaliasaun": pred_label
-                            }
-                            save_extra_to_db(record)
-                            st.success(f"✅ Prediksaun ba **{nome_input}**: **{pred_label}**!")
-                            st.rerun()
+        # ------------------------------------------------------------------
+        # TAB 3: PREDIKSAUN DADUS FOUN
+        # ------------------------------------------------------------------
+        with tab3:
+            st.markdown("### 🔮 Prediksaun Dezempenu Funsionáriu")
+            with st.form("form_funsionariu_foun"):
+                c1, c2 = st.columns(2)
+                with c1:
+                    nome_in = st.text_input("Naran Pessoal:")
+                    sigap_in = st.text_input("ID SIGAP:")
+                    sexo_in = st.selectbox("Sexo:", ["M", "F"])
+                    local_in = st.text_input("Munisípiu / Local:", "Díli")
+                with c2:
+                    grp_in = st.text_input("ID GRP:")
+                    cargo_in = st.text_input("Kargo:", "Técnico Superior")
+                    funcao_in = st.text_input("Funsaun:", "Permanente")
 
-    except Exception as e:
-        st.sidebar.error(f"❌ Erru iha procesamentu: {e}")
+                st.markdown("##### 📊 Notas Indikadór (1.0 - 5.0)")
+                n1, n2, n3, n4 = st.columns(4)
+                with n1:
+                    asid = st.number_input("Asiduidade:", 1.0, 5.0, 4.0)
+                    pont = st.number_input("Pontualidade:", 1.0, 5.0, 4.0)
+                with n2:
+                    prod = st.number_input("Produtividade:", 1.0, 5.0, 4.0)
+                    kual = st.number_input("Kualidade Servisu:", 1.0, 5.0, 4.0)
+                with n3:
+                    koop = st.number_input("Kooperasaun:", 1.0, 5.0, 4.0)
+                    inis = st.number_input("Inisiativa:", 1.0, 5.0, 4.0)
+                with n4:
+                    disi = st.number_input("Disiplina:", 1.0, 5.0, 4.0)
+                    resp = st.number_input("Responsabilidade:", 1.0, 5.0, 4.0)
+
+                sub_btn = st.form_submit_button("🔮 Kalkula & Rai Prediksaun")
+
+                if sub_btn:
+                    input_data = pd.DataFrame([[asid, pont, prod, kual, koop, inis, disi, resp]], columns=nota_cols)
+                    pred_val = le.inverse_transform(model.predict(input_data))[0]
+                    
+                    rec = {
+                        "controlo_ativo_identificacao": "ATIVO", "nome_pessoal": nome_in, "id_sigap": sigap_in,
+                        "id_grp": grp_in, "sexo": sexo_in, "local_trabalho": local_in, "funcao": funcao_in,
+                        "cargo": cargo_in, "Asiduidade": asid, "Pontualidade": pont, "Produtividade": prod,
+                        "Kualidade_Servisu": kual, "Kooperasaun": koop, "Inisiativa": inis, "Disiplina": disi,
+                        "Responsabilidade": resp, "Rezultadu_Avaliasaun": pred_val
+                    }
+                    save_extra_to_db(rec)
+                    st.success(f"✅ Prediksaun ba {nome_in}: **{pred_val}**")
+                    st.rerun()
+
+    except Exception as err:
+        st.sidebar.error(f"❌ Erru procesa dadus: {err}")
 else:
-    st.info("👈 Favor upload ficheiru Excel iha sidebar atu hahú haree análiza Kapítulu IV.")
+    st.info("👈 Favor upload ficheiru Excel (.xlsx) iha sidebar atu hahú haree referénsia Kapítulu IV.")
