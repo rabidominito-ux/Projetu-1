@@ -222,7 +222,7 @@ if uploaded_file is not None:
             for col in nota_cols:
                 df_base[col] = pd.to_numeric(df_base[col], errors="coerce")
 
-            # --- CLEANING DADUS HASAI REZULTADU_AV / VALOR SARA ---
+            # --- CLEANING DADUS / HASAI REZULTADU_AV ---
             df_base = df_base.dropna(subset=nota_cols).copy()
             kategoria_validu = ["Bom", "Insuficiente", "Muito Bom", "Suficiente"]
             df_base[target_col] = df_base[target_col].astype(str).str.strip()
@@ -254,7 +254,7 @@ if uploaded_file is not None:
             # Karga modelo .pkl
             model, le = carregar_modelo_colab()
 
-            # Predict ba dadus tomak atu uza iha Dashboard
+            # Predict ba dadus tomak ba Dashboard
             preds_encoded = model.predict(df_filtered[nota_cols])
             df_filtered["Prediksaun"] = le.inverse_transform(preds_encoded)
 
@@ -368,16 +368,14 @@ if uploaded_file is not None:
                 st.markdown("---")
                 st.subheader("🚀 Performance Modelu Decision Tree (Test Set 20% - Hanesan Colab)")
 
-                # --- TRAIN TEST SPLIT ATU HETAN REZULTADU SAMA COLAB (N=43) ---
+                # --- TRAIN-TEST SPLIT (N=43) HODIN HETAN AKURASI SAMA COLAB ---
                 X_data = df_filtered[nota_cols]
                 y_data = le.transform(df_filtered[target_col])
 
-                # Split stratify 20% test set hanesan iha Colab
                 _, X_test, _, y_test = train_test_split(
                     X_data, y_data, test_size=0.20, random_state=42, stratify=y_data
                 )
 
-                # Predict iha Test Set de'it
                 preds_test = model.predict(X_test)
                 acc_test = accuracy_score(y_test, preds_test)
 
@@ -399,9 +397,23 @@ if uploaded_file is not None:
                     st.dataframe(df_report.style.format(subset=["precision", "recall", "f1-score", "support"], formatter="{:.2f}"), use_container_width=True)
 
                 st.markdown("---")
-                st.subheader("🌳 Vizualizasaun Árbore Desizaun (Modelu Exatu husi PKL)")
-                fig_tree, ax_tree = plt.subplots(figsize=(16, 9), dpi=100)
-                plot_tree(model, feature_names=nota_cols, class_names=le.classes_, filled=True, rounded=True, ax=ax_tree, fontsize=8)
+                st.subheader("🌳 Vizualizasaun Árbore Desizaun (Estruturadu & Formal)")
+
+                # --- VIZUALIZASAUN HIGH RESOLUTION (DPI=300) ---
+                fig_tree, ax_tree = plt.subplots(figsize=(22, 12), dpi=300)
+                plot_tree(
+                    model,
+                    feature_names=nota_cols,
+                    class_names=le.classes_,
+                    filled=True,
+                    rounded=True,
+                    proportion=False,
+                    precision=2,
+                    fontsize=7,
+                    ax=ax_tree
+                )
+                plt.title("Árbore Desizaun ba Klasifikasaun Dezempenu CFP-RDTL", fontsize=14, pad=20, fontweight="bold", color="#0F172A")
+                plt.tight_layout()
                 st.pyplot(fig_tree)
 
             with tab3:
