@@ -9,6 +9,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 import seaborn as sns
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import plot_tree
 import joblib
@@ -30,7 +31,7 @@ from database import (
 )
 from ui_components import render_custom_css, render_header, render_kpi_card
 
-# --- DEFINE VARIAVEL GLOBAL ---
+# --- VARIAVEL GLOBAL ---
 nota_cols = [
     "Asiduidade",
     "Pontualidade",
@@ -45,7 +46,7 @@ target_col = "Rezultadu_Avaliasaun"
 MODEL_PATH = "modelu_cfp.pkl"
 
 def carregar_modelo_colab():
-    """Karga diretu modelu PKL husi Colab no prepara LabelEncoder"""
+    """Karga modelu PKL husi Colab no prepara LabelEncoder"""
     model = joblib.load(MODEL_PATH)
     le = LabelEncoder()
     le.fit(["Bom", "Insuficiente", "Muito Bom", "Suficiente"])
@@ -221,13 +222,11 @@ if uploaded_file is not None:
             for col in nota_cols:
                 df_base[col] = pd.to_numeric(df_base[col], errors="coerce")
 
-            # --- HAFUNAN DADUS / DATA CLEANING ---
+            # --- CLEANING DADUS HASAI REZULTADU_AV / VALOR SARA ---
             df_base = df_base.dropna(subset=nota_cols).copy()
             kategoria_validu = ["Bom", "Insuficiente", "Muito Bom", "Suficiente"]
             df_base[target_col] = df_base[target_col].astype(str).str.strip()
-            # Hasai valor sira ne'ebé la'ós kategoria 4 (hanesan 'Rezultadu_Av' ka header ne'ebé boot lakon)
             df_base = df_base[df_base[target_col].isin(kategoria_validu)].copy()
-            # --------------------------------------
 
             st.session_state["extra_reports"] = load_extra_from_db()
             if len(st.session_state["extra_reports"]) > 0:
@@ -252,15 +251,12 @@ if uploaded_file is not None:
                 label="⬇️ Download Backup (CSV)", data=csv_full, file_name="dataset_cfp_filtrado.csv", mime="text/csv", use_container_width=True
             )
 
-            # Karga diretu modelo .pkl husi Colab
+            # Karga modelo .pkl
             model, le = carregar_modelo_colab()
 
-            # Executa prediksaun uzando modelo Colab
+            # Predict ba dadus tomak atu uza iha Dashboard
             preds_encoded = model.predict(df_filtered[nota_cols])
             df_filtered["Prediksaun"] = le.inverse_transform(preds_encoded)
-
-            y_true_encoded = le.transform(df_filtered[target_col])
-            acc = accuracy_score(y_true_encoded, preds_encoded)
 
             tab1, tab2, tab3 = st.tabs([
                 "📊 Dashboard Analítiku", "⚙️ Modelu & Performance", "🔮 Prediksaun & Gestaun Dadus"
@@ -370,23 +366,35 @@ if uploaded_file is not None:
                 st.subheader("📋 Amostra Dadus (Preview)")
                 st.dataframe(df_filtered.head(10), use_container_width=True)
                 st.markdown("---")
-                st.subheader("🚀 Performance Modelu Decision Tree (Husi Colab)")
-                st.success(f"✅ Akurasi Modelu (Accuracy): **{acc * 100:.2f}%**")
+                st.subheader("🚀 Performance Modelu Decision Tree (Test Set 20% - Hanesan Colab)")
+
+                # --- TRAIN TEST SPLIT ATU HETAN REZULTADU SAMA COLAB (N=43) ---
+                X_data = df_filtered[nota_cols]
+                y_data = le.transform(df_filtered[target_col])
+
+                # Split stratify 20% test set hanesan iha Colab
+                _, X_test, _, y_test = train_test_split(
+                    X_data, y_data, test_size=0.20, random_state=42, stratify=y_data
+                )
+
+                # Predict iha Test Set de'it
+                preds_test = model.predict(X_test)
+                acc_test = accuracy_score(y_test, preds_test)
+
+                st.success(f"✅ Akurasi Modelu iha Test Set (20%): **{acc_test * 100:.2f}%**")
 
                 col_eval1, col_eval2 = st.columns(2)
-                cm = confusion_matrix(y_true_encoded, preds_encoded)
+                cm = confusion_matrix(y_test, preds_test)
 
                 with col_eval1:
-                    st.markdown("##### 📉 Confusion Matrix")
+                    st.markdown("##### 📉 Confusion Matrix (Test Set)")
                     fig_cm, ax_cm = plt.subplots(figsize=(5, 4))
                     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False, xticklabels=le.classes_, yticklabels=le.classes_, ax=ax_cm)
                     st.pyplot(fig_cm)
 
                 with col_eval2:
-                    st.markdown("##### 📑 Classification Report")
-                    unique_labels = np.unique(np.concatenate((y_true_encoded, preds_encoded)))
-                    present_class_names = [le.classes_[i] for i in unique_labels]
-                    report_dict = classification_report(y_true_encoded, preds_encoded, labels=unique_labels, target_names=present_class_names, output_dict=True, zero_division=0)
+                    st.markdown("##### 📑 Classification Report (Test Set)")
+                    report_dict = classification_report(y_test, preds_test, target_names=le.classes_, output_dict=True, zero_division=0)
                     df_report = pd.DataFrame(report_dict).transpose()
                     st.dataframe(df_report.style.format(subset=["precision", "recall", "f1-score", "support"], formatter="{:.2f}"), use_container_width=True)
 
