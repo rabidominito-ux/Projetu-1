@@ -1,9 +1,6 @@
 import streamlit as st
 
 def render_custom_css():
-    """
-    Aplica CSS personalizadu ba Streamlit hodi unifika layout.
-    """
     st.markdown("""
         <style>
         .main {
@@ -39,9 +36,6 @@ def render_custom_css():
     """, unsafe_allow_html=True)
 
 def render_header():
-    """
-    Renderiza header ofisiál CFP-RDTL.
-    """
     st.markdown("""
         <div style="background-color: #1E293B; padding: 1.5rem; border-radius: 10px; margin-bottom: 2rem; color: white;">
             <div style="display: flex; align-items: center; gap: 1rem;">
@@ -59,9 +53,6 @@ def render_header():
     """, unsafe_allow_html=True)
 
 def render_kpi_card(title, value, subtext=""):
-    """
-    Renderiza kártaun KPI padronizadu.
-    """
     st.markdown(f"""
         <div class="metric-card">
             <div class="metric-title">{title}</div>
