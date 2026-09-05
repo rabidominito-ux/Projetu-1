@@ -8,7 +8,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 import seaborn as sns
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.tree import plot_tree
 import streamlit as st
 
 try:
@@ -18,7 +18,6 @@ except ImportError:
     go = None
     make_subplots = None
 
-# Importa husi modulu seluk sira
 from database import (
     delete_extra_from_db_by_index,
     init_db,
@@ -26,10 +25,9 @@ from database import (
     save_extra_to_db,
     verify_user,
 )
-from models import nota_cols, target_col, treinar_modelo
+from models import nota_cols, target_col, carregar_modelo_colab
 from ui_components import render_custom_css, render_header, render_kpi_card
 
-# Konfigurasaun Pajina
 st.set_page_config(
     page_title="Sistema Klasifikasaun CFP - RDTL",
     page_icon="🌳",
@@ -43,7 +41,6 @@ init_db()
 def load_data(file):
     return pd.read_excel(file)
 
-# Gestao Autentikasaun
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
@@ -109,7 +106,6 @@ if not st.session_state["authenticated"]:
     st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# Dashboard Prinsipal
 render_header()
 
 st.sidebar.markdown("## 🌳 CFP-RDTL Portal")
@@ -225,9 +221,15 @@ if uploaded_file is not None:
                 label="⬇️ Download Backup (CSV)", data=csv_full, file_name="dataset_cfp_filtrado.csv", mime="text/csv", use_container_width=True
             )
 
-            model, le, X_train, X_test, y_train, y_test = treinar_modelo(df)
-            df_filtered["Prediksaun"] = le.inverse_transform(model.predict(df_filtered[nota_cols]))
-            acc = accuracy_score(y_test, model.predict(X_test))
+            # Karga diretu modelo Colab husi models.py
+            model, le = carregar_modelo_colab()
+
+            # Executa prediksaun uzando modelo Colab
+            preds_encoded = model.predict(df_filtered[nota_cols])
+            df_filtered["Prediksaun"] = le.inverse_transform(preds_encoded)
+
+            y_true_encoded = le.transform(df_filtered[target_col])
+            acc = accuracy_score(y_true_encoded, preds_encoded)
 
             tab1, tab2, tab3 = st.tabs([
                 "📊 Dashboard Analítiku", "⚙️ Modelu & Performance", "🔮 Prediksaun & Gestaun Dadus"
@@ -337,12 +339,11 @@ if uploaded_file is not None:
                 st.subheader("📋 Amostra Dadus (Preview)")
                 st.dataframe(df_filtered.head(10), use_container_width=True)
                 st.markdown("---")
-                st.subheader("🚀 Performance Modelu Decision Tree")
+                st.subheader("🚀 Performance Modelu Decision Tree (Husi Colab)")
                 st.success(f"✅ Akurasi Modelu (Accuracy): **{acc * 100:.2f}%**")
 
                 col_eval1, col_eval2 = st.columns(2)
-                y_pred_test = model.predict(X_test)
-                cm = confusion_matrix(y_test, y_pred_test)
+                cm = confusion_matrix(y_true_encoded, preds_encoded)
 
                 with col_eval1:
                     st.markdown("##### 📉 Confusion Matrix")
@@ -352,19 +353,16 @@ if uploaded_file is not None:
 
                 with col_eval2:
                     st.markdown("##### 📑 Classification Report")
-                    unique_labels = np.unique(np.concatenate((y_test, y_pred_test)))
+                    unique_labels = np.unique(np.concatenate((y_true_encoded, preds_encoded)))
                     present_class_names = [le.classes_[i] for i in unique_labels]
-                    report_dict = classification_report(y_test, y_pred_test, labels=unique_labels, target_names=present_class_names, output_dict=True, zero_division=0)
+                    report_dict = classification_report(y_true_encoded, preds_encoded, labels=unique_labels, target_names=present_class_names, output_dict=True, zero_division=0)
                     df_report = pd.DataFrame(report_dict).transpose()
                     st.dataframe(df_report.style.format(subset=["precision", "recall", "f1-score", "support"], formatter="{:.2f}"), use_container_width=True)
 
                 st.markdown("---")
-                st.subheader("🌳 Vizualizasaun Árbore Desizaun")
-                max_depth_vis = st.slider("Hili Profundidade Árbore (Max Depth)", 1, 5, 3, key="tree_depth_slider")
-                vis_model = DecisionTreeClassifier(criterion="entropy", max_depth=max_depth_vis, random_state=42)
-                vis_model.fit(X_train, y_train)
+                st.subheader("🌳 Vizualizasaun Árbore Desizaun (Modelu Exatu husi PKL)")
                 fig_tree, ax_tree = plt.subplots(figsize=(16, 9), dpi=100)
-                plot_tree(vis_model, feature_names=nota_cols, class_names=le.classes_, filled=True, rounded=True, ax=ax_tree, fontsize=9)
+                plot_tree(model, feature_names=nota_cols, class_names=le.classes_, filled=True, rounded=True, ax=ax_tree, fontsize=8)
                 st.pyplot(fig_tree)
 
             with tab3:
