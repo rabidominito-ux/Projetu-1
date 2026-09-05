@@ -368,7 +368,7 @@ if uploaded_file is not None:
                 st.markdown("---")
                 st.subheader("🚀 Performance Modelu Decision Tree (Test Set 20% - Hanesan Colab)")
 
-                # --- TRAIN-TEST SPLIT (N=43) HODIN HETAN AKURASI SAMA COLAB ---
+                # --- TRAIN-TEST SPLIT (N=43) ATU HETAN REZULTADU SAMA COLAB ---
                 X_data = df_filtered[nota_cols]
                 y_data = le.transform(df_filtered[target_col])
 
@@ -397,10 +397,10 @@ if uploaded_file is not None:
                     st.dataframe(df_report.style.format(subset=["precision", "recall", "f1-score", "support"], formatter="{:.2f}"), use_container_width=True)
 
                 st.markdown("---")
-                st.subheader("🌳 Vizualizasaun Árbore Desizaun (Estruturadu & Formal)")
+                st.subheader("🌳 Vizualizasaun Árbore Desizaun (Momoos & Resolusaun A'as)")
 
-                # --- VIZUALIZASAUN HIGH RESOLUTION (DPI=300) ---
-                fig_tree, ax_tree = plt.subplots(figsize=(22, 12), dpi=300)
+                # --- GENERATE FIGURA HD (300 DPI) ---
+                fig_tree, ax_tree = plt.subplots(figsize=(26, 14), dpi=300)
                 plot_tree(
                     model,
                     feature_names=nota_cols,
@@ -409,12 +409,28 @@ if uploaded_file is not None:
                     rounded=True,
                     proportion=False,
                     precision=2,
-                    fontsize=7,
+                    fontsize=8,
                     ax=ax_tree
                 )
-                plt.title("Árbore Desizaun ba Klasifikasaun Dezempenu CFP-RDTL", fontsize=14, pad=20, fontweight="bold", color="#0F172A")
+                plt.title("Árbore Desizaun ba Klasifikasaun Dezempenu CFP-RDTL", fontsize=16, pad=20, fontweight="bold", color="#0F172A")
                 plt.tight_layout()
-                st.pyplot(fig_tree)
+
+                # Guarda imajen ba RAM (BytesIO) atu bele download kualidade HD
+                img_buffer = BytesIO()
+                plt.savefig(img_buffer, format="png", dpi=300, bbox_inches="tight")
+                img_buffer.seek(0)
+
+                # Hatudu imajen iha Streamlit
+                st.image(img_buffer, caption="Vizualizasaun Árbore Desizaun (High Resolution)", use_column_width=True)
+                
+                # Buton atu download imajen original moos no boot (HD)
+                st.download_button(
+                    label="⬇️ Download Imajen HD (Resolusaun A'as ba Relatóriu)",
+                    data=img_buffer,
+                    file_name="arbore_desizaun_cfp_hd.png",
+                    mime="image/png",
+                    use_container_width=True
+                )
 
             with tab3:
                 st.subheader("🔍 Prediksaun Funsionáriu Foun & Gestaun Dadus")
