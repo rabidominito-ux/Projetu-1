@@ -1,110 +1,71 @@
 import streamlit as st
 
 def render_custom_css():
+    """
+    Aplica CSS personalizadu ba Streamlit hodi unifika layout.
+    """
     st.markdown("""
         <style>
-        /* Import Font Google */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
-        
-        html, body, [class*="css"]  {
-            font-family: 'Inter', sans-serif;
-        }
-
-        /* Estilu Fundu no Tipografia Prinsipal */
-        .stApp {
+        .main {
             background-color: #F8FAFC;
         }
-        
-        .main-title {
-            font-size: 2.2rem;
-            color: #0F172A;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            margin-bottom: 4px;
-        }
-        .sub-title {
-            color: #475569;
-            font-size: 1.05rem;
-            margin-bottom: 20px;
-            line-height: 1.5;
-        }
-        
-        /* Metric Cards Customizados */
         .metric-card {
-            background: white;
-            border-radius: 12px;
-            padding: 18px;
+            background-color: #FFFFFF;
+            padding: 1.2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             border: 1px solid #E2E8F0;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            text-align: center;
         }
         .metric-title {
             font-size: 0.85rem;
             font-weight: 600;
             color: #64748B;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         .metric-value {
             font-size: 1.8rem;
-            font-weight: 800;
-            color: #1E3A8A;
-            margin-top: 4px;
+            font-weight: 700;
+            color: #1E293B;
+            margin: 0.3rem 0;
         }
-        
-        /* Estilu Botun Generál */
-        .stButton > button {
-            background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);
-            color: white !important;
-            border-radius: 8px;
-            padding: 0.55rem 1.2rem;
-            font-weight: 600;
-            border: none;
-            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.15);
-            transition: all 0.2s ease-in-out;
-        }
-        .stButton > button:hover {
-            background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%);
-            box-shadow: 0 6px 12px rgba(37, 99, 235, 0.25);
-        }
-        
-        /* Estilu Tabs Ne'ebé Bonitu */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 12px;
-            border-bottom: 2px solid #E2E8F0;
-        }
-        .stTabs [data-baseweb="tab"] {
-            background-color: transparent;
-            border-radius: 8px 8px 0px 0px;
-            padding: 12px 24px;
-            font-weight: 600;
-            color: #64748B;
-            border: none;
-        }
-        .stTabs [aria-selected="true"] {
-            background-color: #1E3A8A !important;
-            color: #FFFFFF !important;
-            border-bottom: 3px solid #D97706 !important;
-        }
-        
-        /* Estilu Tabelas no Container sira */
-        div[data-testid="stDataFrame"] {
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid #E2E8F0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        }
-        
-        /* Chapter IV Highlight Box */
-        .capitulo-box {
-            background-color: #EFF6FF;
-            border-left: 5px solid #1E3A8A;
-            padding: 15px 20px;
-            border-radius: 0 8px 8px 0;
-            margin-bottom: 20px;
+        .metric-sub {
+            font-size: 0.78rem;
+            color: #2563EB;
+            font-weight: 500;
         }
         </style>
+    """, unsafe_allow_html=True)
+
+def render_header():
+    """
+    Renderiza header ofisiál CFP-RDTL.
+    """
+    st.markdown("""
+        <div style="background-color: #1E293B; padding: 1.5rem; border-radius: 10px; margin-bottom: 2rem; color: white;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="font-size: 2.5rem;">🌳</div>
+                <div>
+                    <h2 style="margin: 0; color: #FFFFFF; font-size: 1.5rem; font-weight: 700;">
+                        COMISSÃO DA FUNÇÃO PÚBLICA (CFP)
+                    </h2>
+                    <p style="margin: 0; color: #94A3B8; font-size: 0.9rem;">
+                        República Democrática de Timor-Leste | Sistema Inteligente de Classificação de Desempenho
+                    </p>
+                </div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+def render_kpi_card(title, value, subtext=""):
+    """
+    Renderiza kártaun KPI padronizadu.
+    """
+    st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-title">{title}</div>
+            <div class="metric-value">{value}</div>
+            <div class="metric-sub">{subtext}</div>
+        </div>
     """, unsafe_allow_html=True)
