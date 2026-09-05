@@ -222,7 +222,7 @@ if uploaded_file is not None:
             for col in nota_cols:
                 df_base[col] = pd.to_numeric(df_base[col], errors="coerce")
 
-            # --- CLEANING DADUS / HASAI REZULTADU_AV ---
+            # --- CLEANING DADUS HASAI REZULTADU_AV / VALOR SARA ---
             df_base = df_base.dropna(subset=nota_cols).copy()
             kategoria_validu = ["Bom", "Insuficiente", "Muito Bom", "Suficiente"]
             df_base[target_col] = df_base[target_col].astype(str).str.strip()
@@ -254,7 +254,7 @@ if uploaded_file is not None:
             # Karga modelo .pkl
             model, le = carregar_modelo_colab()
 
-            # Predict ba dadus tomak ba Dashboard
+            # Predict ba dadus tomak atu uza iha Dashboard
             preds_encoded = model.predict(df_filtered[nota_cols])
             df_filtered["Prediksaun"] = le.inverse_transform(preds_encoded)
 
@@ -368,14 +368,16 @@ if uploaded_file is not None:
                 st.markdown("---")
                 st.subheader("🚀 Performance Modelu Decision Tree (Test Set 20% - Hanesan Colab)")
 
-                # --- TRAIN-TEST SPLIT (N=43) ATU HETAN REZULTADU SAMA COLAB ---
+                # --- TRAIN TEST SPLIT ATU HETAN REZULTADU SAMA COLAB (N=43) ---
                 X_data = df_filtered[nota_cols]
                 y_data = le.transform(df_filtered[target_col])
 
+                # Split stratify 20% test set hanesan iha Colab
                 _, X_test, _, y_test = train_test_split(
                     X_data, y_data, test_size=0.20, random_state=42, stratify=y_data
                 )
 
+                # Predict iha Test Set de'it
                 preds_test = model.predict(X_test)
                 acc_test = accuracy_score(y_test, preds_test)
 
@@ -397,40 +399,10 @@ if uploaded_file is not None:
                     st.dataframe(df_report.style.format(subset=["precision", "recall", "f1-score", "support"], formatter="{:.2f}"), use_container_width=True)
 
                 st.markdown("---")
-                st.subheader("🌳 Vizualizasaun Árbore Desizaun (Momoos & Resolusaun A'as)")
-
-                # --- GENERATE FIGURA HD (300 DPI) ---
-                fig_tree, ax_tree = plt.subplots(figsize=(26, 14), dpi=300)
-                plot_tree(
-                    model,
-                    feature_names=nota_cols,
-                    class_names=le.classes_,
-                    filled=True,
-                    rounded=True,
-                    proportion=False,
-                    precision=2,
-                    fontsize=8,
-                    ax=ax_tree
-                )
-                plt.title("Árbore Desizaun ba Klasifikasaun Dezempenu CFP-RDTL", fontsize=16, pad=20, fontweight="bold", color="#0F172A")
-                plt.tight_layout()
-
-                # Guarda imajen ba RAM (BytesIO) atu bele download kualidade HD
-                img_buffer = BytesIO()
-                plt.savefig(img_buffer, format="png", dpi=300, bbox_inches="tight")
-                img_buffer.seek(0)
-
-                # Hatudu imajen iha Streamlit
-                st.image(img_buffer, caption="Vizualizasaun Árbore Desizaun (High Resolution)", use_column_width=True)
-                
-                # Buton atu download imajen original moos no boot (HD)
-                st.download_button(
-                    label="⬇️ Download Imajen HD (Resolusaun A'as ba Relatóriu)",
-                    data=img_buffer,
-                    file_name="arbore_desizaun_cfp_hd.png",
-                    mime="image/png",
-                    use_container_width=True
-                )
+                st.subheader("🌳 Vizualizasaun Árbore Desizaun (Modelu Exatu husi PKL)")
+                fig_tree, ax_tree = plt.subplots(figsize=(16, 9), dpi=100)
+                plot_tree(model, feature_names=nota_cols, class_names=le.classes_, filled=True, rounded=True, ax=ax_tree, fontsize=8)
+                st.pyplot(fig_tree)
 
             with tab3:
                 st.subheader("🔍 Prediksaun Funsionáriu Foun & Gestaun Dadus")
