@@ -2,13 +2,16 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 import seaborn as sns
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import plot_tree
+import joblib
 import streamlit as st
 
 try:
@@ -25,8 +28,28 @@ from database import (
     save_extra_to_db,
     verify_user,
 )
-from models import nota_cols, target_col, carregar_modelo_colab
 from ui_components import render_custom_css, render_header, render_kpi_card
+
+# --- DEFINE VARIAVEL GLOBAL ---
+nota_cols = [
+    "Asiduidade",
+    "Pontualidade",
+    "Produtividade",
+    "Kualidade_Servisu",
+    "Kooperasaun",
+    "Inisiativa",
+    "Disiplina",
+    "Responsabilidade",
+]
+target_col = "Rezultadu_Avaliasaun"
+MODEL_PATH = "modelu_cfp.pkl"
+
+def carregar_modelo_colab():
+    """Karga diretu modelu PKL husi Colab no prepara LabelEncoder"""
+    model = joblib.load(MODEL_PATH)
+    le = LabelEncoder()
+    le.fit(["Bom", "Insuficiente", "Muito Bom", "Suficiente"])
+    return model, le
 
 st.set_page_config(
     page_title="Sistema Klasifikasaun CFP - RDTL",
@@ -221,7 +244,7 @@ if uploaded_file is not None:
                 label="⬇️ Download Backup (CSV)", data=csv_full, file_name="dataset_cfp_filtrado.csv", mime="text/csv", use_container_width=True
             )
 
-            # Karga diretu modelo Colab husi models.py
+            # Karga diretu modelo .pkl husi Colab
             model, le = carregar_modelo_colab()
 
             # Executa prediksaun uzando modelo Colab
