@@ -221,6 +221,14 @@ if uploaded_file is not None:
             for col in nota_cols:
                 df_base[col] = pd.to_numeric(df_base[col], errors="coerce")
 
+            # --- HAFUNAN DADUS / DATA CLEANING ---
+            df_base = df_base.dropna(subset=nota_cols).copy()
+            kategoria_validu = ["Bom", "Insuficiente", "Muito Bom", "Suficiente"]
+            df_base[target_col] = df_base[target_col].astype(str).str.strip()
+            # Hasai valor sira ne'ebé la'ós kategoria 4 (hanesan 'Rezultadu_Av' ka header ne'ebé boot lakon)
+            df_base = df_base[df_base[target_col].isin(kategoria_validu)].copy()
+            # --------------------------------------
+
             st.session_state["extra_reports"] = load_extra_from_db()
             if len(st.session_state["extra_reports"]) > 0:
                 df_extra = pd.DataFrame(st.session_state["extra_reports"])
