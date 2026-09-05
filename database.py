@@ -10,7 +10,6 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
     
-    # Tabela ba utilizadór (Users)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             username TEXT PRIMARY KEY,
@@ -18,12 +17,10 @@ def init_db():
         )
     """)
     
-    # Insert utilizadór padrão se dauk iha
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
         cursor.execute("INSERT INTO users (username, password) VALUES ('admin', 'admin123')")
     
-    # Tabela ba dadus extra (Registus foun)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS extra_records (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -81,7 +78,6 @@ def load_extra_from_db():
     conn.close()
     if df.empty:
         return []
-    # Hasai koluna 'id' ne'ebé ho SQLite nian atu faíl seluk bele lee ho mos
     if 'id' in df.columns:
         df = df.drop(columns=['id'])
     return df.to_dict(orient="records")
