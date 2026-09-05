@@ -33,7 +33,7 @@ def init_db(db_name="cfp_database.db"):
         )
     ''')
     
-    # 2. Tabela ba Users (Autentikasaun & RBAC)
+    # 2. Tabela ba Users
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             username TEXT PRIMARY KEY,
@@ -42,7 +42,7 @@ def init_db(db_name="cfp_database.db"):
         )
     ''')
     
-    # 3. Tabela ba Audit Trail (Rejistu Mudansa)
+    # 3. Tabela ba Audit Log
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS audit_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,11 +54,11 @@ def init_db(db_name="cfp_database.db"):
         )
     ''')
     
-    # Kria Default Admin se seidauk iha (Username: admin, Password: admin123)
+    # Default Admin (admin / admin123)
     cursor.execute("SELECT * FROM users WHERE username = 'admin'")
     if not cursor.fetchone():
         hashed_pw = bcrypt.hashpw('admin123'.encode('utf-8'), bcrypt.gensalt())
-        cursor.execute("INSERT INTO users VALUES (?, ?, ?)", ('admin', hashed_pw, 'admin'))
+        cursor.execute("INSERT INTO users VALUES (?, ?, ?)", ('admin', hashed_pw.decode('utf-8'), 'admin'))
 
     conn.commit()
     conn.close()
@@ -135,9 +135,6 @@ def delete_extra_from_db_by_index(index, db_name="cfp_database.db"):
         return True
     return False
 
-# ==========================================
-# FUNSAUN AUTENTIKASAUN & JESTAUN USER
-# ==========================================
 def verify_user(username, password, db_name="cfp_database.db"):
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
@@ -145,7 +142,10 @@ def verify_user(username, password, db_name="cfp_database.db"):
     result = cursor.fetchone()
     conn.close()
     if result:
-        return bcrypt.checkpw(password.encode('utf-8'), result[0])
+        stored_pw = result[0]
+        if isinstance(stored_pw, str):
+            stored_pw = stored_pw.encode('utf-8')
+        return bcrypt.checkpw(password.encode('utf-8'), stored_pw)
     return False
 
 def get_user_role(username, db_name="cfp_database.db"):
@@ -157,7 +157,7 @@ def get_user_role(username, db_name="cfp_database.db"):
     return result[0] if result else 'user'
 
 def add_user(username, password, role='user', db_name="cfp_database.db"):
-    hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
     try:
@@ -169,9 +169,6 @@ def add_user(username, password, role='user', db_name="cfp_database.db"):
     finally:
         conn.close()
 
-# ==========================================
-# FUNSAUN AUDIT TRAIL (REJISTU MUDANSA)
-# ==========================================
 def log_action(username, action, table_name, record_id, db_name="cfp_database.db"):
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
